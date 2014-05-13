@@ -115,7 +115,7 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
     static uint32_t gyroSampleCount = 0;
     static uint32_t accSampleCount = 0;
 
-#if defined ALGORITHM_TASK || defined ANDROID_COMM_TASK
+#if defined ALGORITHM_TASK
     MessageBuffer *pMagSample = NULLP;
     MessageBuffer *pAccSample = NULLP;
     MessageBuffer *pGyroSample = NULLP;
@@ -123,7 +123,7 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
 
     switch (sensorId)
     {
-    case SENSOR_UNCAL_MAGNETIC_FIELD:
+    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
         if ((sMagDecimateCount++ % MAG_DECIMATE_FACTOR) == 0 )
         {
             /* Read mag Data - reading would clear interrupt also */
@@ -135,13 +135,6 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
             pMagSample->msg.msgMagData = magData;
             ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pMagSample ) == ASF_OK );
 #endif
-#ifdef ANDROID_COMM_TASK
-            pMagSample = NULLP;
-            /* Send sample to Host interface also */
-            ASF_assert( ASFCreateMessage( MSG_MAG_DATA, sizeof(MsgMagData), &pMagSample ) == ASF_OK );
-            pMagSample->msg.msgMagData = magData;
-            ASFSendMessage( ANDROID_COMM_TASK, pMagSample ); // No error check. We are OK to drop messages
-#endif
         }
         else
         {
@@ -149,7 +142,7 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
         }
         break;
 
-    case SENSOR_UNCAL_GYROSCOPE:
+    case SENSOR_GYROSCOPE_UNCALIBRATED:
         if ((gyroSampleCount++ % GYRO_SAMPLE_DECIMATE) == 0)
         {
             /* Read Gyro Data - reading typically clears interrupt as well */
@@ -161,13 +154,7 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
             pGyroSample->msg.msgGyroData = gyroData;
             ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pGyroSample ) == ASF_OK );
 #endif
-#ifdef ANDROID_COMM_TASK
-            pGyroSample = NULLP;
-            /* Send sample to Host interface also */
-            ASF_assert( ASFCreateMessage( MSG_GYRO_DATA, sizeof(MsgGyroData), &pGyroSample ) == ASF_OK );
-            pGyroSample->msg.msgGyroData = gyroData;
-            ASFSendMessage( ANDROID_COMM_TASK, pGyroSample ); // No error check. We are OK to drop messages
-#endif
+
         }
         else
         {
@@ -175,7 +162,7 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
         }
         break;
 
-    case SENSOR_UNCAL_ACCELEROMETER:
+    case SENSOR_ACCELEROMETER_UNCALIBRATED:
 #if defined TRIGGERED_MAG_SAMPLING
         if (accSampleCount % MAG_TRIGGER_RATE_DECIMATE == 0)
         {
@@ -193,14 +180,6 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
             pAccSample->msg.msgAccelData = accelData;
             ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pAccSample ) == ASF_OK );
 #endif
-#ifdef ANDROID_COMM_TASK
-            pAccSample = NULLP;
-            /* Send sample to Host interface also */
-            ASF_assert( ASFCreateMessage( MSG_ACC_DATA, sizeof(MsgAccelData), &pAccSample ) == ASF_OK );
-            pAccSample->msg.msgAccelData = accelData;
-            ASFSendMessage( ANDROID_COMM_TASK, pAccSample ); // No error check. We are OK to drop messages
-#endif
-
         }
         else
         {

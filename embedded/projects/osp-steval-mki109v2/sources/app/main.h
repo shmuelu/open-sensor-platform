@@ -31,9 +31,7 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#ifdef ANDROID_DEMO
-# define ANDROID_COMM_TASK              I2CSLAVE_COMM_TASK_ID
-#endif
+
 #define ALGORITHM_TASK                  ALGORITHM_TASK_ID
 
 #ifdef DEBUG_BUILD

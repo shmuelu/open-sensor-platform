@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include "common.h"
-#ifdef ANDROID_COMM_TASK
 #include "hostinterface.h"
 #include "HostFunctions.h"
 #include "osp-sensors.h"
@@ -106,11 +105,11 @@ static void I2C_Slave_Initialise(void)
 
 
 /****************************************************************************************************
- * @fn      I2C_Slave_init
+ * @fn      I2C_Slave_hardware
  *          Initialize the Sensor Hub I2C Slave hardware
  *
  ***************************************************************************************************/
-static void I2C_Slave_init( void )
+static void SH_Host_Slave_hardware_init( void )
 {
     GPIO_InitTypeDef  GPIO_InitStructure;
     NVIC_InitTypeDef  NVIC_InitStructure;
@@ -154,11 +153,11 @@ static void I2C_Slave_init( void )
 }
 
 /****************************************************************************************************
- * @fn      SH_Slave_init
+ * @fn      SH_Host_Slave_software_init
  *          Initialize the Sensor Hub I2C Slave register interface
  *
  ***************************************************************************************************/
-static void SH_Slave_init(void)
+static void SH_Host_Slave_software_init(void)
 {
     memset(&SlaveRegMap, 0, sizeof(SlaveRegMap));
     memset(&slave_xfer, 0, sizeof(slave_xfer));
@@ -167,10 +166,29 @@ static void SH_Slave_init(void)
     SlaveRegMap.whoami   = SH_WHO_AM_I;
 }
 
-
-
-void setup_I2c_Tx(uint8_t *address, uint16_t size)
+/****************************************************************************************************
+ * @fn      SH_Slave_init
+ *          Initialize the Sensor Hub I2C Slave register interface
+ *
+ ***************************************************************************************************/
+void SH_Host_Slave_init(void)
 {
+    SH_Host_Slave_software_init();
+    SH_Host_Slave_hardware_init();
+}
+
+/****************************************************************************************************
+ * @fn      SH_Slave_setup_I2c_Tx
+ *          sets up the I2C Slave TX buffer for next Slave Read operation
+ *
+ *
+ * @param   address - address of buffer to transmit
+ * @param   size    - size of buffer to transmit
+ *
+ * @return  none
+ *
+ ***************************************************************************************************/
+void SH_Slave_setup_I2c_Tx(uint8_t *address, uint16_t size) {
 	slave_xfer.txBuff = address;
     slave_xfer.txCnt = 0;
     slave_xfer.txCntMax = size;
@@ -198,7 +216,6 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
         if ((i2cslvstate & 0xFF00) == I2C_EVENT_SLAVE_ACK_FAILURE)
         {
             /* Master NAKed - this was end of transaction when slave is transmitting */
-            isr_evt_set(I2C_SLAVE_XFER_DONE, asfTaskHandleTable[I2CSLAVE_COMM_TASK_ID].handle );
             slave_xfer.rxCnt = 0;
             slave_xfer.rxCntMax = 0;
             return;
@@ -270,7 +287,7 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
         {
             I2C_SendData(pI2C, slave_xfer.txBuff[slave_xfer.txCnt++]);
             if (slave_xfer.txCnt >= slave_xfer.txCntMax) {
-                setup_I2c_Tx(NULL, 0);
+                SH_Slave_setup_I2c_Tx(NULL, 0);
                 if (getLastCommand() == OSP_HOST_GET_BROADCAST_DATA) {
                     hostCommitDataTx();
                     calculate_commited_tx_buffer_size();
@@ -280,7 +297,7 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
         else
         {
             I2C_SendData(pI2C, I2C_OVERREACH_VAL); //This value signifies read beyond allowed range
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
         }
       
         break;
@@ -290,8 +307,8 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
         /* if (STOPF==1) Read SR1;Write CR1 */
         I2C_GetFlagStatus(pI2C, I2C_FLAG_STOPF);
         I2C_Cmd(pI2C, ENABLE);
-        isr_evt_set(I2C_SLAVE_XFER_DONE, asfTaskHandleTable[I2CSLAVE_COMM_TASK_ID].handle );
         slave_xfer.rxCnt = 0;
+        slave_xfer.rxCntMax = 0;
         /* Re-enable ACK (in case it was disabled) */
         I2C_AcknowledgeConfig(pI2C, ENABLE);
         break;
@@ -301,60 +318,6 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
     }
 }
 
-
-/****************************************************************************************************
- * @fn      I2CCommTask
- *          This tasks primary goal is to serialize the communication request (sensor results) going
- *          over I2C
- *
- * @param   none
- *
- * @return  none
- *
- ***************************************************************************************************/
-ASF_TASK void I2CCommTask( ASF_TASK_ARG )
-{
-    MessageBuffer *rcvMsg = NULLP;
-
-    /* I2C Slave mode initialization */
-    I2C_Slave_init();
-
-    /* Init register area for slave */
-    SH_Slave_init();
-
-    while(1)
-    {
-        ASFReceiveMessage(I2CSLAVE_COMM_TASK_ID, &rcvMsg );
-
-        switch (rcvMsg->msgId)
-        {
-        case MSG_ACC_DATA:
-            SendSensorData(SENSOR_UNCAL_ACCELEROMETER, &rcvMsg->msg.msgAccelData);
-            break;
-
-        case MSG_MAG_DATA:
-            SendSensorData(SENSOR_UNCAL_MAGNETIC_FIELD, &rcvMsg->msg.msgMagData);
-            break;
-
-        case MSG_GYRO_DATA:
-            SendSensorData(SENSOR_UNCAL_GYROSCOPE, &rcvMsg->msg.msgGyroData);
-            break;
-
-        case MSG_QUATERNION_DATA:
-            SendQuaternionData(&rcvMsg->msg.msgQuaternionData);
-            break;
-
-        case MSG_CD_SEGMENT_DATA:
-            SendCDSegmentData(&rcvMsg->msg.msgCDSegmentData);
-            break;
-
-        default:
-            D1_printf("I2C:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);
-            break;
-        }
-    }
-}
-#endif //ANDROID_COMM_TASK
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

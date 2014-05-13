@@ -20,6 +20,7 @@
 \*-------------------------------------------------------------------------------------------------*/
 #include "common.h"
 #include "hw_setup.h"
+#include "i2c_slavecomm_t.h"
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -86,6 +87,9 @@ int main( void )
       To select different clock setup refer to Clock configuration tool for STM32L1xx microcontrollers (AN3309)
     */
     SystemCoreClockUpdate();
+    
+    /* initialize the Host Slave I2C port */
+    SH_Host_Slave_init();
 
     /* Configure the GPIO ports (non module specific) */
     SystemGPIOConfig();

@@ -28,6 +28,7 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
+#define NUM_ACCEL_AXES                  (3)
 
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
@@ -51,13 +52,14 @@ typedef struct {
 typedef struct StepDataOSP_t{
     NTTIME startTime;
     NTTIME stopTime;
-    NT stepFrequency;
+    osp_float_t stepFrequency;
     uint32_t numStepsTotal;
     uint32_t numStepsSinceWalking;
 } StepDataOSP_t;
 
 typedef void (*OSP_StepSegmentResultCallback_t)(StepSegment_t * segment);
 typedef void (*OSP_StepResultCallback_t)(StepDataOSP_t* stepData);
+typedef void (*OSP_EventResultCallback_t)(NTTIME * eventTime);
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S

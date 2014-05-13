@@ -18,6 +18,9 @@
 #if !defined (I2C_SLAVECOMM_T_H)
 #define   I2C_SLAVECOMM_T_H
 
-void setup_I2c_Tx(uint8_t *address, uint16_t size);
+#include <stdint.h>
+
+void SH_Host_Slave_init(void);
+void SH_Slave_setup_I2c_Tx(uint8_t *address, uint16_t size);
 
 #endif // I2C_SLAVECOMM_T_H

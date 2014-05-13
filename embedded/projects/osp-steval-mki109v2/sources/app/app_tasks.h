@@ -52,9 +52,6 @@
 /* Declare additional application specific tasks here */
 /* NOTE: STACK_INCREASE can be used to increase the stack size of all tasks by a constant amount.
    This value is set in ASF_TaskInit.c file and is normally 0. Use this for Debugging crashes */
-#ifdef ANDROID_DEMO
-ASF_TASK_STATIC( I2CSLAVE_COMM_TASK_ID, I2CCommTask,        99,  (0x200+STACK_INCREASE),   16 )
-#endif
 ASF_TASK_STATIC( ALGORITHM_TASK_ID,     AlgorithmTask,      90,  (0x800+STACK_INCREASE),   16 )
 ASF_TASK_STATIC( ALG_BG_TASK_ID,        AlgBackGndTask,     85,  (0x800+STACK_INCREASE),   32 )
 

@@ -54,7 +54,8 @@
 #define ACCEL_INPUT_RATES               TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
 #define MAG_INPUT_RATES                 TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
 #define GYRO_INPUT_RATES                TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
-#define STEP_COUNT_OUTPUT_RATE          TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
+#define STEP_COUNT_OUTPUT_RATE          TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
+#define SIG_MOTION_OUTPUT_RATE          TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
 #define ACCEL_OUTPUT_RATES              TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
 #define MAG_OUTPUT_RATES                TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
 #define GYRO_OUTPUT_RATES               TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
@@ -86,7 +87,7 @@ static InputSensorSpecificData_t _AccInputSensor =
 
 static SensorDescriptor_t _AccSensDesc =
 {
-    SENSOR_UNCAL_ACCELEROMETER,
+    SENSOR_ACCELEROMETER_UNCALIBRATED,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -116,7 +117,7 @@ static InputSensorSpecificData_t _MagInputSensor =
 
 static SensorDescriptor_t _MagSensDesc =
 {
-    SENSOR_UNCAL_MAGNETIC_FIELD,
+    SENSOR_MAGNETIC_FIELD_UNCALIBRATED,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -146,7 +147,7 @@ static InputSensorSpecificData_t _GyroInputSensor =
 
 static SensorDescriptor_t _GyroSensDesc =
 {
-    SENSOR_UNCAL_GYROSCOPE,
+    SENSOR_GYROSCOPE_UNCALIBRATED,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -158,6 +159,9 @@ static SensorDescriptor_t _GyroSensDesc =
 
 static void stepCounterOutputCallback(OutputSensorHandle_t outputHandle,
     Android_StepCounterOutputData_t* pOutput);
+
+static void sigMotionOutputCallback(OutputSensorHandle_t outputHandle,
+    Android_SignificantMotionOutputData_t* pOutput);
 
 static void UnCalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
     Android_UncalibratedAccelOutputData_t* pOutput);
@@ -180,9 +184,21 @@ static SensorDescriptor_t  stepCounterRequest = {
     OSP_NO_OPTIONAL_DATA
 };
 
+/* Output result descriptor for subscribing to significant motion */
+static SensorDescriptor_t  sigMotionRequest = {
+    SENSOR_CONTEXT_DEVICE_MOTION,
+    DATA_CONVENTION_ANDROID,
+    (OSP_OutputReadyCallback_t)sigMotionOutputCallback,
+    OSP_NO_NVM_WRITE_CALLBACK,
+    OSP_NO_SENSOR_CONTROL_CALLBACK,
+    SIG_MOTION_OUTPUT_RATE,
+    OSP_NO_FLAGS,
+    OSP_NO_OPTIONAL_DATA
+};
+
 /* Output result descriptor for subscribing to uncalibrated accelerometer data */
 static SensorDescriptor_t UnCalAccelRequest = {
-    SENSOR_UNCAL_ACCELEROMETER,
+    SENSOR_ACCELEROMETER_UNCALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalAccelDataResultCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -194,7 +210,7 @@ static SensorDescriptor_t UnCalAccelRequest = {
 
 /* Output result descriptor for subscribing to uncalibrated magnetometer data */
 static SensorDescriptor_t UnCalMagRequest = {
-    SENSOR_UNCAL_MAGNETIC_FIELD,
+    SENSOR_MAGNETIC_FIELD_UNCALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalMagDataResultCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -206,7 +222,7 @@ static SensorDescriptor_t UnCalMagRequest = {
 
 /* Output result descriptor for subscribing to uncalibrated gyroscope data */
 static SensorDescriptor_t UnCalGyroRequest = {
-    SENSOR_UNCAL_GYROSCOPE,
+    SENSOR_GYROSCOPE_UNCALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalGyroDataResultCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -221,6 +237,7 @@ static InputSensorHandle_t _MagHandle;
 static InputSensorHandle_t _GyroHandle;
 static const OSP_Library_Version_t* version;
 static OutputSensorHandle_t _stepCounterHandle;
+static OutputSensorHandle_t _sigMotionHandle;
 static OutputSensorHandle_t _unCalAccelHandle;
 static OutputSensorHandle_t _unCalMagHandle;
 static OutputSensorHandle_t _unCalGyroHandle;
@@ -318,7 +335,19 @@ static void UnCalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
 static void stepCounterOutputCallback(OutputSensorHandle_t OutputHandle,
     Android_StepCounterOutputData_t* pOutput)
 {
-    Print_LIPS("STC, %+03.2f, %d,0", TOFLT_TIME(pOutput->TimeStamp), pOutput->StepCount);
+    Print_LIPS("STC,%+03.4f,%d,0", TOFLT_TIME(pOutput->TimeStamp), pOutput->StepCount);
+}
+
+
+/****************************************************************************************************
+ * @fn      sigMotionOutputCallback
+ *          Call back for Significant Motion results
+ *
+ ***************************************************************************************************/
+static void sigMotionOutputCallback(OutputSensorHandle_t outputHandle,
+    Android_SignificantMotionOutputData_t* pOutput)
+{
+    Print_LIPS("SM,%+03.4f,%d",TOFLT_TIME(pOutput->TimeStamp), pOutput->significantMotionDetected);
 }
 
 
@@ -420,6 +449,9 @@ ASF_TASK  void AlgorithmTask ( ASF_TASK_ARG )
     // Register output sensors/results
     OSP_Status =  OSP_SubscribeOutputSensor(&stepCounterRequest, &_stepCounterHandle);
     ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_COUNTER) Failed");
+
+    OSP_Status =  OSP_SubscribeOutputSensor(&sigMotionRequest, &_sigMotionHandle);
+    ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_CONTEXT_DEVICE_MOTION) Failed");
 
     OSP_Status =  OSP_SubscribeOutputSensor(&UnCalAccelRequest, &_unCalAccelHandle);
     ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER) Failed");

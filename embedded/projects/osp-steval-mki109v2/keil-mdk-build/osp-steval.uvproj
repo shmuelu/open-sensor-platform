@@ -139,8 +139,6 @@
             <RestoreFunctions>0</RestoreFunctions>
             <RestoreToolbox>1</RestoreToolbox>
             <RestoreTracepoints>0</RestoreTracepoints>
-            <RestoreTracepoints>1</RestoreTracepoints>
-            <RestoreTracepoints>1</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
           <TargetSelection>8</TargetSelection>
@@ -355,8 +353,6 @@
             <wLevel>2</wLevel>
             <uThumb>0</uThumb>
             <uSurpInc>0</uSurpInc>
-            <uC99>0</uC99>
-            <useXO>0</useXO>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define>ANDROID_DEMO,HSE_VALUE=16000000,USE_STDPERIPH_DRIVER,STM32F10X_HD,DEBUG_BUILD,DEBUG_OUTPUT,STEVAL_MKI109V2,UART_DMA_ENABLE,ASF_PROFILING,ON_DEMAND_PROFILING</Define>
@@ -373,7 +369,6 @@
             <SwStkChk>0</SwStkChk>
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
-            <useXO>0</useXO>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -390,7 +385,6 @@
             <useFile>0</useFile>
             <TextAddressRange>0x08000000</TextAddressRange>
             <DataAddressRange>0x20000000</DataAddressRange>
-            <pXoBase></pXoBase>
             <ScatterFile></ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
@@ -540,8 +534,6 @@
                 <wLevel>0</wLevel>
                 <uThumb>2</uThumb>
                 <uSurpInc>2</uSurpInc>
-                <uC99>2</uC99>
-                <useXO>2</useXO>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -558,7 +550,6 @@
                 <SwStkChk>2</SwStkChk>
                 <NoWarn>2</NoWarn>
                 <uSurpInc>2</uSurpInc>
-                <useXO>2</useXO>
                 <VariousControls>
                   <MiscControls></MiscControls>
                   <Define></Define>
@@ -600,9 +591,14 @@
               <FilePath>..\..\..\common\alg\stepsegmenter.c</FilePath>
             </File>
             <File>
-              <FileName>stepsignalgenerator.c</FileName>
+              <FileName>signalgenerator.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\common\alg\stepsignalgenerator.c</FilePath>
+              <FilePath>..\..\..\common\alg\signalgenerator.c</FilePath>
+            </File>
+            <File>
+              <FileName>significantmotiondetector.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\common\alg\significantmotiondetector.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -668,6 +664,11 @@
               <FileName>taskinit_user.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\sources\app\taskinit_user.c</FilePath>
+            </File>
+            <File>
+              <FileName>HostFunctions.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\sources\app\HostFunctions.c</FilePath>
             </File>
           </Files>
         </Group>

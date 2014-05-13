@@ -341,7 +341,7 @@ void send_commited_tx_buffer_size(void)
 		commited_index = 0;
 	}
 #ifdef USE_I2C_SLAVE_DRIVER
-	setup_i2c_Tx((uint8_t *)&commited_length, sizeof(commited_length));
+	SH_Slave_setup_I2c_Tx((uint8_t *)&commited_length, sizeof(commited_length));
 #endif
 
 #ifdef USE_SPI_SLAVE_DRIVER
@@ -404,14 +404,14 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         {
         case OSP_HOST_GET_BROADCAST_LENGTH:
 			calculate_commited_tx_buffer_size();
-			setup_I2c_Tx((uint8_t *)&commited_length, sizeof(commited_length));
+			SH_Slave_setup_I2c_Tx((uint8_t *)&commited_length, sizeof(commited_length));
             break;
         case OSP_HOST_GET_BROADCAST_DATA:
-			setup_I2c_Tx(&broadcast_buf[broadcast_buf_rd][last_transmitted_offset[broadcast_buf_rd]], commited_length);
+			SH_Slave_setup_I2c_Tx(&broadcast_buf[broadcast_buf_rd][last_transmitted_offset[broadcast_buf_rd]], commited_length);
             break;
         case OSP_HOST_GET_WHO_AM_I:
             //D0_printf("I2C:WHO_AM_I\r\n");
-            setup_I2c_Tx((uint8_t *)&SlaveRegMap.whoami, (uint16_t) sizeof(SlaveRegMap.whoami));
+            SH_Slave_setup_I2c_Tx((uint8_t *)&SlaveRegMap.whoami, (uint16_t) sizeof(SlaveRegMap.whoami));
              break;
 		case OSP_HOST_RESET:
 			{
@@ -422,19 +422,19 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
 			}
 			break;
          case OSP_HOST_GET_VERSION:
-            setup_I2c_Tx((uint8_t *)&SlaveRegMap.version, (uint16_t) sizeof(SlaveRegMap.version));
+            SH_Slave_setup_I2c_Tx((uint8_t *)&SlaveRegMap.version, (uint16_t) sizeof(SlaveRegMap.version));
             break;
         case OSP_HOST_SENSOR_SET_ENABLE:
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
             remaining = 2;              // sensorId, enable boolean byte
             break;
         case OSP_HOST_SENSOR_GET_DELAY:
         case OSP_HOST_SENSOR_GET_ENABLE:
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
             remaining = 1;              // sensor id
             break;
         case OSP_HOST_SENSOR_SET_DELAY:
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
             remaining = 3;              // sensor id, 16 bit delay
             break;
 
@@ -444,7 +444,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         case SPI_SH_SENSOR_GET_CALIBRATE:
 # endif
         default:
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
             break;
         }
         break;
@@ -453,12 +453,12 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         {
         case OSP_HOST_SENSOR_GET_DELAY:
             SlaveRegMap.shortResult = getSensorDelay(rx_buf[1]);
-            setup_I2c_Tx((uint8_t *)&SlaveRegMap.shortResult, sizeof(SlaveRegMap.shortResult));
+            SH_Slave_setup_I2c_Tx((uint8_t *)&SlaveRegMap.shortResult, sizeof(SlaveRegMap.shortResult));
             remaining = 1;
             break;
         case OSP_HOST_SENSOR_GET_ENABLE:
             SlaveRegMap.booleanResult = isSensorEnable(rx_buf[1]);
-            setup_I2c_Tx(&SlaveRegMap.booleanResult, sizeof(SlaveRegMap.booleanResult));
+            SH_Slave_setup_I2c_Tx(&SlaveRegMap.booleanResult, sizeof(SlaveRegMap.booleanResult));
             remaining = 1;
             break;
         }
@@ -468,7 +468,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         {
         case OSP_HOST_SENSOR_SET_ENABLE:
             controlSensorEnable(rx_buf[1], rx_buf[2] ? 1 : 0);
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
             remaining = 1;
             break;
         }
@@ -478,7 +478,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         {
         case OSP_HOST_SENSOR_SET_DELAY:
             controlSensorDelay(rx_buf[1], (uint16_t) rx_buf[2] | ((uint16_t) rx_buf[3] << 8));
-            setup_I2c_Tx(NULL, 0);
+            SH_Slave_setup_I2c_Tx(NULL, 0);
             remaining = 1;
             break;
         }
