@@ -184,6 +184,10 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 #define SensorHubIntLow()                       \
     SH_INT_GPIO_GRP->BSRR = SH_INT_GPIO_PIN;
 
+#define isSensorHubIntHigh()                      \
+    ((SH_INT_GPIO_GRP->BRR & SH_INT_GPIO_PIN) ? true : false)
+
+
 /* ########################################################################## */
 /* #    S P I   I N T E R F A C E                                           # */
 /* ########################################################################## */

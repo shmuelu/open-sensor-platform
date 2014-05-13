@@ -41,38 +41,41 @@
  *  If a sensor type not is supported by the library implementation, an error will be returned on its usage
  */
 typedef enum {
-    SENSOR_ACCELEROMETER                   =  0, //!< accelerometer data
-    SENSOR_MAGNETIC_FIELD                  =  1, //!< magnetometer data
-    SENSOR_GYROSCOPE                       =  2, //!< gyroscope data
-    SENSOR_LIGHT                           =  3, //!< light data
-    SENSOR_PRESSURE                        =  4, //!< barometer pressure data
-    SENSOR_PROXIMITY                       =  5, //!< proximity data
-    SENSOR_RELATIVE_HUMIDITY               =  6, //!< relative humidity data
-    SENSOR_AMBIENT_TEMPERATURE             =  7, //!< ambient temperature data
-    SENSOR_GRAVITY                         =  8, //!< gravity part of acceleration in body frame 
-    SENSOR_LINEAR_ACCELERATION             =  9, //!< dynamic acceleration 
-    SENSOR_ORIENTATION                     = 10, //!< yaw, pitch, roll (also use this for Win8 Inclinometer)
-    SENSOR_AUG_REALITY_COMPASS             = 11, //!< heading which switches to aug-reality mode when camera towards horizon (Win8 compass)
-    SENSOR_ROTATION_VECTOR                 = 12, //!< accel+mag+gyro quaternion
-    SENSOR_GEOMAGNETIC_ROTATION_VECTOR     = 13, //!< accel+mag quaternion
-    SENSOR_GAME_ROTATION_VECTOR            = 14, //!< accel+gyro quaternion
-    SENSOR_VIRTUAL_GYROSCOPE               = 15, //!< virtual gyroscope data from accel+mag
-    SENSOR_STEP_DETECTOR                   = 16, //!< precise time a step occured
-    SENSOR_STEP_COUNTER                    = 17, //!< count of steps
-    SENSOR_CONTEXT_DEVICE_MOTION           = 18, //!< context of device relative to world frame
-    SENSOR_CONTEXT_CARRY                   = 19, //!< context of device relative to user
-    SENSOR_CONTEXT_POSTURE                 = 20, //!< context of user relative to world frame
-    SENSOR_CONTEXT_TRANSPORT               = 21, //!< context of environment relative to world frame
-    SENSOR_CONTEXT_CHANGE_DETECTOR         = 22, //!< low compute trigger for seeing if context may have changed
-    SENSOR_STEP_SEGMENT_DETECTOR           = 23, //!< low compute trigger for analyzing if step may have occured
-    SENSOR_GESTURE_EVENT                   = 24, //!< gesture event such as a double-tap or shake
-    SENSOR_MESSAGE                         = 25, //!< warnings from the library: e.g. excessive timestamp jitter, need calibration
-    SENSOR_RGB_LIGHT                       = 26, //!< RGB light data
-    SENSOR_UV_LIGHT                        = 27, //!< UV light data
-    SENSOR_HEART_RATE                      = 28, //!< heart-rate data
-    SENSOR_BLOOD_OXYGEN_LEVEL              = 29, //!< blood-oxygen level data
-    SENSOR_SKIN_HYDRATION_LEVEL            = 30, //!< skin-hydration level data
-    SENSOR_BREATHALYZER                    = 31, //!< breathalyzer data
+    SENSOR_CAL_ACCELEROMETER               =  0, //!< accelerometer data
+    SENSOR_UNCAL_ACCELEROMETER             =  1, //!< accelerometer data
+    SENSOR_CAL_MAGNETIC_FIELD              =  2, //!< magnetometer data
+    SENSOR_UNCAL_MAGNETIC_FIELD            =  3, //!< magnetometer data
+    SENSOR_CAL_GYROSCOPE                   =  4, //!< gyroscope data
+    SENSOR_UNCAL_GYROSCOPE                 =  5, //!< gyroscope data
+    SENSOR_LIGHT                           =  6, //!< light data
+    SENSOR_PRESSURE                        =  7, //!< barometer pressure data
+    SENSOR_PROXIMITY                       =  8, //!< proximity data
+    SENSOR_RELATIVE_HUMIDITY               =  9, //!< relative humidity data
+    SENSOR_AMBIENT_TEMPERATURE             = 10, //!< ambient temperature data
+    SENSOR_GRAVITY                         = 11, //!< gravity part of acceleration in body frame 
+    SENSOR_LINEAR_ACCELERATION             = 12, //!< dynamic acceleration 
+    SENSOR_ORIENTATION                     = 13, //!< yaw, pitch, roll (also use this for Win8 Inclinometer)
+    SENSOR_AUG_REALITY_COMPASS             = 14, //!< heading which switches to aug-reality mode when camera towards horizon (Win8 compass)
+    SENSOR_ROTATION_VECTOR                 = 15, //!< accel+mag+gyro quaternion
+    SENSOR_GEOMAGNETIC_ROTATION_VECTOR     = 16, //!< accel+mag quaternion
+    SENSOR_GAME_ROTATION_VECTOR            = 17, //!< accel+gyro quaternion
+    SENSOR_VIRTUAL_GYROSCOPE               = 18, //!< virtual gyroscope data from accel+mag
+    SENSOR_STEP_DETECTOR                   = 19, //!< precise time a step occured
+    SENSOR_STEP_COUNTER                    = 20, //!< count of steps
+    SENSOR_CONTEXT_DEVICE_MOTION           = 21, //!< context of device relative to world frame
+    SENSOR_CONTEXT_CARRY                   = 22, //!< context of device relative to user
+    SENSOR_CONTEXT_POSTURE                 = 23, //!< context of user relative to world frame
+    SENSOR_CONTEXT_TRANSPORT               = 24, //!< context of environment relative to world frame
+    SENSOR_CONTEXT_CHANGE_DETECTOR         = 25, //!< low compute trigger for seeing if context may have changed
+    SENSOR_STEP_SEGMENT_DETECTOR           = 26, //!< low compute trigger for analyzing if step may have occured
+    SENSOR_GESTURE_EVENT                   = 27, //!< gesture event such as a double-tap or shake
+    SENSOR_MESSAGE                         = 28, //!< warnings from the library: e.g. excessive timestamp jitter, need calibration
+    SENSOR_RGB_LIGHT                       = 29, //!< RGB light data
+    SENSOR_UV_LIGHT                        = 30, //!< UV light data
+    SENSOR_HEART_RATE                      = 31, //!< heart-rate data
+    SENSOR_BLOOD_OXYGEN_LEVEL              = 32, //!< blood-oxygen level data
+    SENSOR_SKIN_HYDRATION_LEVEL            = 33, //!< skin-hydration level data
+    SENSOR_BREATHALYZER                    = 34, //!< breathalyzer data
     SENSOR_ENUM_COUNT
 } SensorType_t ;
 

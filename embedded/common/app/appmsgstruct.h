@@ -21,6 +21,7 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    I N C L U D E   F I L E S
 \*-------------------------------------------------------------------------------------------------*/
+#include <stdint.h>
 
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
@@ -73,6 +74,19 @@ typedef struct MsgCDSegmentDataTag
     uint32_t duration;
     uint8_t  type;
 } MsgCDSegmentData;
+
+
+typedef struct MsgSensorEnableTag
+{
+    uint8_t     sensorId;
+    uint8_t     enabled;
+} MsgSensorEnable;
+
+typedef struct MsgSensorDelayTag
+{
+    uint8_t      sensorId;
+    uint16_t    delayMiliSec;
+} MsgSensorDelay;
 
 
 

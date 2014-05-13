@@ -42,8 +42,6 @@ extern "C" {
 /* Flags defining sensor attributes */
 #define OSP_NO_FLAGS                    (0)
 #define OSP_FLAGS_INPUT_SENSOR          (1 << 0)
-#define OSP_FLAGS_UNCALIBRATED          (1 << 1)
-#define OSP_FLAGS_CALIBRATED            (1 << 2)
 
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S

@@ -18,11 +18,14 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    I N C L U D E   F I L E S
 \*-------------------------------------------------------------------------------------------------*/
+#include <string.h>
+
 #include "common.h"
 #ifdef ANDROID_COMM_TASK
 #include "hostinterface.h"
+#include "HostFunctions.h"
 #include "osp-sensors.h"
-#include <string.h>
+#include "i2c_slavecomm_t.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -40,10 +43,6 @@ extern uint32_t QuatTimeExtend;
 #define RX_LENGTH                   32
 #define I2C_SLAVE_ADDR_8BIT         (0x18 << 1)
 
-#define SH_WHO_AM_I                 0x54
-#define SH_VERSION0                 0x01
-#define SH_VERSION1                 0x22
-
 #define I2C_SLAVE_XFER_DONE         0x10
 #define I2C_OVERREACH_VAL           0xCC //This value is sent for access beyond register area
 
@@ -52,10 +51,13 @@ extern uint32_t QuatTimeExtend;
 \*-------------------------------------------------------------------------------------------------*/
 typedef struct I2CXferTag {
     const uint8_t *txBuff;  /* Pointer to array of bytes to be transmitted */
-    uint32_t  txSz;         /* Number of bytes in transmit array,
-                               if 0 only receive transfer will be carried on */
     uint32_t  txCnt;        /* Current transfer transmitted bytes */
+    uint32_t  txCntMax;     /* Number of bytes in transmit array,
+                               if 0 only receive transfer will be carried on */
+
     uint32_t  rxCnt;        /* Received bytes count */
+    uint32_t  rxCntMax;			/* max bytes expected, max of  RX_LENGTH */
+    uint8_t   rxData[RX_LENGTH];	/* storage for Rx data */
 } I2CXfer_t;
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -159,136 +161,20 @@ static void I2C_Slave_init( void )
 static void SH_Slave_init(void)
 {
     memset(&SlaveRegMap, 0, sizeof(SlaveRegMap));
-    SlaveRegMap.version0 = SH_VERSION0;
-    SlaveRegMap.version1 = SH_VERSION1;
+    memset(&slave_xfer, 0, sizeof(slave_xfer));
+    
+    SlaveRegMap.version = (uint16_t)SH_VERSION0 | ((uint16_t) SH_VERSION1 << 8);
     SlaveRegMap.whoami   = SH_WHO_AM_I;
-
-    SlaveRegMap.irq_cause = SH_MSG_IRQCAUSE_NEWMSG;
-    SlaveRegMap.read_len = 11;
-    SlaveRegMap.rd_mem[0] = SH_MSG_TYPE_ABS_ACCEL;
 }
 
 
-/****************************************************************************************************
- * @fn      I2C_Slave_Wait_Completion
- *          This function allows application to pend on completion for slave transfer
- *
- ***************************************************************************************************/
-static void I2C_Slave_Wait_Completion( void )
+
+void setup_I2c_Tx(uint8_t *address, uint16_t size)
 {
-    OS_RESULT result;
-    static uint32_t dessimate = 0;
-
-    result = os_evt_wait_or( I2C_SLAVE_XFER_DONE, MSEC_TO_TICS(500));
-    if (result == OS_R_TMO)
-    {
-        dessimate++;
-        if ((dessimate & 0x1) == 0)
-        {
-            SensorHubIntLow(); //Deassert Interrupt
-            //D1_printf("\t### WARNING - Timedout on I2C Slave completion (%d) ###\r\n", dessimate);
-            LED_Toggle(LED_YELLOW);
-        }
-    }
+	slave_xfer.txBuff = address;
+    slave_xfer.txCnt = 0;
+    slave_xfer.txCntMax = size;
 }
-
-
-/****************************************************************************************************
- * @fn      SendSensorData
- *          Sends 3-axis sensor data over the I2C slave interface
- *
- ***************************************************************************************************/
-static void SendSensorData( uint8_t sensorId, MsgSensorData *pMsg )
-{
-    ShMotionSensor_t sensData;
-
-    switch (sensorId)
-    {
-    case SENSOR_ACCELEROMETER:
-        SlaveRegMap.rd_mem[0] = SH_MSG_TYPE_ABS_ACCEL;
-        sensData.TimeStamp.timestamp40 = AccelTimeExtend & 0xFF;
-        break;
-
-    case SENSOR_MAGNETIC_FIELD:
-        SlaveRegMap.rd_mem[0] = SH_MSG_TYPE_ABS_MAG;
-        sensData.TimeStamp.timestamp40 = MagTimeExtend & 0xFF;
-        break;
-
-    case SENSOR_GYROSCOPE:
-        SlaveRegMap.rd_mem[0] = SH_MSG_TYPE_ABS_GYRO;
-        sensData.TimeStamp.timestamp40 = GyroTimeExtend & 0xFF;
-        break;
-
-    default:
-        return; //Unsupported sensor
-
-    }
-
-    sensData.Data[0] = -pMsg->X;
-    sensData.Data[1] = pMsg->Y;
-    sensData.Data[2] = -pMsg->Z;
-    sensData.TimeStamp.timestamp32 = pMsg->timeStamp;
-
-    SlaveRegMap.irq_cause = SH_MSG_IRQCAUSE_NEWMSG;
-    SlaveRegMap.read_len = sizeof(sensData) + 1;
-    memcpy( &SlaveRegMap.rd_mem[1], &sensData, sizeof(sensData) );
-    /*  Assert interrupt request to Host */
-    SensorHubIntHigh();
-    /* Wait for I2C transfer to finish */
-    I2C_Slave_Wait_Completion();
-}
-
-
-/****************************************************************************************************
- * @fn      SendQuaternionData
- *          Sends Quaternion data over the I2C slave interface
- *
- ***************************************************************************************************/
-static void SendQuaternionData( MsgQuaternionData *pMsg )
-{
-    ShQuaternion_t quatData;
-    quatData.Data[0] = pMsg->w;
-    quatData.Data[1] = pMsg->x;
-    quatData.Data[2] = pMsg->y;
-    quatData.Data[3] = pMsg->z;
-    quatData.TimeStamp.timestamp32 = pMsg->timeStamp;
-    quatData.TimeStamp.timestamp40 = QuatTimeExtend;
-
-    SlaveRegMap.rd_mem[0] = SH_MSG_TYPE_QUAT;
-    SlaveRegMap.irq_cause = SH_MSG_IRQCAUSE_NEWMSG;
-    SlaveRegMap.read_len = sizeof(quatData) + 1;
-    memcpy( &SlaveRegMap.rd_mem[1], &quatData, sizeof(quatData) );
-    /* Assert interrupt request to Host */
-    SensorHubIntHigh();
-    /* Wait for I2C transfer to finish */
-    I2C_Slave_Wait_Completion();
-}
-
-
-/****************************************************************************************************
- * @fn      SendCDSegmentData
- *          Sends Change Detector segment data over the I2C slave interface
- *
- ***************************************************************************************************/
-static void SendCDSegmentData( MsgCDSegmentData *pMsg )
-{
-    ShSegment_t segData;
-    segData.endTime.timestamp32 = pMsg->endTime;
-    segData.endTime.timestamp40 = (pMsg->endTime >> 32) & 0xFF;
-    segData.duration.timestamp32 = pMsg->duration;
-    segData.duration.timestamp40 = 0;
-    segData.type = pMsg->type;
-
-    SlaveRegMap.rd_mem[0] = SH_MSG_TYPE_CD;
-    SlaveRegMap.irq_cause = SH_MSG_IRQCAUSE_NEWMSG;
-    SlaveRegMap.read_len = sizeof(segData) + 1;
-    memcpy( &SlaveRegMap.rd_mem[1], &segData, sizeof(segData) );
-    /*  Assert interrupt request to Host */
-    SensorHubIntHigh();
-    /* Wait for I2C transfer to finish */
-    I2C_Slave_Wait_Completion();
-}
-
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C     F U N C T I O N S
@@ -302,7 +188,7 @@ static void SendCDSegmentData( MsgCDSegmentData *pMsg )
 void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
 {
     uint32_t i2cslvstate = I2C_GetLastEvent(pI2C);
-    uint8_t slvRxData;
+
 
     /* If error event - clear it */
     if ((irqCh == I2C_SLAVE_BUS_ERROR_IRQ_CH) && ((i2cslvstate & 0xFF00) != 0))
@@ -314,6 +200,7 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
             /* Master NAKed - this was end of transaction when slave is transmitting */
             isr_evt_set(I2C_SLAVE_XFER_DONE, asfTaskHandleTable[I2CSLAVE_COMM_TASK_ID].handle );
             slave_xfer.rxCnt = 0;
+            slave_xfer.rxCntMax = 0;
             return;
         }
     }
@@ -321,96 +208,83 @@ void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh)
     /* Below three states are for Slave mode: Address Received, TX, and RX. */
     switch ( i2cslvstate )
     {
+    case I2C_EVENT_SLAVE_RECEIVER_ADDRESS_MATCHED: /* 00020002 */
+        slave_xfer.rxCnt = 0; /* I2C Read Mode - no more receive */
+        slave_xfer.rxCntMax = 0;
+
+        /* Nothing to do except continue */
+        break;
+        
     case I2C_EVENT_SLAVE_BYTE_RECEIVED:  /* 00020040 */
     case (I2C_EVENT_SLAVE_BYTE_RECEIVED | I2C_SR1_BTF):
         SensorHubIntLow(); //Deassert Interrupt
-        slvRxData = (uint8_t)I2C_ReceiveData(pI2C);
-        slave_xfer.rxCnt++;
-        if (slave_xfer.rxCnt == 1) //First byte received must be the register address
-        {
-            switch (slvRxData)
-            {
-            case SH_REG_IRQ_CAUSE:
-                slave_xfer.txBuff = &SlaveRegMap.irq_cause;
-                slave_xfer.txSz = TX_LENGTH;
-                slave_xfer.txCnt = 0;
+        
+        if ((slave_xfer.rxCnt == 0) || (slave_xfer.rxCnt < slave_xfer.rxCntMax)) {
+            slave_xfer.rxData[slave_xfer.rxCnt++] = (uint8_t) I2C_ReceiveData(pI2C);
+            switch (slave_xfer.rxCnt) {
+            case 1:
+                slave_xfer.rxCntMax = process_command(slave_xfer.rxData, slave_xfer.rxCnt) + 1;
+                if (slave_xfer.rxCnt >= slave_xfer.rxCntMax) {
+                    slave_xfer.rxCnt = 0;
+                    slave_xfer.rxCntMax = 0;
+                }
                 break;
-
-            case SH_REG_RD_LEN:
-                slave_xfer.txBuff = &SlaveRegMap.read_len;
-                slave_xfer.txSz = TX_LENGTH;
-                slave_xfer.txCnt = 0;
+            case 2:                    
+            case 3:
+            case 4:
+                if (slave_xfer.rxCnt >= slave_xfer.rxCntMax) {
+                    if (process_command(slave_xfer.rxData, slave_xfer.rxCnt) != 1)
+                    {
+                        I2C_AcknowledgeConfig(pI2C, DISABLE);
+                    }
+                    slave_xfer.rxCnt = 0;
+                    slave_xfer.rxCntMax = 0;
+                }
                 break;
-
-            case SH_REG_ACK:
-                //TODO -- Need to define state machine logic that would handle ACK
-                break;
-
-            case SH_REG_REQUEST:
-                //TODO
-                break;
-
-            case SH_REG_WHO_AM_I:
-                slave_xfer.txBuff = &SlaveRegMap.whoami;
-                slave_xfer.txSz = TX_LENGTH;
-                slave_xfer.txCnt = 0;
-                break;
-
-            case SH_REG_VERSION0:
-                slave_xfer.txBuff = &SlaveRegMap.version0;
-                slave_xfer.txSz = TX_LENGTH;
-                slave_xfer.txCnt = 0;
-                break;
-
-            case SH_REG_VERSION1:
-                slave_xfer.txBuff = &SlaveRegMap.version1;
-                slave_xfer.txSz = TX_LENGTH;
-                slave_xfer.txCnt = 0;
-                break;
-
-            case SH_REG_RD_MEM:
-                slave_xfer.txBuff = &SlaveRegMap.rd_mem[0];
-                slave_xfer.txSz = SlaveRegMap.read_len;
-                slave_xfer.txCnt = 0;
-                break;
-
-            case SH_REG_WR_MEM:
             default:
                 //Not supported at this time so just NACK it for now
                 I2C_AcknowledgeConfig(pI2C, DISABLE);
                 break;
-
-            case 0xEE: //Ack write
-                //Ack is ignored for now
-                break;
             }
-        }
-        else
-        {
-            //TODO Implement host command functions
+        } else {
+            //Not supported at this time so just NACK it for now
+            uint8_t tmp = (uint8_t) I2C_ReceiveData(pI2C);
+            slave_xfer.rxCnt = 0;
+            I2C_AcknowledgeConfig(pI2C, DISABLE);
         }
         break;
 
+
     case I2C_EVENT_SLAVE_TRANSMITTER_ADDRESS_MATCHED:  /* 00060082 */
         slave_xfer.rxCnt = 0; /* I2C Read Mode - no more receive */
+        slave_xfer.rxCntMax = 0;
+        
         /* Fall thru */
     case I2C_EVENT_SLAVE_BYTE_TRANSMITTING: /* 00060080 */
     case I2C_EVENT_SLAVE_BYTE_TRANSMITTED:
     case 0x00060004: //Sometimes we get this event and the driver is stuck in ISR!
         /* In transmit we will do not want to send data beyond the register set */
-        if (&slave_xfer.txBuff[slave_xfer.txCnt] < &SlaveRegMap.endMarker)
+ 
+        /* In transmit we will do not want to send data beyond specified region */
+        if ((slave_xfer.txBuff != NULL) && (slave_xfer.txCnt < slave_xfer.txCntMax))
         {
             I2C_SendData(pI2C, slave_xfer.txBuff[slave_xfer.txCnt++]);
+            if (slave_xfer.txCnt >= slave_xfer.txCntMax) {
+                setup_I2c_Tx(NULL, 0);
+                if (getLastCommand() == OSP_HOST_GET_BROADCAST_DATA) {
+                    hostCommitDataTx();
+                    calculate_commited_tx_buffer_size();
+                }
+            }
         }
         else
         {
             I2C_SendData(pI2C, I2C_OVERREACH_VAL); //This value signifies read beyond allowed range
+            setup_I2c_Tx(NULL, 0);
         }
+      
         break;
 
-    case I2C_EVENT_SLAVE_RECEIVER_ADDRESS_MATCHED: /* 00020002 */
-        /* Nothing to do except continue */
-        break;
 
     case I2C_EVENT_SLAVE_STOP_DETECTED: /* This is end of transaction when slave is receiving */
         /* if (STOPF==1) Read SR1;Write CR1 */
@@ -455,15 +329,15 @@ ASF_TASK void I2CCommTask( ASF_TASK_ARG )
         switch (rcvMsg->msgId)
         {
         case MSG_ACC_DATA:
-            SendSensorData(SENSOR_ACCELEROMETER, &rcvMsg->msg.msgAccelData);
+            SendSensorData(SENSOR_UNCAL_ACCELEROMETER, &rcvMsg->msg.msgAccelData);
             break;
 
         case MSG_MAG_DATA:
-            SendSensorData(SENSOR_MAGNETIC_FIELD, &rcvMsg->msg.msgMagData);
+            SendSensorData(SENSOR_UNCAL_MAGNETIC_FIELD, &rcvMsg->msg.msgMagData);
             break;
 
         case MSG_GYRO_DATA:
-            SendSensorData(SENSOR_GYROSCOPE, &rcvMsg->msg.msgGyroData);
+            SendSensorData(SENSOR_UNCAL_GYROSCOPE, &rcvMsg->msg.msgGyroData);
             break;
 
         case MSG_QUATERNION_DATA:

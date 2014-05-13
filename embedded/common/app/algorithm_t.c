@@ -86,7 +86,7 @@ static InputSensorSpecificData_t _AccInputSensor =
 
 static SensorDescriptor_t _AccSensDesc =
 {
-    SENSOR_ACCELEROMETER,
+    SENSOR_UNCAL_ACCELEROMETER,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -116,7 +116,7 @@ static InputSensorSpecificData_t _MagInputSensor =
 
 static SensorDescriptor_t _MagSensDesc =
 {
-    SENSOR_MAGNETIC_FIELD,
+    SENSOR_UNCAL_MAGNETIC_FIELD,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -146,7 +146,7 @@ static InputSensorSpecificData_t _GyroInputSensor =
 
 static SensorDescriptor_t _GyroSensDesc =
 {
-    SENSOR_GYROSCOPE,
+    SENSOR_UNCAL_GYROSCOPE,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -182,37 +182,37 @@ static SensorDescriptor_t  stepCounterRequest = {
 
 /* Output result descriptor for subscribing to uncalibrated accelerometer data */
 static SensorDescriptor_t UnCalAccelRequest = {
-    SENSOR_ACCELEROMETER,
+    SENSOR_UNCAL_ACCELEROMETER,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalAccelDataResultCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
     OSP_NO_SENSOR_CONTROL_CALLBACK,
     ACCEL_OUTPUT_RATES,
-    OSP_FLAGS_UNCALIBRATED,
+    OSP_NO_FLAGS,
     OSP_NO_OPTIONAL_DATA
 };
 
 /* Output result descriptor for subscribing to uncalibrated magnetometer data */
 static SensorDescriptor_t UnCalMagRequest = {
-    SENSOR_MAGNETIC_FIELD,
+    SENSOR_UNCAL_MAGNETIC_FIELD,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalMagDataResultCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
     OSP_NO_SENSOR_CONTROL_CALLBACK,
     MAG_OUTPUT_RATES,
-    OSP_FLAGS_UNCALIBRATED,
+    OSP_NO_FLAGS,
     OSP_NO_OPTIONAL_DATA
 };
 
 /* Output result descriptor for subscribing to uncalibrated gyroscope data */
 static SensorDescriptor_t UnCalGyroRequest = {
-    SENSOR_GYROSCOPE,
+    SENSOR_UNCAL_GYROSCOPE,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalGyroDataResultCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
     OSP_NO_SENSOR_CONTROL_CALLBACK,
     GYRO_OUTPUT_RATES,
-    OSP_FLAGS_UNCALIBRATED,
+    OSP_NO_FLAGS,
     OSP_NO_OPTIONAL_DATA
 };
 

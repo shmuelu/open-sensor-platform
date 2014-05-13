@@ -41,15 +41,17 @@
 
 /* Add application message definitions here */
 
-ASF_MSG_DEF( MSG_ACC_DATA,          MsgAccelData        msgAccelData        )
-ASF_MSG_DEF( MSG_MAG_DATA,          MsgMagData          msgMagData          )
-ASF_MSG_DEF( MSG_GYRO_DATA,         MsgGyroData         msgGyroData         )
-ASF_MSG_DEF( MSG_QUATERNION_DATA,   MsgQuaternionData   msgQuaternionData   )
-ASF_MSG_DEF( MSG_CAL_EVT_NOTIFY,    MsgGeneric          msgCalEvtNotify     )
-ASF_MSG_DEF( MSG_SENSOR_DATA_RDY,   MsgSensorDataRdy    msgSensorDataRdy    )
-ASF_MSG_DEF( MSG_CD_SEGMENT_DATA,   MsgCDSegmentData    msgCDSegmentData    )
-ASF_MSG_DEF( MSG_HOST_READY,        MsgGeneric          msgHostReady        )
-ASF_MSG_DEF( MSG_TRIG_ALG_BG,       MsgNoData           msgTrigAlgBg        )
+ASF_MSG_DEF( MSG_ACC_DATA,              MsgAccelData        msgAccelData        )
+ASF_MSG_DEF( MSG_MAG_DATA,              MsgMagData          msgMagData          )
+ASF_MSG_DEF( MSG_GYRO_DATA,             MsgGyroData         msgGyroData         )
+ASF_MSG_DEF( MSG_QUATERNION_DATA,       MsgQuaternionData   msgQuaternionData   )
+ASF_MSG_DEF( MSG_CAL_EVT_NOTIFY,        MsgGeneric          msgCalEvtNotify     )
+ASF_MSG_DEF( MSG_SENSOR_DATA_RDY,       MsgSensorDataRdy    msgSensorDataRdy    )
+ASF_MSG_DEF( MSG_CD_SEGMENT_DATA,       MsgCDSegmentData    msgCDSegmentData    )
+ASF_MSG_DEF( MSG_HOST_READY,            MsgGeneric          msgHostReady        )
+ASF_MSG_DEF( MSG_TRIG_ALG_BG,           MsgNoData           msgTrigAlgBg        )
+ASF_MSG_DEF( MSG_SENSOR_ENABLE_DATA,    MsgSensorEnable     msgSensorEnable     )
+ASF_MSG_DEF( MSG_SENSOR_DELAY_DATA,     MsgSensorDelay      msgSensorDelay      )
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E
