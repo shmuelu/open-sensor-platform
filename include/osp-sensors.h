@@ -76,6 +76,7 @@ typedef enum {
     SENSOR_ENUM_COUNT
 } SensorType_t ;
 
+
 //! Use these enums as indices into the probability vector of a ContextOutputData_t in a CONTEXT_DEVICE_MOTION result callback
 typedef enum {
     CONTEXT_DEVICE_MOTION_STILL                 = 0,

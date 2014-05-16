@@ -19,7 +19,6 @@
 
 extern uint64_t sensorEnable;      // bit map of (1 << sensorId) to show if sensor is enabled (1) or disabled (0)
 uint8_t isSensorEnable(uint8_t sensorId);
-uint8_t areSensorEnable(uint64_t mask);
 
 
 extern uint16_t sensorDelay[SENSOR_ENUM_COUNT];
@@ -62,7 +61,7 @@ uint8_t getLastCommand(void);
 
 void init_android_broadcast_buffers(void);
 uint8_t  process_command(uint8_t *rx_buf, uint16_t length);
-uint8_t post_on_boardcast_buffer(uint8_t *buffer, uint16_t length, uint32_t timeStamp);
+uint8_t post_on_boardcast_buffer(uint8_t *buffer, uint16_t length, struct Timestamp40_t *timeStamp);
 
 uint8_t isHostInterruptAsserted(void);
 void activateHostInterrupt(void);

@@ -126,6 +126,8 @@ typedef struct {
     NTPRECISE X;                   //!< X axis 32Q24 fixed point data
     NTPRECISE Y;                   //!< Y axis 32Q24 fixed point data
     NTPRECISE Z;                   //!< Z axis 32Q24 fixed point data
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_CalibratedAccelOutputData_t;
 
 //! calibrated magnetometer in uT.  Note positive Y when top edge points towards magnetic North.
@@ -134,6 +136,8 @@ typedef struct {
     NTEXTENDED X;                  //!< X axis 32Q12 fixed point data
     NTEXTENDED Y;                  //!< Y axis 32Q12 fixed point data
     NTEXTENDED Z;                  //!< Z axis 32Q12 fixed point data
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_CalibratedMagOutputData_t;
 
 //! calibrated rotation rate in rad/s.  Note positive Z when spin counter-clockwise on the table (right handed).
@@ -142,6 +146,8 @@ typedef struct {
     NTPRECISE X;                   //!< X axis 32Q24 fixed point data
     NTPRECISE Y;                   //!< Y axis 32Q24 fixed point data
     NTPRECISE Z;                   //!< Z axis 32Q24 fixed point data
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_CalibratedGyroOutputData_t;
 
 //! uncalibrated acceleration in m/s^2. note positive Z when flat on table.
@@ -153,6 +159,8 @@ typedef struct {
     NTPRECISE X_offset;            //!< 32Q24 fixed point data representing rad/sec.
     NTPRECISE Y_offset;            //!< 32Q24 fixed point data representing rad/sec.
     NTPRECISE Z_offset;            //!< 32Q24 fixed point data representing rad/sec.
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_UncalibratedAccelOutputData_t;
 
 //! uncalibrated magnetometer in uT.  Note positive Y when top edge points towards magnetic North.
@@ -164,6 +172,8 @@ typedef struct {
     NTEXTENDED X_hardIron_offset;  //!< 32Q12 fixed point data representing uT.
     NTEXTENDED Y_hardIron_offset;  //!< 32Q12 fixed point data representing uT.
     NTEXTENDED Z_hardIron_offset;  //!< 32Q12 fixed point data representing uT.
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_UncalibratedMagOutputData_t;
 
 //! uncalibrated rotation rate in rad/s.  Note positive Z when spin counter-clockwise on the table (right handed).
@@ -175,25 +185,32 @@ typedef struct {
     NTPRECISE X_drift_offset;      //!< 32Q24 fixed point data representing rad/sec.
     NTPRECISE Y_drift_offset;      //!< 32Q24 fixed point data representing rad/sec.
     NTPRECISE Z_drift_offset;      //!< 32Q24 fixed point data representing rad/sec.
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_UncalibratedGyroOutputData_t;
 
 //! time at the start of a motion which is likely to lead to a change in position
 typedef struct {
     NTTIME TimeStamp;              //!< Time in seconds
-    osp_bool_t significantMotionDetected;//!< always set to true when this result fires
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_SignificantMotionOutputData_t;
 
 //! indicates when each step is taken
 typedef struct {
     NTTIME TimeStamp;              //!< Time in seconds
-    osp_bool_t StepDetected;             //!< always set to true, indicating a step was taken
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_StepDetectorOutputData_t;
 
 //! Android style step counter, but note that the host driver must bookkeep between sensorhub power on/off to meet android requirement 
 typedef struct {
     NTTIME TimeStamp;              // timestamp
     uint32_t StepCount;            //!< steps since power on of the sensorhub (this is an important distinction from the full android requirement!)
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_StepCounterOutputData_t;
+
 
 //! positive, normalized quaternion used for the various flavors of ROTATION_VECTOR
 typedef struct {
@@ -203,6 +220,8 @@ typedef struct {
     NTPRECISE Z;                   //!< Z component of normalized quaternion in 32Q24 fixed point
     NTPRECISE W;                   //!< W component of normalized quaternion in 32Q24 fixed point
     NTPRECISE ErrorEst;            //!< estimated heading Accuracy in radians in 32Q24 fixed point (-1 if unavailable)
+    uint32_t  TickTimeStampHigh;   //!< ms portion of tick time stamp 
+    uint32_t  TickTimeStampLow;    //!< ls portion of tick time stamp 
 } Android_RotationVectorOutputData_t;
 
 
@@ -463,6 +482,21 @@ osp_status_t     OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle);
  *  \return status as specified in OSP_Types.h
  */
 osp_status_t     OSP_GetVersion(const OSP_Library_Version_t **pVersionStruct);
+
+//! provides a mask for all subscribed sensor results, as well as a mask all subscribed ContextDeviceMotion sub-results
+/*!
+ *
+ *  \return mask for all subscribed sensor results
+ */
+uint64_t OSP_GetSubsctibedResults(void);
+
+
+//! provides a mask for all subscribed sensor results, as well as a mask all subscribed ContextDeviceMotion sub-results
+/*!
+ *
+ *  \return mask for all subscribed ContextDeviceMotion sub-results
+ */
+uint16_t OSP_GetSubsctibedContextDeviceMotionSubResults(void);
 
 
 #ifdef __cplusplus

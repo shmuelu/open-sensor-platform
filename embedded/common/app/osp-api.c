@@ -87,6 +87,7 @@ typedef union {
     Android_UncalibratedAccelOutputData_t ucAccel;
     Android_UncalibratedMagOutputData_t   ucMag;
     Android_UncalibratedGyroOutputData_t  ucGyro;
+
 } AndroidUnCalResult_t;
 
 /* Common bridge between the different data types for base sensors (Accel/Mag/Gyro) */
@@ -109,7 +110,11 @@ static const OSP_Library_Version_t libVersion = {
 };
 
 static uint64_t _SubscribedResults;   // bit field of currently subscribed results, bit positions
-                                      // same as SensorType_t
+                                      // same as SensorType_t                                      
+static uint16_t _contextDeviceMotionMask = 0;// bit field of currently subscribed results, bit positions
+                                      // same as ContextMotionType_t        
+
+
 // pointer to platform descriptor structure
 SystemDescriptor_t const *_pPlatformDesc = NULL;
 
@@ -132,8 +137,14 @@ static int16_t _SensorBgDataQCnt;          // number of data packets in the queu
 static uint16_t _SensorBgDataNqPtr = SENSOR_BG_DATA_Q_SIZE - 1; // where the last data packet was put into the queue
 static uint16_t _SensorBgDataDqPtr;         // where to remove next data packet from the queue
 
-static uint32_t _sensorLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
-static uint32_t _sensorLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
+static uint32_t _accelLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
+static uint32_t _accelLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
+
+static uint32_t _gyroLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
+static uint32_t _gyroLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
+
+static uint32_t _magLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
+static uint32_t _magLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
 
 static uint32_t _sensorLastBackgroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
 static uint32_t _sensorLastBackgroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
@@ -203,8 +214,22 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
 
         callbackData.StepCount = stepData->numStepsTotal;
         callbackData.TimeStamp = stepData->startTime; //!TODO - Double check if start time or stop time
+        callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
+        callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
         index = FindResultTableIndexByType(SENSOR_STEP_COUNTER);
+        _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
+            &callbackData);
+    }
+   if(_SubscribedResults & (1 << SENSOR_STEP_DETECTOR)) {
+        int16_t index;
+        Android_StepDetectorOutputData_t callbackData;
+
+        callbackData.TimeStamp = stepData->startTime; //!TODO - Double check if start time or stop time
+        callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
+        callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
+
+        index = FindResultTableIndexByType(SENSOR_STEP_DETECTOR);
         _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
             &callbackData);
     }
@@ -222,8 +247,9 @@ static void OnSignificantMotionResult( NTTIME * eventTime )
         int16_t index;
         Android_SignificantMotionOutputData_t callbackData;
 
-        callbackData.significantMotionDetected = true;
         callbackData.TimeStamp = *eventTime;
+        callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
+        callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
         index = FindResultTableIndexByType(SENSOR_CONTEXT_DEVICE_MOTION);
         _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
@@ -1145,8 +1171,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
                 &data,
                 &AndoidProcessedData,
                 QFIXEDPOINTPRECISE,
-                &_sensorLastForegroundTimeStamp,
-                &_sensorLastForegroundTimeStampExtension);
+                &_accelLastForegroundTimeStamp,
+                &_accelLastForegroundTimeStampExtension);
         } else {
             //!TODO - Other data conventions support not implemented yet
             return OSP_STATUS_NOT_IMPLEMENTED;
@@ -1163,9 +1189,14 @@ osp_status_t OSP_DoForegroundProcessing(void)
                         memcpy(&AndoidUncalProcessedData.ucAccel.X_offset,
                             _accel_bias, (sizeof(NTPRECISE)*3));
                         AndoidUncalProcessedData.ucAccel.TimeStamp = AndoidProcessedData.TimeStamp;
+                        
+                        AndoidUncalProcessedData.ucAccel.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
+                        AndoidUncalProcessedData.ucAccel.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
                         _ResultTable[index].pResDesc->pOutputReadyCallback(
                             (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucAccel);
+                } else {
+                    return OSP_STATUS_ERROR;
                 }
             } else {
                 return OSP_STATUS_ERROR;
@@ -1197,8 +1228,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
                 &data,
                 &AndoidProcessedData,
                 QFIXEDPOINTEXTENDED,
-                &_sensorLastForegroundTimeStamp,
-                &_sensorLastForegroundTimeStampExtension);
+                &_magLastForegroundTimeStamp,
+                &_magLastForegroundTimeStampExtension);
         } else {
             //!TODO - Other data conventions support not implemented yet
             return OSP_STATUS_NOT_IMPLEMENTED;
@@ -1215,6 +1246,10 @@ osp_status_t OSP_DoForegroundProcessing(void)
                         memcpy(&AndoidUncalProcessedData.ucMag.X_hardIron_offset,
                             _mag_bias, (sizeof(NTEXTENDED)*3));
                         AndoidUncalProcessedData.ucMag.TimeStamp = AndoidProcessedData.TimeStamp;
+                        
+                        AndoidUncalProcessedData.ucMag.TickTimeStampHigh = _magLastForegroundTimeStampExtension;
+                        AndoidUncalProcessedData.ucMag.TickTimeStampLow = _magLastForegroundTimeStamp;
+
 
                         _ResultTable[index].pResDesc->pOutputReadyCallback(
                             (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucMag);
@@ -1244,8 +1279,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
                 &data,
                 &AndoidProcessedData,
                 QFIXEDPOINTPRECISE,
-                &_sensorLastForegroundTimeStamp,
-                &_sensorLastForegroundTimeStampExtension);
+                &_gyroLastForegroundTimeStamp,
+                &_gyroLastForegroundTimeStampExtension);
         } else {
             //!TODO - Other data conventions support not implemented yet
             return OSP_STATUS_NOT_IMPLEMENTED;
@@ -1262,6 +1297,9 @@ osp_status_t OSP_DoForegroundProcessing(void)
                         memcpy(&AndoidUncalProcessedData.ucGyro.X_drift_offset,
                             _gyro_bias, (sizeof(NTPRECISE)*3));
                         AndoidUncalProcessedData.ucGyro.TimeStamp = AndoidProcessedData.TimeStamp;
+
+                        AndoidUncalProcessedData.ucGyro.TickTimeStampHigh = _gyroLastForegroundTimeStampExtension;
+                        AndoidUncalProcessedData.ucGyro.TickTimeStampLow = _gyroLastForegroundTimeStamp;
 
                         _ResultTable[index].pResDesc->pOutputReadyCallback(
                             (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucGyro);
@@ -1608,6 +1646,26 @@ osp_status_t OSP_GetVersion(const OSP_Library_Version_t **pVersionStruct)
     return OSP_STATUS_OK;
 }
 
+//! provides a mask for all subscribed sensor results, as well as a mask all subscribed ContextDeviceMotion sub-results
+/*!
+ *
+ *  \return mask for all subscribed sensor results
+ */
+uint64_t OSP_GetSubsctibedResults(void)
+{
+    return _SubscribedResults;
+}
+
+
+//! provides a mask for all subscribed sensor results, as well as a mask all subscribed ContextDeviceMotion sub-results
+/*!
+ *
+ *  \return mask for all subscribed ContextDeviceMotion sub-results
+ */
+uint16_t OSP_GetSubsctibedContextDeviceMotionSubResults(void)
+{
+    return _contextDeviceMotionMask;
+}
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

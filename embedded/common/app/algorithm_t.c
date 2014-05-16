@@ -20,6 +20,8 @@
 \*-------------------------------------------------------------------------------------------------*/
 #include "common.h"
 #include "osp-api.h"
+#include "hostinterface.h"
+#include "hostFunctions.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -36,37 +38,125 @@
 
 #define ACCEL_SENSITIVITY_4G            0.002f      //2mg/LSB
 #define ACCEL_SCALING_FACTOR            TOFIX_PRECISE(ACCEL_SENSITIVITY_4G * M_SI_EARTH_GRAVITY)
+#define ACCEL_UNSCALING_FACTOR          CONST_PRECISE(1.0f / (ACCEL_SENSITIVITY_4G * M_SI_EARTH_GRAVITY))  // LSB / earth grav
 #define ACCEL_RANGE_MAX                 TOFIX_EXTENDED(4.0f * M_SI_EARTH_GRAVITY)
+#define ACCEL_NOISE                     TOFIX_PRECISE(1.0f/M_SI_EARTH_GRAVITY)
+#define ACCEL_INPUT_RATES               TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
+#define ACCEL_OUTPUT_RATES              TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
+
 #define MAG_SENSITIVITY_2_5G_XY         1.4925f     //mg/LSB
 #define MAG_SCALING_XY                  TOFIX_EXTENDED(MAG_SENSITIVITY_2_5G_XY * 0.1f)  //uT/LSB
+#define MAG_UNSCALING_XY                CONST_EXTENDED(1.0f / (MAG_SENSITIVITY_2_5G_XY * 0.1f))  //LSB / ut
 #define MAG_SENSITIVITY_2_5G_Z          1.6666f     //mg/LSB
 #define MAG_SCALING_Z                   TOFIX_EXTENDED(MAG_SENSITIVITY_2_5G_Z * 0.1f)  //uT/LSB
+#define MAG_UNSCALING_Z                 CONST_EXTENDED(1.0f / (MAG_SENSITIVITY_2_5G_Z * 0.1f))  //LSB / ut
 #define MAG_RANGE_MAX                   (2.5f * 100.0f) //µT
+#define MAG_NOISE                       TOFIX_PRECISE(0.2f)
+#define MAG_INPUT_RATES                 TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
+#define MAG_OUTPUT_RATES                TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
+
 #define GYRO_SENSITIVITY                0.07f       //70mdps/digit
 #define GYRO_SCALING_FACTOR             TOFIX_PRECISE(GYRO_SENSITIVITY * 0.0175f)  //rad/sec/lsb
-#define GYRO_RANGE_MAX                  (2000.0f * 0.017453f) //in rad/sec
+#define GYRO_UNSCALING_1_FACTOR         CONST_PRECISE(1.0f / 0.0175f)  //  lsb / rad
+#define GYRO_UNSCALING_2_FACTOR         CONST_PRECISE(1.0f / GYRO_SENSITIVITY)  //  lsb / deg
 
-#define ACCEL_NOISE                     TOFIX_PRECISE(1.0f/M_SI_EARTH_GRAVITY)
-#define MAG_NOISE                       TOFIX_PRECISE(0.2f)
+#define GYRO_RANGE_MAX                  (2000.0f * 0.017453f) //in rad/sec
 #define GYRO_NOISE                      TOFIX_PRECISE(0.006f)
+#define GYRO_INPUT_RATES                TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
+#define GYRO_OUTPUT_RATES               TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
 
 #define XYZ_FROM_ORIGIN                 TOFIX_PRECISE(0.0f)
-#define ACCEL_INPUT_RATES               TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
-#define MAG_INPUT_RATES                 TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
-#define GYRO_INPUT_RATES                TOFIX_EXTENDED(12.5f),TOFIX_EXTENDED(25.0f),TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(100.0f)
+
 #define STEP_COUNT_OUTPUT_RATE          TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
 #define SIG_MOTION_OUTPUT_RATE          TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
-#define ACCEL_OUTPUT_RATES              TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
-#define MAG_OUTPUT_RATES                TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
-#define GYRO_OUTPUT_RATES               TOFIX_EXTENDED(50.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f),TOFIX_EXTENDED(0.0f)
+
+/*-------------------------------------------------------------------------------------------------*\
+ |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
+\*-------------------------------------------------------------------------------------------------*/
+
+static void EnterCriticalSection(void);
+static void ExitCriticalSection(void);
+
+static void stepCounterOutputCallback(OutputSensorHandle_t outputHandle,
+    Android_StepCounterOutputData_t* pOutput);
+
+static void stepDetectorOutputCallback(OutputSensorHandle_t outputHandle,
+    Android_StepCounterOutputData_t* pOutput);
+
+static void sigMotionOutputCallback(OutputSensorHandle_t outputHandle,
+    Android_SignificantMotionOutputData_t* pOutput);
+
+static void UnCalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_UncalibratedAccelOutputData_t* pOutput);
+
+static void CalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_CalibratedAccelOutputData_t* pOutput);
+
+static void UnCalMagDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_UncalibratedMagOutputData_t* pOutput);
+
+static void CalMagDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_CalibratedMagOutputData_t* pOutput);
+
+static void UnCalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_UncalibratedGyroOutputData_t* pOutput);
+
+static void CalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_CalibratedGyroOutputData_t* pOutput);
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 
+/* Common bridge between the different data types for base sensors (Accel/Mag/Gyro) */
+/* NOTE: the index into this array is NOT necessarily based on Axis index - it is implementation dependant */
+typedef struct  {
+    uint8_t accuracy;
+    union {
+        NTEXTENDED  ntExtendedUnscaleFactor[3];    // unscaling factor from 32 bit presentation into 16 bit for NTEXTENDED
+        NTPRECISE   ntPreciseUnscaleFactor[3];     // unscaling factor from 32 bit presentation into 16 bit for NTPRECISE
+    } unscale;
+} ResultOptionalData_t;
+
+
 /*-------------------------------------------------------------------------------------------------*\
  |    S T A T I C   V A R I A B L E S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
+
+
+static OutputSensorHandle_t _unCalAccelHandle = NULL;
+static OutputSensorHandle_t _calAccelHandle = NULL;
+static OutputSensorHandle_t _unCalMagHandle = NULL;
+static OutputSensorHandle_t _calMagHandle = NULL;
+static OutputSensorHandle_t _unCalGyroHandle = NULL;
+static OutputSensorHandle_t _calGyroHandle = NULL;
+
+static InputSensorHandle_t _AccHandle = NULL;
+static InputSensorHandle_t _MagHandle = NULL;
+static InputSensorHandle_t _GyroHandle = NULL;
+
+static OutputSensorHandle_t _stepCounterHandle = NULL;
+static OutputSensorHandle_t _stepDetectorHandle = NULL;
+static OutputSensorHandle_t _sigMotionHandle = NULL;
+
+static const OSP_Library_Version_t* version;
+static OS_MUT mutexCritSection;
+
+static SystemDescriptor_t gSystemDesc =
+{
+    TOFIX_TIMECOEFFICIENT(US_PER_RTC_TICK * 0.000001f),        // timestamp conversion factor = 1us / count
+    (OSP_CriticalSectionCallback_t) EnterCriticalSection,
+    (OSP_CriticalSectionCallback_t) ExitCriticalSection
+};
+
+
+/***********************************************************/
+/* Input Sensors descriptor for registering */
+/***********************************************************/
+
+
+
 static InputSensorSpecificData_t _AccInputSensor =
 {
     0xffffffff,                             // 32 bits of raw data are significant
@@ -157,26 +247,27 @@ static SensorDescriptor_t _GyroSensDesc =
     &_GyroInputSensor
 };
 
-static void stepCounterOutputCallback(OutputSensorHandle_t outputHandle,
-    Android_StepCounterOutputData_t* pOutput);
 
-static void sigMotionOutputCallback(OutputSensorHandle_t outputHandle,
-    Android_SignificantMotionOutputData_t* pOutput);
+/***********************************************************/
+/* Output result descriptor for subscribing */
+/***********************************************************/
 
-static void UnCalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
-    Android_UncalibratedAccelOutputData_t* pOutput);
 
-static void UnCalMagDataResultCallback(OutputSensorHandle_t outputHandle,
-    Android_UncalibratedMagOutputData_t* pOutput);
-
-static void UnCalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
-    Android_UncalibratedGyroOutputData_t* pOutput);
-
-/* Output result descriptor for subscribing to step counts */
 static SensorDescriptor_t  stepCounterRequest = {
     SENSOR_STEP_COUNTER,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)stepCounterOutputCallback,
+    OSP_NO_NVM_WRITE_CALLBACK,
+    OSP_NO_SENSOR_CONTROL_CALLBACK,
+    STEP_COUNT_OUTPUT_RATE,
+    OSP_NO_FLAGS,
+    OSP_NO_OPTIONAL_DATA
+};
+
+static SensorDescriptor_t  stepDetectorRequest = {
+    SENSOR_STEP_DETECTOR,
+    DATA_CONVENTION_ANDROID,
+    (OSP_OutputReadyCallback_t)stepDetectorOutputCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
     OSP_NO_SENSOR_CONTROL_CALLBACK,
     STEP_COUNT_OUTPUT_RATE,
@@ -196,6 +287,9 @@ static SensorDescriptor_t  sigMotionRequest = {
     OSP_NO_OPTIONAL_DATA
 };
 
+static ResultOptionalData_t accelUnscaleFactor = { QFIXEDPOINTPRECISE, {ACCEL_UNSCALING_FACTOR, ACCEL_UNSCALING_FACTOR, ACCEL_UNSCALING_FACTOR }}; /* index per Axis */
+
+
 /* Output result descriptor for subscribing to uncalibrated accelerometer data */
 static SensorDescriptor_t UnCalAccelRequest = {
     SENSOR_ACCELEROMETER_UNCALIBRATED,
@@ -207,6 +301,21 @@ static SensorDescriptor_t UnCalAccelRequest = {
     OSP_NO_FLAGS,
     OSP_NO_OPTIONAL_DATA
 };
+
+
+/* Output result descriptor for subscribing to uncalibrated accelerometer data */
+static SensorDescriptor_t CalAccelRequest = {
+    SENSOR_ACCELEROMETER_CALIBRATED,
+    DATA_CONVENTION_ANDROID,
+    (OSP_OutputReadyCallback_t)CalAccelDataResultCallback,
+    OSP_NO_NVM_WRITE_CALLBACK,
+    OSP_NO_SENSOR_CONTROL_CALLBACK,
+    ACCEL_OUTPUT_RATES,
+    OSP_NO_FLAGS,
+    OSP_NO_OPTIONAL_DATA
+};
+
+static ResultOptionalData_t magUnscaleFactor = { QFIXEDPOINTEXTENDED, { MAG_UNSCALING_XY, MAG_UNSCALING_XY, MAG_UNSCALING_Z }}; /* index per Axis */
 
 /* Output result descriptor for subscribing to uncalibrated magnetometer data */
 static SensorDescriptor_t UnCalMagRequest = {
@@ -220,6 +329,20 @@ static SensorDescriptor_t UnCalMagRequest = {
     OSP_NO_OPTIONAL_DATA
 };
 
+/* Output result descriptor for subscribing to uncalibrated magnetometer data */
+static SensorDescriptor_t CalMagRequest = {
+    SENSOR_MAGNETIC_FIELD_CALIBRATED,
+    DATA_CONVENTION_ANDROID,
+    (OSP_OutputReadyCallback_t)CalMagDataResultCallback,
+    OSP_NO_NVM_WRITE_CALLBACK,
+    OSP_NO_SENSOR_CONTROL_CALLBACK,
+    MAG_OUTPUT_RATES,
+    OSP_NO_FLAGS,
+    OSP_NO_OPTIONAL_DATA
+};
+
+static ResultOptionalData_t gyroUnscaleFactor = { QFIXEDPOINTPRECISE, { GYRO_UNSCALING_1_FACTOR, GYRO_UNSCALING_2_FACTOR, 0 }}; /* index NOT per Axis - see computation */
+
 /* Output result descriptor for subscribing to uncalibrated gyroscope data */
 static SensorDescriptor_t UnCalGyroRequest = {
     SENSOR_GYROSCOPE_UNCALIBRATED,
@@ -232,30 +355,16 @@ static SensorDescriptor_t UnCalGyroRequest = {
     OSP_NO_OPTIONAL_DATA
 };
 
-static InputSensorHandle_t _AccHandle;
-static InputSensorHandle_t _MagHandle;
-static InputSensorHandle_t _GyroHandle;
-static const OSP_Library_Version_t* version;
-static OutputSensorHandle_t _stepCounterHandle;
-static OutputSensorHandle_t _sigMotionHandle;
-static OutputSensorHandle_t _unCalAccelHandle;
-static OutputSensorHandle_t _unCalMagHandle;
-static OutputSensorHandle_t _unCalGyroHandle;
-
-static OS_MUT mutexCritSection;
-
-/*-------------------------------------------------------------------------------------------------*\
- |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
-\*-------------------------------------------------------------------------------------------------*/
-
-static void EnterCriticalSection(void);
-static void ExitCriticalSection(void);
-
-SystemDescriptor_t gSystemDesc =
-{
-    TOFIX_TIMECOEFFICIENT(US_PER_RTC_TICK * 0.000001f),        // timestamp conversion factor = 1us / count
-    (OSP_CriticalSectionCallback_t) EnterCriticalSection,
-    (OSP_CriticalSectionCallback_t) ExitCriticalSection
+/* Output result descriptor for subscribing to uncalibrated gyroscope data */
+static SensorDescriptor_t CalGyroRequest = {
+    SENSOR_GYROSCOPE_CALIBRATED,
+    DATA_CONVENTION_ANDROID,
+    (OSP_OutputReadyCallback_t)CalGyroDataResultCallback,
+    OSP_NO_NVM_WRITE_CALLBACK,
+    OSP_NO_SENSOR_CONTROL_CALLBACK,
+    GYRO_OUTPUT_RATES,
+    OSP_NO_FLAGS,
+    OSP_NO_OPTIONAL_DATA
 };
 
 
@@ -278,6 +387,30 @@ __inline void ExitCriticalSection(void)
     os_mut_release( mutexCritSection );
 }
 
+#ifndef multiplyAndRound                                    // to be able to replace it with optimized implementation */
+int16_t multiplyAndRound(int32_t x, int32_t y, uint8_t accutacy)
+{
+    int64_t temp;
+    uint8_t flag;
+    temp = (int64_t) x * (int64_t) y;                               // multiply
+    flag = temp & 0x8000000000000000 ? 2 : 0;               // set bit 1 if negative
+    flag +=  (temp & (1LL << ((accutacy * 2) -1))) ? 1 : 0; // set bit 0 if more than half (for positive) or less than haf (for negative)
+    
+    temp >>= (accutacy * 2);                              // keep integer portion
+    switch (flag) {
+        case 0:                                                     // positive less than half - leave as is
+        case 3:                                                     // negative more than half - leave as is
+            break;
+        case 1:
+            ++temp;                                                 // positive more than half - round up
+            break;
+        case 2:
+            --temp;                                                 // negative less than half, round down
+            break;
+    }
+    return temp & 0xffff;    
+}
+#endif
 
 /****************************************************************************************************
  * @fn      UnCalAccelDataResultCallback
@@ -287,9 +420,58 @@ __inline void ExitCriticalSection(void)
 static void UnCalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
     Android_UncalibratedAccelOutputData_t* pOutput)
 {
+   	struct sh_sensor_broadcast_node hostBuffer;
+
+	hostBuffer.sensorId = SENSOR_ACCELEROMETER_UNCALIBRATED;
+	hostBuffer.compression = 0;
+    
+	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh & 0xff;
+
+	hostBuffer.data.uncalibratedSensordata.Data[0] = multiplyAndRound(pOutput->X, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[0], QFIXEDPOINTPRECISE);
+	hostBuffer.data.uncalibratedSensordata.Data[1] = multiplyAndRound(pOutput->Y, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[1], QFIXEDPOINTPRECISE);
+	hostBuffer.data.uncalibratedSensordata.Data[2] = multiplyAndRound(pOutput->Z, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[2], QFIXEDPOINTPRECISE);
+    
+	hostBuffer.data.uncalibratedSensordata.Offset[0] = multiplyAndRound(pOutput->X_offset, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[0], QFIXEDPOINTPRECISE);
+	hostBuffer.data.uncalibratedSensordata.Offset[1] = multiplyAndRound(pOutput->Y_offset, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[1], QFIXEDPOINTPRECISE);
+	hostBuffer.data.uncalibratedSensordata.Offset[2] = multiplyAndRound(pOutput->Z_offset, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[2], QFIXEDPOINTPRECISE);
+        
+
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.uncalibratedSensordata), &hostBuffer.data.uncalibratedSensordata.timeStamp);
+
     if (g_logging & 0x40)  //Uncalibrated data, in Android conventions
     {
         Print_LIPS("RA,%.6f,%.6f,%.6f,%.6f", TOFLT_TIME(pOutput->TimeStamp), TOFLT_PRECISE(pOutput->X),
+            TOFLT_PRECISE(pOutput->Y), TOFLT_PRECISE(pOutput->Z));
+    }
+}
+
+
+/****************************************************************************************************
+ * @fn      CalAccelDataResultCallback
+ *          Call back for Calibrated accelerometer data
+ *
+ ***************************************************************************************************/
+static void CalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_CalibratedAccelOutputData_t* pOutput)
+{
+    struct sh_sensor_broadcast_node hostBuffer;
+
+	hostBuffer.sensorId = SENSOR_ACCELEROMETER_CALIBRATED;
+	hostBuffer.compression = 0;
+    
+	hostBuffer.data.sensorData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+	hostBuffer.data.sensorData.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh & 0xff;
+
+	hostBuffer.data.sensorData.Data[0] = multiplyAndRound(pOutput->X, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[0], QFIXEDPOINTPRECISE);
+	hostBuffer.data.sensorData.Data[1] = multiplyAndRound(pOutput->Y, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[1], QFIXEDPOINTPRECISE);
+	hostBuffer.data.sensorData.Data[2] = multiplyAndRound(pOutput->Z, accelUnscaleFactor.unscale.ntPreciseUnscaleFactor[2], QFIXEDPOINTPRECISE);
+
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.sensorData), &hostBuffer.data.sensorData.timeStamp);
+
+    if (g_logging & 0x40)  //Uncalibrated data, in Android conventions
+    {
+        Print_LIPS("A,%.6f,%.6f,%.6f,%.6f", TOFLT_TIME(pOutput->TimeStamp), TOFLT_PRECISE(pOutput->X),
             TOFLT_PRECISE(pOutput->Y), TOFLT_PRECISE(pOutput->Z));
     }
 }
@@ -303,9 +485,56 @@ static void UnCalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
 static void UnCalMagDataResultCallback(OutputSensorHandle_t outputHandle,
     Android_UncalibratedMagOutputData_t* pOutput)
 {
+    struct sh_sensor_broadcast_node hostBuffer;
+
+    hostBuffer.sensorId = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
+    hostBuffer.compression = 0;
+
+    hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp32  = pOutput->TickTimeStampLow;
+    hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh & 0xff;
+     
+    hostBuffer.data.uncalibratedSensordata.Data[0] = multiplyAndRound(pOutput->X, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[0], QFIXEDPOINTEXTENDED);
+    hostBuffer.data.uncalibratedSensordata.Data[1] = multiplyAndRound(pOutput->Y, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[1], QFIXEDPOINTEXTENDED);
+    hostBuffer.data.uncalibratedSensordata.Data[2] = multiplyAndRound(pOutput->Z, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[2], QFIXEDPOINTEXTENDED);
+
+    hostBuffer.data.uncalibratedSensordata.Offset[0] = multiplyAndRound(pOutput->X_hardIron_offset, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[0], QFIXEDPOINTEXTENDED);
+    hostBuffer.data.uncalibratedSensordata.Offset[1] = multiplyAndRound(pOutput->Y_hardIron_offset, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[1], QFIXEDPOINTEXTENDED);
+    hostBuffer.data.uncalibratedSensordata.Offset[2] = multiplyAndRound(pOutput->Z_hardIron_offset, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[2], QFIXEDPOINTEXTENDED);
+
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.uncalibratedSensordata), &hostBuffer.data.uncalibratedSensordata.timeStamp);
+
     if (g_logging & 0x40)  //Uncalibrated data, in Android conventions
     {
         Print_LIPS("RM,%.6f,%.6f,%.6f,%.6f", TOFLT_TIME(pOutput->TimeStamp), TOFLT_EXTENDED(pOutput->X),
+            TOFLT_EXTENDED(pOutput->Y), TOFLT_EXTENDED(pOutput->Z));
+    }
+}
+
+/****************************************************************************************************
+ * @fn      CalMagDataResultCallback
+ *          Call back for Calibrated magnetometer data
+ *
+ ***************************************************************************************************/
+static void CalMagDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_CalibratedMagOutputData_t* pOutput)
+{
+   struct sh_sensor_broadcast_node hostBuffer;
+
+    hostBuffer.sensorId = SENSOR_MAGNETIC_FIELD_CALIBRATED;
+    hostBuffer.compression = 0;
+
+    hostBuffer.data.sensorData.timeStamp.timeStamp32  = pOutput->TickTimeStampLow;
+    hostBuffer.data.sensorData.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh & 0xff;
+     
+    hostBuffer.data.sensorData.Data[0] = multiplyAndRound(pOutput->X, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[0], QFIXEDPOINTEXTENDED);
+    hostBuffer.data.sensorData.Data[1] = multiplyAndRound(pOutput->Y, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[1], QFIXEDPOINTEXTENDED);
+    hostBuffer.data.sensorData.Data[2] = multiplyAndRound(pOutput->Z, magUnscaleFactor.unscale.ntExtendedUnscaleFactor[2], QFIXEDPOINTEXTENDED);
+
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.sensorData), &hostBuffer.data.sensorData.timeStamp);
+    
+    if (g_logging & 0x40)  //Uncalibrated data, in Android conventions
+    {
+        Print_LIPS("M,%.6f,%.6f,%.6f,%.6f", TOFLT_TIME(pOutput->TimeStamp), TOFLT_EXTENDED(pOutput->X),
             TOFLT_EXTENDED(pOutput->Y), TOFLT_EXTENDED(pOutput->Z));
     }
 }
@@ -319,6 +548,48 @@ static void UnCalMagDataResultCallback(OutputSensorHandle_t outputHandle,
 static void UnCalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
     Android_UncalibratedGyroOutputData_t* pOutput)
 {
+   	struct sh_sensor_broadcast_node hostBuffer;
+
+	hostBuffer.sensorId = SENSOR_GYROSCOPE_UNCALIBRATED;
+	hostBuffer.compression = 0;
+    
+	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh & 0xff;
+
+
+	hostBuffer.data.uncalibratedSensordata.Data[0] = multiplyAndRound(
+        ((int64_t) pOutput->X * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+	hostBuffer.data.uncalibratedSensordata.Data[1] = multiplyAndRound(
+        ((int64_t) pOutput->Y * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+	hostBuffer.data.uncalibratedSensordata.Data[2] = multiplyAndRound(
+        ((int64_t) pOutput->Z * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+
+	hostBuffer.data.uncalibratedSensordata.Offset[0] = multiplyAndRound(
+        ((int64_t) pOutput->X_drift_offset * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+	hostBuffer.data.uncalibratedSensordata.Offset[1] = multiplyAndRound(
+        ((int64_t) pOutput->Y_drift_offset * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+	hostBuffer.data.uncalibratedSensordata.Offset[2] = multiplyAndRound(
+        ((int64_t) pOutput->Z_drift_offset * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+       
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.uncalibratedSensordata), &hostBuffer.data.uncalibratedSensordata.timeStamp);
+    
     if (g_logging & 0x40)  //Uncalibrated data, in Android conventions
     {
         Print_LIPS("RG,%.6f,%.6f,%.6f,%.6f", TOFLT_TIME(pOutput->TimeStamp), TOFLT_PRECISE(pOutput->X),
@@ -328,13 +599,88 @@ static void UnCalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
 
 
 /****************************************************************************************************
- * @fn      stepDetectorResultCallback
- *          Call back for Step Detector results
+ * @fn      CalGyroDataResultCallback
+ *          Call back for Calibrated gyroscope data
+ *
+ ***************************************************************************************************/
+static void CalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
+    Android_CalibratedGyroOutputData_t* pOutput)
+{
+   	struct sh_sensor_broadcast_node hostBuffer;
+
+	hostBuffer.sensorId = SENSOR_GYROSCOPE_CALIBRATED;
+	hostBuffer.compression = 0;
+    
+	hostBuffer.data.sensorData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+	hostBuffer.data.sensorData.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh & 0xff;
+
+
+	hostBuffer.data.sensorData.Data[0] = multiplyAndRound(
+        ((int64_t) pOutput->X * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+	hostBuffer.data.sensorData.Data[1] = multiplyAndRound(
+        ((int64_t) pOutput->Y * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+	hostBuffer.data.sensorData.Data[2] = multiplyAndRound(
+        ((int64_t) pOutput->Z * (int64_t) gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[0]) >> QFIXEDPOINTPRECISE,
+        gyroUnscaleFactor.unscale.ntPreciseUnscaleFactor[1],
+        QFIXEDPOINTPRECISE);
+
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.sensorData), &hostBuffer.data.sensorData.timeStamp);
+
+
+    if (g_logging & 0x40)  //Uncalibrated data, in Android conventions
+    {
+        Print_LIPS("G,%.6f,%.6f,%.6f,%.6f", TOFLT_TIME(pOutput->TimeStamp), TOFLT_PRECISE(pOutput->X),
+            TOFLT_PRECISE(pOutput->Y), TOFLT_PRECISE(pOutput->Z));
+    }
+}
+
+
+/****************************************************************************************************
+ * @fn      stepCounterOutputCallback
+ *          Call back for Step Detector step counter
  *
  ***************************************************************************************************/
 static void stepCounterOutputCallback(OutputSensorHandle_t OutputHandle,
     Android_StepCounterOutputData_t* pOutput)
 {
+    struct sh_sensor_broadcast_node hostBuffer;	
+    hostBuffer.sensorId = SENSOR_STEP_COUNTER;
+    hostBuffer.compression = 0;
+
+    hostBuffer.data.stepCounterData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+    hostBuffer.data.stepCounterData.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh;
+    
+    hostBuffer.data.stepCounterData.numSteps = pOutput->StepCount;
+    
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.stepCounterData), &hostBuffer.data.stepCounterData.timeStamp);
+
+    Print_LIPS("STC,%+03.4f,%d,0", TOFLT_TIME(pOutput->TimeStamp), pOutput->StepCount);
+}
+
+
+/****************************************************************************************************
+ * @fn      stepDetectorResultCallback
+ *          Call back for Step Detector results
+ *
+ ***************************************************************************************************/
+static void stepDetectorOutputCallback(OutputSensorHandle_t OutputHandle,
+    Android_StepCounterOutputData_t* pOutput)
+{
+    struct sh_sensor_broadcast_node hostBuffer;	
+    hostBuffer.sensorId = SENSOR_STEP_DETECTOR;
+    hostBuffer.compression = 0;
+
+    hostBuffer.data.stepDetectorData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+    hostBuffer.data.stepDetectorData.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh;
+        
+    post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.stepDetectorData), &hostBuffer.data.stepDetectorData.timeStamp);
+
     Print_LIPS("STC,%+03.4f,%d,0", TOFLT_TIME(pOutput->TimeStamp), pOutput->StepCount);
 }
 
@@ -347,7 +693,7 @@ static void stepCounterOutputCallback(OutputSensorHandle_t OutputHandle,
 static void sigMotionOutputCallback(OutputSensorHandle_t outputHandle,
     Android_SignificantMotionOutputData_t* pOutput)
 {
-    Print_LIPS("SM,%+03.4f,%d",TOFLT_TIME(pOutput->TimeStamp), pOutput->significantMotionDetected);
+    Print_LIPS("SM,%+03.4f,%d",TOFLT_TIME(pOutput->TimeStamp), true);
 }
 
 
@@ -446,21 +792,6 @@ ASF_TASK  void AlgorithmTask ( ASF_TASK_ARG )
     OSP_Status = OSP_RegisterInputSensor(&_GyroSensDesc, &_GyroHandle);
     ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_RegisterSensor (gyro) Failed");
 
-    // Register output sensors/results
-    OSP_Status =  OSP_SubscribeOutputSensor(&stepCounterRequest, &_stepCounterHandle);
-    ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_COUNTER) Failed");
-
-    OSP_Status =  OSP_SubscribeOutputSensor(&sigMotionRequest, &_sigMotionHandle);
-    ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_CONTEXT_DEVICE_MOTION) Failed");
-
-    OSP_Status =  OSP_SubscribeOutputSensor(&UnCalAccelRequest, &_unCalAccelHandle);
-    ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER) Failed");
-
-    OSP_Status =  OSP_SubscribeOutputSensor(&UnCalMagRequest, &_unCalMagHandle);
-    ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD) Failed");
-
-    OSP_Status =  OSP_SubscribeOutputSensor(&UnCalGyroRequest, &_unCalGyroHandle);
-    ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE) Failed");
 
     while (1)
     {
@@ -479,7 +810,119 @@ ASF_TASK  void AlgorithmTask ( ASF_TASK_ARG )
             } while(OSP_Status != OSP_STATUS_IDLE)
                 ; //keep doing foreground computation until its finished
             break;
+        case MSG_SENSOR_ENABLE_DATA:
+            switch (rcvMsg->msg.msgSensorEnable.sensorId) {
+            case SENSOR_ACCELEROMETER_UNCALIBRATED:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_unCalAccelHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&UnCalAccelRequest, &_unCalAccelHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER_UNCALIBRATED) Failed");
+                    }
+                } else {
+                    if (_unCalAccelHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_unCalAccelHandle);
+                    }
+                }
+                break;
+            case SENSOR_ACCELEROMETER_CALIBRATED:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_calAccelHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&CalAccelRequest, &_calAccelHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER_CALIBRATED) Failed");
+                    }
+                } else {
+                    if (_calAccelHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_calAccelHandle);
+                    }
+                }
+                break;
+            case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_unCalMagHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&UnCalMagRequest, &_unCalMagHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD_UNCALIBRATED) Failed");
+                    }
+                } else {
+                    if (_unCalMagHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_unCalMagHandle);
+                    }
+                }
+                break;
+            case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_calMagHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&CalMagRequest, &_calMagHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD_CALIBRATED) Failed");
+                    }
+                } else {
+                    if (_calMagHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_calMagHandle);
+                    }
+                }
+                break;
+            case SENSOR_GYROSCOPE_UNCALIBRATED:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_unCalGyroHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&UnCalGyroRequest, &_unCalGyroHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE_UNCALIBRATED) Failed");
 
+                    }
+                } else {
+                    if (_unCalGyroHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_unCalGyroHandle);
+                    }
+                }
+                break;
+            case SENSOR_GYROSCOPE_CALIBRATED:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_calGyroHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&CalGyroRequest, &_calGyroHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE_CALIBRATED) Failed");
+                    }
+                } else {
+                    if (_calGyroHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_calGyroHandle);
+                    }
+                }
+                break;
+            case SENSOR_STEP_COUNTER:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_stepCounterHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&stepCounterRequest, &_stepCounterHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_COUNTER) Failed");
+                    }
+                } else {
+                    if (_stepCounterHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_stepCounterHandle);
+                    }
+                }
+                break;
+            case SENSOR_STEP_DETECTOR:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_stepDetectorHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&stepDetectorRequest, &_stepDetectorHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_DETECTOR) Failed");
+                    }
+                } else {
+                    if (_stepDetectorHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_stepDetectorHandle);
+                    }
+                }
+                break;
+            case SENSOR_CONTEXT_DEVICE_MOTION:
+				if (rcvMsg->msg.msgSensorEnable.enabled) {
+                    if (_sigMotionHandle == NULL) {
+                        OSP_Status =  OSP_SubscribeOutputSensor(&sigMotionRequest, &_sigMotionHandle);
+                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_CONTEXT_DEVICE_MOTION) Failed");
+                    }
+                } else {
+                    if (_sigMotionHandle != NULL) {
+                        OSP_UnsubscribeOutputSensor(&_sigMotionHandle);
+                    }
+                }
+                break;
+            }
+            break;
         default:
             /* Unhandled messages */
             D1_printf("Alg-FG:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);

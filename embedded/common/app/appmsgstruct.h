@@ -80,6 +80,7 @@ typedef struct MsgSensorEnableTag
 {
     uint8_t     sensorId;
     uint8_t     enabled;
+    osp_sub_result_mask    subResultMask;
 } MsgSensorEnable;
 
 typedef struct MsgSensorDelayTag
