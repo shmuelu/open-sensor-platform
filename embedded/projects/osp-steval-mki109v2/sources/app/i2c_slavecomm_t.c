@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "common.h"
-#include "hostinterface.h"
+#include "osp_HostInterface.h"
 #include "HostFunctions.h"
 #include "osp-sensors.h"
 #include "i2c_slavecomm_t.h"

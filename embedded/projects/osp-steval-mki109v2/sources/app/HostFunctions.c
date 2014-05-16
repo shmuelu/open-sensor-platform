@@ -10,7 +10,7 @@
 #include "common.h"
 #include "osp-api.h"
 
-#include "HostInterface.h"
+#include "osp_HostInterface.h"
 #include "HostFunctions.h"
 #include "i2c_slavecomm_t.h"
 //#include "Algorithm_T.h"

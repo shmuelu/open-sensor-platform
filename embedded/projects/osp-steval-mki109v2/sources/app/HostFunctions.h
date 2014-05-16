@@ -12,7 +12,7 @@
 //#include <timers.h>
 
 #include "osp-sensors.h"
-#include "HostInterface.h"
+#include "osp_HostInterface.h"
 
 #define SLAVE_NUM_TX_BUFFERS 25
 
