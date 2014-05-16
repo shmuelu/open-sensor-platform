@@ -584,7 +584,7 @@ config SENSOR_RELAY
         bool "Class for sensor data reporting via relay"
         depends on MISC_DEVICES && INPUT && RELAY
         default y
-        help
+         ---help---
           This is the class for sensor data reporting via relay.
 
 

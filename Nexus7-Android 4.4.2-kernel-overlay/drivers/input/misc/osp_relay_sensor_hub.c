@@ -32,7 +32,8 @@
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
-#include "osp-sensors.h"
+#include "linux/osp-sensors.h"
+#include "osp-HostInterface.h"
 #include <linux/sensor_relay.h>
 
 /* Message types from Hub */
