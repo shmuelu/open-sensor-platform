@@ -63,7 +63,6 @@ typedef struct I2CXferTag {
  |    S T A T I C   V A R I A B L E S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 static I2CXfer_t slave_xfer;
-static SH_RegArea_t SlaveRegMap;
 
 /*-------------------------------------------------------------------------------------------------*\
  |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
@@ -159,11 +158,8 @@ static void SH_Host_Slave_hardware_init( void )
  ***************************************************************************************************/
 static void SH_Host_Slave_software_init(void)
 {
-    memset(&SlaveRegMap, 0, sizeof(SlaveRegMap));
     memset(&slave_xfer, 0, sizeof(slave_xfer));
     
-    SlaveRegMap.version = (uint16_t)SH_VERSION0 | ((uint16_t) SH_VERSION1 << 8);
-    SlaveRegMap.whoami   = SH_WHO_AM_I;
 }
 
 /****************************************************************************************************

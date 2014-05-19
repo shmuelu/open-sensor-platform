@@ -78,9 +78,9 @@ typedef struct MsgCDSegmentDataTag
 
 typedef struct MsgSensorEnableTag
 {
-    uint8_t     sensorId;
-    uint8_t     enabled;
-    osp_sub_result_mask    subResultMask;
+    uint8_t         sensorId;
+    uint8_t         enabled;
+    uint16_t        subResultMask;
 } MsgSensorEnable;
 
 typedef struct MsgSensorDelayTag

@@ -81,7 +81,6 @@ typedef float           osp_float_t;
 typedef unsigned short osp_size_t;
 typedef int osp_status_t;
 
-typedef unsigned short osp_sub_result_mask;
 
 #endif /* OSP_TYPES_H */
 /*-------------------------------------------------------------------------------------------------*\

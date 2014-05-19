@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined (HOSTINTERFACE_H)
-#define   HOSTINTERFACE_H
+#if !defined (_OSP_HOSTINTERFACE_H_)
+#define   _OSP_HOSTINTERFACE_H_
 
 /*-------------------------------------------------------------------------------------------------*\
  |    I N C L U D E   F I L E S
@@ -25,6 +25,10 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
+#ifdef __KERNEL__
+#   define OSP_SH_SUSPEND_DELAY 100        /* msec suspend delay*/
+#endif
+
 
 #define SH_WHO_AM_I                 0x54
 #define SH_VERSION0                 0x01
@@ -34,7 +38,9 @@
 
 #define OSP_HOST_MAX_BROADCAST_BUFFER_SIZE 256
 
+#ifndef __KERNEL__
 #include <stdint.h>
+#endif
 
 struct osp_pack Timestamp40_t {
     uint32_t timeStamp32;
@@ -59,33 +65,56 @@ struct osp_pack sh_motion_uncalibrated_sensor_broadcast_node {
 };
 
 struct osp_pack sh_segment_broadcast_node {
-	struct Timestamp40_t endTime;	/* in NTTIME  */
-	struct Timestamp40_t duration;	/* in NTTIME  */
+	int64_t endTime;	/* in NTTIME  */
+	int32_t duration;	/* in NTDELTATIME  */
 	uint8_t type;
 };
 
  
 struct osp_pack sh_step_counter_sensor_node {
-	struct Timestamp40_t timeStamp;	/* in ticks  */
+    /*
+     * raw time stamp in sensor time capture ticks
+     */
+	struct Timestamp40_t timeStamp;
     uint32_t numSteps;
 };
 
 struct osp_pack sh_step_detector_sensor_node {
-	struct Timestamp40_t timeStamp;	/* in ticks  */
+    /*
+     * raw time stamp in sensor time capture ticks
+     */
+	struct Timestamp40_t timeStamp;
 };
 
+struct osp_pack sh_significant_motion_sensor_node {
+    uint8_t sensorId;    /* Holds Sensor type enumeration - MUST be 1st*/
+    /*
+     * raw time stamp in sensor time capture ticks
+     */
+    struct Timestamp40_t timeStamp;
+    unsigned char  significantMotionDetected;    /* bool */
+
+};
 
 struct osp_pack sh_quaternion_data {
     /*
      * raw time stamp in sensor time capture ticks
      */
-    struct Timestamp40_t timeStamp;           /* Time in NTTIME */
-    int32_t W;	                 /* w/x/y/z Raw sensor data  in NTPRECISE*/
+    struct Timestamp40_t timeStamp;
+    int32_t W;	                 /* w/x/y/z/e Raw sensor data  in NTPRECISE*/
     int32_t X;  
     int32_t Y;	
     int32_t Z;	
+    int32_t E_EST;
 } ;
 
+struct osp_pack sh_orientation_broadcast_node {
+	/*
+	 * raw time stamp in sensor time capture ticks 
+	 */
+	struct Timestamp40_t timeStamp;
+	int32_t Data[3];	/* Raw sensor data in NTEXTENDED*/
+};
 
 
  struct osp_pack sh_sensor_broadcast_node {
@@ -98,6 +127,8 @@ struct osp_pack sh_quaternion_data {
         struct sh_quaternion_data               quaternionData;
         struct sh_step_counter_sensor_node      stepCounterData;
         struct sh_step_detector_sensor_node     stepDetectorData;
+        struct sh_significant_motion_sensor_node significantMotionData;
+        struct sh_orientation_broadcast_node orientationData;
 	} data;
 };
 
@@ -112,7 +143,7 @@ struct osp_pack ShCmdGetHeader_get_16bits_param_t {
 } ;
 
 struct osp_pack ShCmdGetEnableHeader_t {
-    osp_sub_result_mask subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
+    uint16_t subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
     uint8_t enable;     /* 0 - to disable, !=0 to enable */
 };
 
@@ -171,7 +202,7 @@ struct osp_pack ShSensorSetDelayCmdHeader_t {
 struct osp_pack ShSensorSetEnableCmdHeader_param_t {
     uint8_t command;	/* enum OSP_HOST_SENSOR_COMMANDS */
     uint8_t sensorId;	/* enum OSP_HOST_SENSOR_ID */
-    osp_sub_result_mask subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
+    uint16_t subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
     uint8_t enable;     /* 0 - to disable, !=0 to enable */
 };
 
@@ -189,19 +220,6 @@ union osp_pack ShCmdHeaderUnion{
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-/* Register Area for slave device */
-typedef struct SH_RegArea_tag
-{
-    uint8_t whoami;
-    uint16_t version;
-    struct  ShCmdGetEnableHeader_t enable;
-    struct ShCmdGetHeader_get_16bits_param_t delay;
-} SH_RegArea_t;
-
-
-
-
-
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -217,7 +235,7 @@ typedef struct SH_RegArea_tag
 \*-------------------------------------------------------------------------------------------------*/
 
 
-#endif /* HOSTINTERFACE_H */
+#endif /* _OSP_HOSTINTERFACE_H_ */
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E
 \*-------------------------------------------------------------------------------------------------*/

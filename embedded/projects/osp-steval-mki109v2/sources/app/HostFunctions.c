@@ -18,6 +18,16 @@
 
 //#include "msp430_board.h"
 
+/* Register Area for slave device */
+typedef struct SH_RegArea_tag
+{
+    uint8_t whoami;
+    uint16_t version;
+    struct  ShCmdGetEnableHeader_t enable;
+    struct ShCmdGetHeader_get_16bits_param_t delay;
+} SH_RegArea_t;
+
+static SH_RegArea_t SlaveRegMap;
 
 /****************************************************************************************************
  * @fn      SendSensorEnabledIndication
@@ -27,7 +37,7 @@
  * @return None
  *
  ***************************************************************************************************/
-static void AlgSendSensorEnabledIndication( uint8_t sensorId, uint8_t enabled, osp_sub_result_mask subResultMask)
+static void AlgSendSensorEnabledIndication( uint8_t sensorId, uint8_t enabled, uint16_t  subResultMask)
 {
     MessageBuffer *pSendMsg = NULLP;
 
@@ -40,7 +50,7 @@ static void AlgSendSensorEnabledIndication( uint8_t sensorId, uint8_t enabled, o
 }
 
 
-static void controlSensorEnable(uint8_t sensorId, uint8_t enable, osp_sub_result_mask subResultMask) {
+static void controlSensorEnable(uint8_t sensorId, uint8_t enable, unsigned short  subResultMask) {
     uint8_t update = 0;
     uint64_t sensorEnable = OSP_GetSubsctibedResults();
     
@@ -166,6 +176,11 @@ void init_android_broadcast_buffers(void)
 #ifdef USE_I2C_SLAVE_DRIVER
 	memset(broadcast_buf_flags,       0, sizeof(broadcast_buf_flags));			// all buffers unused
 #endif
+    memset(&SlaveRegMap, 0, sizeof(SlaveRegMap));
+
+    SlaveRegMap.version = (uint16_t)SH_VERSION0 | ((uint16_t) SH_VERSION1 << 8);
+    SlaveRegMap.whoami   = SH_WHO_AM_I;
+
 	commited_length = 0;
 
 	broadcast_buf_wr = 0;

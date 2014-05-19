@@ -593,7 +593,6 @@ static int16_t ActivateResultSensors(SensorType_t ResultType)
                 // if this sensor is not active, mark it as such and send a command to it to go active.
                 if((_SensorTable[index].Flags & SENSOR_FLAG_IN_USE) == 0) {
                     _SensorTable[index].Flags |= SENSOR_FLAG_IN_USE; // mark sensor as "in use"
-                    //                  TurnOnSensor(_ResultResourceMap[i].Sensors[j]);
                     sensorsMask |= (1 << _ResultResourceMap[i].Sensors[j]);
                 }
             }
