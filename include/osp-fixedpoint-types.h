@@ -57,7 +57,6 @@ extern "C" {
 #define TOFIX(x)  ((NT)(((osp_float_t)x) * (osp_float_t)(1UL << QFIXEDPOINT) ))
 
 /* float to fixed point precise */
-#define CONST_PRECISE(x) ((NTPRECISE)(((osp_float_t)x) * (osp_float_t)(1UL << QFIXEDPOINTPRECISE) ))
 #define TOFIX_PRECISE(x) ((NTPRECISE)(((osp_float_t)x) * (osp_float_t)(1UL << QFIXEDPOINTPRECISE) ))
 
 
@@ -68,7 +67,6 @@ extern "C" {
 #define TOFIX_TIMECOEFFICIENT(x) ((uint32_t)(((osp_dbl_t)x) * (osp_dbl_t)(4294967296.0) ))
 
 /* Float to fixed point extended */
-#define CONST_EXTENDED(x) ((NTEXTENDED)(((osp_float_t)x) * (osp_float_t)(1UL << QFIXEDPOINTEXTENDED) ))
 #define TOFIX_EXTENDED(x) ((NTEXTENDED)(((osp_float_t)x) * (osp_float_t)(1UL << QFIXEDPOINTEXTENDED) ))
 
 /* fixed point number of arbitrary q to a floating point number  */
@@ -91,13 +89,14 @@ extern "C" {
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef int16_t NT; /* 16 bit, Q12 fixed point! */
-typedef int32_t NTPRECISE; /* 32 bit, Q24 fixed point */
-typedef int32_t NTDELTATIME; /* 32 bit, Q24 fixed point.  Useful when you're just working with time deltas and only want to use a 32 bit number  */
-typedef int32_t NTEXTENDED; /* 32 bit, Q12 fixed point */
+typedef int16_t NT;          /* 16 bit, Q12 fixed point! */
+typedef int32_t NTPRECISE;   /* 32 bit, Q24 fixed point */
+typedef int32_t NTDELTATIME; /* 32 bit, Q24 fixed point.  Useful when you're just working with time
+                                deltas and only want to use a 32 bit number  */
+typedef int32_t NTEXTENDED;  /* 32 bit, Q12 fixed point */
 typedef uint32_t TIMECOEFFICIENT; /* U32Q32 which is a coefficient to convert counter tics to NTTIME */
 
-typedef int64_t NTTIME; /* 64 bit, Q24 fixed point */
+typedef int64_t NTTIME;      /* 64 bit, Q24 fixed point */
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
