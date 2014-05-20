@@ -21,7 +21,6 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    I N C L U D E   F I L E S
 \*-------------------------------------------------------------------------------------------------*/
-#include <stdint.h>
 
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
@@ -80,12 +79,12 @@ typedef struct MsgSensorEnableTag
 {
     uint8_t     sensorId;
     uint8_t     enabled;
-    osp_sub_result_mask    subResultMask;
+    uint16_t    subResultMask;
 } MsgSensorEnable;
 
 typedef struct MsgSensorDelayTag
 {
-    uint8_t      sensorId;
+    uint8_t     sensorId;
     uint16_t    delayMiliSec;
 } MsgSensorDelay;
 
