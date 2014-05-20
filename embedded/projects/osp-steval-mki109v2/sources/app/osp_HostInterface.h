@@ -112,7 +112,7 @@ struct osp_pack ShCmdGetHeader_get_16bits_param_t {
 } ;
 
 struct osp_pack ShCmdGetEnableHeader_t {
-    osp_sub_result_mask subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
+    uint16_t subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
     uint8_t enable;     /* 0 - to disable, !=0 to enable */
 };
 
@@ -171,7 +171,7 @@ struct osp_pack ShSensorSetDelayCmdHeader_t {
 struct osp_pack ShSensorSetEnableCmdHeader_param_t {
     uint8_t command;	/* enum OSP_HOST_SENSOR_COMMANDS */
     uint8_t sensorId;	/* enum OSP_HOST_SENSOR_ID */
-    osp_sub_result_mask subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
+    uint16_t subResultMask;  /* optional param. Currently used for SENSOR_CONTEXT_DEVICE_MOTION, contains mask based on ContextMotionType_t */
     uint8_t enable;     /* 0 - to disable, !=0 to enable */
 };
 

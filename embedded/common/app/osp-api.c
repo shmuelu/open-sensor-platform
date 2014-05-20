@@ -110,9 +110,9 @@ static const OSP_Library_Version_t libVersion = {
 };
 
 static uint64_t _SubscribedResults;   // bit field of currently subscribed results, bit positions
-                                      // same as SensorType_t                                      
+                                      // correspond to SensorType_t
 static uint16_t _contextDeviceMotionMask = 0;// bit field of currently subscribed results, bit positions
-                                      // same as ContextMotionType_t        
+                                      // correspond ContextMotionType_t
 
 
 // pointer to platform descriptor structure
@@ -137,14 +137,14 @@ static int16_t _SensorBgDataQCnt;          // number of data packets in the queu
 static uint16_t _SensorBgDataNqPtr = SENSOR_BG_DATA_Q_SIZE - 1; // where the last data packet was put into the queue
 static uint16_t _SensorBgDataDqPtr;         // where to remove next data packet from the queue
 
-static uint32_t _accelLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
-static uint32_t _accelLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
+static uint32_t _accelLastForegroundTimeStamp = 0;          // keep the last time stamp here, we will use it to check for rollover
+static uint32_t _accelLastForegroundTimeStampExtension = 0; // we will re-create a larger raw time stamp here
 
-static uint32_t _gyroLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
-static uint32_t _gyroLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
+static uint32_t _gyroLastForegroundTimeStamp = 0;           // keep the last time stamp here, we will use it to check for rollover
+static uint32_t _gyroLastForegroundTimeStampExtension = 0;  // we will re-create a larger raw time stamp here
 
-static uint32_t _magLastForegroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
-static uint32_t _magLastForegroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
+static uint32_t _magLastForegroundTimeStamp = 0;            // keep the last time stamp here, we will use it to check for rollover
+static uint32_t _magLastForegroundTimeStampExtension = 0;   // we will re-create a larger raw time stamp here
 
 static uint32_t _sensorLastBackgroundTimeStamp = 0;             // keep the last time stamp here, we will use it to check for rollover
 static uint32_t _sensorLastBackgroundTimeStampExtension = 0;    // we will re-create a larger raw time stamp here
@@ -221,7 +221,8 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
         _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
             &callbackData);
     }
-   if(_SubscribedResults & (1 << SENSOR_STEP_DETECTOR)) {
+
+    if(_SubscribedResults & (1 << SENSOR_STEP_DETECTOR)) {
         int16_t index;
         Android_StepDetectorOutputData_t callbackData;
 
@@ -853,10 +854,10 @@ static int16_t ConvertSensorData(
         case AXIS_MAP_UNUSED:
             switch (accuracy) {
             case QFIXEDPOINTPRECISE:
-                pCookedData->data.preciseData[i] = CONST_PRECISE(0.0f);
+                pCookedData->data.preciseData[i] = TOFIX_PRECISE(0.0f);
                 break;
             case QFIXEDPOINTEXTENDED:
-                pCookedData->data.extendedData[i] = CONST_EXTENDED(0.0f);
+                pCookedData->data.extendedData[i] = TOFIX_EXTENDED(0.0f);
                 break;
             default:
                 return ERROR;
@@ -1131,7 +1132,7 @@ osp_status_t OSP_DoForegroundProcessing(void)
     AndroidUnCalResult_t AndoidUncalProcessedData;
     int16_t index;
     Common_3AxisResult_t algConvention;
-    uint8_t sensorType;
+    SensorType_t sensorType;
     
     // Get next sensor data packet from the queue. If nothing in the queue, return OSP_STATUS_IDLE.
     // If we get a data packet that has a sensor handle of NULL, we should drop it and get the next one,
@@ -1236,7 +1237,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
         }
 
         // Do uncalibrated mag call back here (Android conventions)
-        if ((sensorType == SENSOR_MAGNETIC_FIELD_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_MAGNETIC_FIELD_UNCALIBRATED))) {
+        if ((sensorType == SENSOR_MAGNETIC_FIELD_UNCALIBRATED) &&
+            (_SubscribedResults & (1LL << SENSOR_MAGNETIC_FIELD_UNCALIBRATED))) {
             index = FindResultTableIndexByType(SENSOR_MAGNETIC_FIELD_UNCALIBRATED);
             if (index != ERROR) {
                 if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
@@ -1474,7 +1476,7 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
     OutputSensorHandle_t *pOutputHandle)
 {
     int16_t index;
-    uint8_t sensorType;
+    SensorType_t sensorType;
     
     if((pSensorDescriptor == NULL) || (pOutputHandle == NULL) ||
         (pSensorDescriptor->pOutputReadyCallback == NULL)) // just in case
@@ -1505,7 +1507,9 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
         *pOutputHandle = NULL;                              //  and set the handle to NULL, so we can check for it later
         return OSP_STATUS_NOT_REGISTERED;
     }
+
     sensorType = pSensorDescriptor->SensorType;
+
     // Setup the alg callbacks, and any thing else that is needed for this result.
     switch (sensorType) {
 
@@ -1646,23 +1650,33 @@ osp_status_t OSP_GetVersion(const OSP_Library_Version_t **pVersionStruct)
     return OSP_STATUS_OK;
 }
 
-//! provides a mask for all subscribed sensor results, as well as a mask all subscribed ContextDeviceMotion sub-results
-/*!
+
+/****************************************************************************************************
+ * @fn      OSP_GetSubscribedResults
+ *          Provides mask for all subscribed sensor results.
  *
- *  \return mask for all subscribed sensor results
- */
-uint64_t OSP_GetSubsctibedResults(void)
+ * @param   none
+ *
+ * @return  mask for all subscribed sensor results
+ *
+ ***************************************************************************************************/
+uint64_t OSP_GetSubscribedResults(void)
 {
     return _SubscribedResults;
 }
 
 
-//! provides a mask for all subscribed sensor results, as well as a mask all subscribed ContextDeviceMotion sub-results
-/*!
+/****************************************************************************************************
+ * @fn      OSP_GetSubscribedResults
+ *          Provides mask for all subscribed sensor results, as well as a mask all subscribed
+ *          ContextDeviceMotion sub-results
  *
- *  \return mask for all subscribed ContextDeviceMotion sub-results
- */
-uint16_t OSP_GetSubsctibedContextDeviceMotionSubResults(void)
+ * @param   none
+ *
+ * @return  mask for all subscribed ContextDeviceMotion sub-results
+ *
+ ***************************************************************************************************/
+uint16_t OSP_GetSubscribedContextDeviceMotionSubResults(void)
 {
     return _contextDeviceMotionMask;
 }
