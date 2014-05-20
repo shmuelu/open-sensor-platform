@@ -289,7 +289,7 @@ typedef void  (* OSP_OutputReadyCallback_t)(OutputSensorHandle_t OutputHandle, v
 */
 
 typedef struct  {
-    SensorType_t SensorType;                    //!< accelerometer, gyro, etc
+    struct SensorId_t sensorId;                   //!< accelerometer, gyro, etc / calibrated, uncalibrated etc.
     SensorDataConvention_t DataConvention;      //!< none, Android, Win8, etc,...
     OSP_OutputReadyCallback_t pOutputReadyCallback; //!<  called only when a new output result is ready (usually NULL for input sensors)
     OSP_WriteCalDataCallback_t pOptionalWriteCalDataCallback; //!<  called when calibration data is ready to write to NVM (NULL if not used)

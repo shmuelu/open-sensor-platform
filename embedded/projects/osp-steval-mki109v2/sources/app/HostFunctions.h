@@ -69,7 +69,7 @@ void deactivateHostInterrupt(void);
 void hostCommitDataTx(void);
 void configureTimeCaptureTimers (void);
 void configureSensorsTimeCapture (void);
-void getTimeCapture(SensorType_t sensorId, uint32_t *result);
+void getTimeCapture(enum SensorType_t sensorId, uint32_t *result);
 void calculate_commited_tx_buffer_size(void);
 
 #endif /* ANDROIDHOSTINTERFACE_H_ */

@@ -61,6 +61,8 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
+
+
 /* Local structure for keeping tab on active sensors and results */
 typedef struct {
     SensorDescriptor_t *pSenDesc;
@@ -78,9 +80,9 @@ typedef struct {
 } _SensorDataBuffer_t;
 
 typedef struct {
-    SensorType_t ResultType;        // result type
+    struct SensorId_t  sensorId;   // sensir ID
     uint16_t SensorCount;           // number of sensors required
-    SensorType_t Sensors[MAX_SENSORS_PER_RESULT];   // sensor types required for this result
+    struct SensorId_t Sensors[MAX_SENSORS_PER_RESULT];   // sensor types required for this result
 } _ResultResourceMap_t;
 
 typedef union {
@@ -110,7 +112,7 @@ static const OSP_Library_Version_t libVersion = {
 };
 
 static uint64_t _SubscribedResults;   // bit field of currently subscribed results, bit positions
-                                      // same as SensorType_t                                      
+                                      // same as enum SensorType_t                                      
 static uint16_t _contextDeviceMotionMask = 0;// bit field of currently subscribed results, bit positions
                                       // same as ContextMotionType_t        
 
@@ -162,14 +164,49 @@ static Common_3AxisResult_t _LastGyroCookedData;
 // table of result to resource maps. 1 entry for each result that describes which sensor types
 // that it needs, which callback routine to use, etc.
 static const _ResultResourceMap_t _ResultResourceMap[] = {
-    {SENSOR_MAGNETIC_FIELD_UNCALIBRATED, 1, {SENSOR_MAGNETIC_FIELD_UNCALIBRATED}},
-    {SENSOR_GYROSCOPE_UNCALIBRATED, 1, {SENSOR_GYROSCOPE_UNCALIBRATED}},
-    {SENSOR_ACCELEROMETER_UNCALIBRATED, 1, {SENSOR_ACCELEROMETER_UNCALIBRATED}},
-    {SENSOR_MAGNETIC_FIELD_CALIBRATED, 1, {SENSOR_MAGNETIC_FIELD_UNCALIBRATED}},
-    {SENSOR_GYROSCOPE_CALIBRATED, 1, {SENSOR_GYROSCOPE_UNCALIBRATED}},
-    {SENSOR_ACCELEROMETER_CALIBRATED, 1, {SENSOR_ACCELEROMETER_UNCALIBRATED}},
-    {SENSOR_CONTEXT_DEVICE_MOTION, 2, {SENSOR_MAGNETIC_FIELD_UNCALIBRATED, SENSOR_ACCELEROMETER_UNCALIBRATED}},
-    {SENSOR_STEP_COUNTER, 1, {SENSOR_ACCELEROMETER_UNCALIBRATED}}
+    {
+        {SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED},
+        1,
+        {{SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_RAW}}
+    },
+    {
+        {SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED},
+        1,
+        {{SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_RAW}}
+    },
+    {
+        {SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_UNCALIBRATED},
+        1,
+        {{SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_RAW}}
+    },
+    {
+        {SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_CALIBRATED},
+        1,
+        {{SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED}}
+    },
+    {
+        {SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_CALIBRATED},
+        1,
+        {{SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_RAW}}
+    },
+    {
+        {SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_CALIBRATED},
+        1,
+        {{SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_RAW}}
+    },
+    {
+        {SENSOR_CONTEXT_DEVICE_MOTION, CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION},
+        2,
+        {
+            {SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED},
+            {SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_RAW}
+        }
+    },
+    {
+        {SENSOR_STEP, SENSOR_STEP_COUNTER},
+        1,
+        {SENSOR_ACCELEROMETER_RAW}
+    }
 };
 #define RESOURCE_MAP_COUNT  (sizeof(_ResultResourceMap)/sizeof(_ResultResourceMap_t))
 
@@ -180,7 +217,7 @@ static osp_status_t NullRoutine(void);
 /* callback for entering/exiting a critical section of code (i.e. disable/enable task switch) */
 OSP_CriticalSectionCallback_t EnterCritical = (OSP_CriticalSectionCallback_t)&NullRoutine;
 OSP_CriticalSectionCallback_t ExitCritical = (OSP_CriticalSectionCallback_t)&NullRoutine;
-static int16_t FindResultTableIndexByType(SensorType_t Type);
+static int16_t FindResultTableIndexByType(const struct SensorId_t *sensorId);
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C   V A R I A B L E S   D E F I N I T I O N S
@@ -208,6 +245,7 @@ __inline static uint32_t mult_uint16_uint16(uint16_t a, uint16_t b)
  ***************************************************************************************************/
 static void OnStepResultsReady( StepDataOSP_t* stepData )
 {
+    struct SensorId_t sensorId;
     if(_SubscribedResults & (1 << SENSOR_STEP_COUNTER)) {
         int16_t index;
         Android_StepCounterOutputData_t callbackData;
@@ -217,7 +255,10 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
         callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
         callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
-        index = FindResultTableIndexByType(SENSOR_STEP_COUNTER);
+        sensorId.sensorType = SENSOR_STEP;
+        sensorId.sensorSubType = SENSOR_STEP_COUNTER;
+        
+        index = FindResultTableIndexByType(&sensorId);
         _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
             &callbackData);
     }
@@ -229,7 +270,10 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
         callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
         callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
-        index = FindResultTableIndexByType(SENSOR_STEP_DETECTOR);
+        sensorId.sensorType = SENSOR_STEP;
+        sensorId.sensorSubType = SENSOR_STEP_DETECTOR;
+
+        index = FindResultTableIndexByType(&sensorId);
         _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
             &callbackData);
     }
@@ -243,6 +287,8 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
  ***************************************************************************************************/
 static void OnSignificantMotionResult( NTTIME * eventTime )
 {
+    struct SensorId_t sensorId;
+    
     if(_SubscribedResults & (1 << SENSOR_CONTEXT_DEVICE_MOTION)) {
         int16_t index;
         Android_SignificantMotionOutputData_t callbackData;
@@ -251,7 +297,10 @@ static void OnSignificantMotionResult( NTTIME * eventTime )
         callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
         callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
-        index = FindResultTableIndexByType(SENSOR_CONTEXT_DEVICE_MOTION);
+        sensorId.sensorType = SENSOR_CONTEXT_DEVICE_MOTION;
+        sensorId.sensorSubType = CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION;
+
+        index = FindResultTableIndexByType(&sensorId);
         _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
             &callbackData);
     }
@@ -285,17 +334,18 @@ static int16_t ValidateSystemDescriptor(SystemDescriptor_t const *pSystemDescrip
 
 /****************************************************************************************************
  * @fn      FindSensorTableIndexByType
- *          Given a sensor type, return the index into the sensor table
+ *          Given a sensor ID, return the index into the sensor table
  *
  ***************************************************************************************************/
-static int16_t FindSensorTableIndexByType(SensorType_t Type)
+static int16_t FindSensorTableIndexByType(const struct SensorId_t *sensorId)
 {
     int16_t i;
 
     for(i = 0; i < MAX_SENSOR_DESCRIPTORS; i++) {
         if(_SensorTable[i].pSenDesc == NULL)
             continue;
-        if(Type == ((SensorDescriptor_t *)(_SensorTable[i].pSenDesc))->SensorType)
+        if((sensorId->sensorType == ((SensorDescriptor_t *)(_SensorTable[i].pSenDesc))->sensorId.sensorType) &&
+           (sensorId->sensorSubType == ((SensorDescriptor_t *)(_SensorTable[i].pSenDesc))->sensorId.sensorSubType))
             return i;
     }
     return ERROR;
@@ -303,7 +353,7 @@ static int16_t FindSensorTableIndexByType(SensorType_t Type)
 
 
 /****************************************************************************************************
- * @fn      FindSensorTableIndexByType
+ * @fn      FindEmptySensorTableIndex
  *          Find 1st available empty sensor table slot, return the index into the sensor table
  *
  ***************************************************************************************************/
@@ -338,17 +388,18 @@ static int16_t FindSensorTableIndexByHandle(InputSensorHandle_t Handle)
 
 /****************************************************************************************************
  * @fn      FindResultTableIndexByType
- *          Given a result type, return the index into the result table
+ *          Given a sensor ID , return the index into the result table
  *
  ***************************************************************************************************/
-static int16_t FindResultTableIndexByType(SensorType_t Type)
+static int16_t FindResultTableIndexByType(const struct SensorId_t *sensorId)
 {
     int16_t i;
 
     for(i = 0; i < MAX_RESULT_DESCRIPTORS; i++) {
         if(_ResultTable[i].pResDesc == NULL)
             continue;
-        if(Type == ((SensorDescriptor_t *)(_ResultTable[i].pResDesc))->SensorType)
+        if((sensorId->sensorType == ((SensorDescriptor_t *)(_ResultTable[i].pResDesc))->sensorId.sensorType) && 
+           (sensorId->sensorSubType == ((SensorDescriptor_t *)(_ResultTable[i].pResDesc))->sensorId.sensorSubType))
             return i;
     }
     return ERROR;
@@ -391,16 +442,17 @@ static int16_t FindResultTableIndexByHandle(OutputSensorHandle_t Handle)
 
 /****************************************************************************************************
  * @fn      FindResourceMapIndexByType
- *          Given a result type, return the index into the resource map table. If not found, return
+ *          Given a sensor ID, return the index into the resource map table. If not found, return
  *          ERROR
  *
  ***************************************************************************************************/
-static int16_t FindResourceMapIndexByType(SensorType_t ResultType)
+static int16_t FindResourceMapIndexByType(const struct SensorId_t *sensorId)
 {
     int16_t i;
 
     for (i = 0; i < RESOURCE_MAP_COUNT; i++) {
-        if (_ResultResourceMap[i].ResultType == ResultType)
+        if ((_ResultResourceMap[i].sensorId.sensorType == sensorId->sensorType) &&
+            (_ResultResourceMap[i].sensorId.sensorSubType == sensorId->sensorSubType))
             return i;
     }
     return ERROR;
@@ -418,7 +470,7 @@ static int16_t ValidateSensorDescriptor(SensorDescriptor_t *pSensorDescriptor)
     osp_bool_t haveGoodCalData = FALSE;
 
     // test that the ENUMs are in range
-    if ( pSensorDescriptor->SensorType >= SENSOR_ENUM_COUNT )
+    if ( pSensorDescriptor->sensorId.sensorType >= SENSOR_ENUM_COUNT )
         return ERROR;
     if ( pSensorDescriptor->DataConvention >= DATA_CONVENTION_ENUM_COUNT )
         return ERROR;
@@ -440,15 +492,21 @@ static int16_t ValidateSensorDescriptor(SensorDescriptor_t *pSensorDescriptor)
 
     // Do any other validation that is required here...
 
-    switch(pSensorDescriptor->SensorType) {
+    switch(pSensorDescriptor->sensorId.sensorType) {
 
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
+    case SENSOR_ACCELEROMETER:
+        if (pSensorDescriptor->sensorId.sensorSubType >= SENSOR_ACCELEROMETER_ENUM_COUNT)
+            return ERROR;            
         break;
 
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+    case SENSOR_MAGNETIC_FIELD:
+        if (pSensorDescriptor->sensorId.sensorSubType >= SENSOR_MAGNETIC_FIELD_ENUM_COUNT)
+            return ERROR;            
         break;
 
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
+    case SENSOR_GYROSCOPE:
+        if (pSensorDescriptor->sensorId.sensorSubType >= SENSOR_GYROSCOPE_ENUM_COUNT)
+            return ERROR;            
         break;
 
     default:
@@ -469,7 +527,7 @@ static int16_t ValidateSensorDescriptor(SensorDescriptor_t *pSensorDescriptor)
  ***************************************************************************************************/
 static int16_t ValidateResultDescriptor(SensorDescriptor_t *pResultDescriptor)
 {
-    if(pResultDescriptor->SensorType >= SENSOR_ENUM_COUNT )
+    if(pResultDescriptor->sensorId.sensorType >= SENSOR_ENUM_COUNT )
         return ERROR;
 
     if(pResultDescriptor->DataConvention >= DATA_CONVENTION_ENUM_COUNT )
@@ -482,18 +540,28 @@ static int16_t ValidateResultDescriptor(SensorDescriptor_t *pResultDescriptor)
     //...
 
     // Add currently supported output sensor results...
-    switch (pResultDescriptor->SensorType) {
+    switch (pResultDescriptor->sensorId.sensorType) {
 
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-    case SENSOR_GYROSCOPE_CALIBRATED:
-    case SENSOR_ACCELEROMETER_CALIBRATED:
-    case SENSOR_STEP_COUNTER:
-    case SENSOR_CONTEXT_DEVICE_MOTION:
+    case SENSOR_MAGNETIC_FIELD:
+        if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_MAGNETIC_FIELD_ENUM_COUNT)
+            return ERROR;            
         break;
-
+    case SENSOR_GYROSCOPE:
+        if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_GYROSCOPE_ENUM_COUNT)
+            return ERROR;            
+        break;
+    case SENSOR_ACCELEROMETER:
+        if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_ACCELEROMETER_ENUM_COUNT)
+            return ERROR;            
+        break;        
+    case SENSOR_STEP:
+        if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_STEP_ENUM_COUNT)
+            return ERROR;            
+        break;                
+    case SENSOR_CONTEXT_DEVICE_MOTION:
+        if (pResultDescriptor->sensorId.sensorSubType >= CONTEXT_DEVICE_MOTION_ENUM_COUNT)
+            return ERROR;            
+        break;                
     default:
         return ERROR;
 
@@ -526,7 +594,7 @@ void InvalidateQueuedDataByHandle(InputSensorHandle_t Handle)
 
 /****************************************************************************************************
  * @fn      TurnOnSensors
- *          Turns on sensors indicated by sensorsMask (bit mask based on SensorType_t bit position
+ *          Turns on sensors indicated by sensorsMask (bit mask based on enum SensorType_t bit position
  *
  ***************************************************************************************************/
 static int16_t TurnOnSensors(uint32_t sensorsMask)
@@ -547,7 +615,7 @@ static int16_t TurnOnSensors(uint32_t sensorsMask)
 
 /****************************************************************************************************
  * @fn      TurnOffSensors
- *          Turns off sensors indicated by sensorsMask (bit mask based on SensorType_t bit position
+ *          Turns off sensors indicated by sensorsMask (bit mask based on enum SensorType_t bit position
  *
  ***************************************************************************************************/
 static int16_t TurnOffSensors(uint32_t sensorsMask)
@@ -568,13 +636,13 @@ static int16_t TurnOffSensors(uint32_t sensorsMask)
 
 /****************************************************************************************************
  * @fn      ActivateResultSensors
- *          Given a result type, check to be sure that all of the sensors that are needed
+ *          Given a sensor ID, check to be sure that all of the sensors that are needed
  *          for this result type are available. If any sensor that is needed is available and marked
  *          as "not in-use", mark it so and send a "turn on" command through the control callback if
  *          it is available.
  *
  ***************************************************************************************************/
-static int16_t ActivateResultSensors(SensorType_t ResultType)
+static int16_t ActivateResultSensors(const struct SensorId_t *sensorId)
 {
     int16_t i,j;
     int16_t index;
@@ -585,9 +653,10 @@ static int16_t ActivateResultSensors(SensorType_t ResultType)
 
     // Find the index of the result type in the resource map table.
     for (i =  0; i < RESOURCE_MAP_COUNT; i++) {
-        if (_ResultResourceMap[i].ResultType == ResultType) {
+        if ((_ResultResourceMap[i].sensorId.sensorType == sensorId->sensorType) &&
+            (_ResultResourceMap[i].sensorId.sensorSubType == sensorId->sensorSubType)){
             for(j = 0; j < _ResultResourceMap[i].SensorCount; j++) {
-                index = FindSensorTableIndexByType(_ResultResourceMap[i].Sensors[j]);
+                index = FindSensorTableIndexByType(&_ResultResourceMap[i].Sensors[j]);
                 if(index == ERROR)
                     return ERROR;                // sensor is not registered, exit with error
                 // if this sensor is not active, mark it as such and send a command to it to go active.
@@ -608,11 +677,11 @@ static int16_t ActivateResultSensors(SensorType_t ResultType)
 
 /****************************************************************************************************
  * @fn      DeactivateResultSensors
- *          Given a result type, deactivate (mark as "not in use") all sensors that were used by
+ *          Given a sensor ID, deactivate (mark as "not in use") all sensors that were used by
  *          this result if they are not in use by any another active result.
  *
  ***************************************************************************************************/
-static int16_t DeactivateResultSensors(SensorType_t ResultType)
+static int16_t DeactivateResultSensors(const struct SensorId_t *sensorId)
 {
     int16_t i,j,k,l;
     int16_t index;
@@ -624,7 +693,7 @@ static int16_t DeactivateResultSensors(SensorType_t ResultType)
     // We will send a control command to turn off the sensor if it supports it.
 
     // find our result resource table entry
-    index = FindResourceMapIndexByType(ResultType);
+    index = FindResourceMapIndexByType(sensorId);
     if (index == ERROR)
         return ERROR;
 
@@ -632,12 +701,13 @@ static int16_t DeactivateResultSensors(SensorType_t ResultType)
     for(i = 0; i < _ResultResourceMap[index].SensorCount; i++ ) { // for each of our sensors
         NeedSensor = FALSE;                                       // assume no other result uses this sensor
         for(k = 0; k < MAX_RESULT_DESCRIPTORS; k++) {
-            if((_ResultTable[k].pResDesc != NULL) && (_ResultTable[k].pResDesc->SensorType != ResultType)) { // search active results (but not ours)
-                j = FindResourceMapIndexByType(_ResultTable[k].pResDesc->SensorType);
+            if((_ResultTable[k].pResDesc != NULL) && (_ResultTable[k].pResDesc->sensorId.sensorType != sensorId->sensorType)) { // search active results (but not ours)
+                j = FindResourceMapIndexByType(&_ResultTable[k].pResDesc->sensorId);
                 if(j == ERROR)
                     return ERROR;
                 for(l = 0; l < _ResultResourceMap[j].SensorCount; l++) { // for each sensor in this active result
-                    if(_ResultResourceMap[j].Sensors[l] == _ResultResourceMap[index].Sensors[i]) {
+                    if ((_ResultResourceMap[j].Sensors[l].sensorType == _ResultResourceMap[index].Sensors[i].sensorType) &&
+                        (_ResultResourceMap[j].Sensors[l].sensorType == _ResultResourceMap[index].Sensors[i].sensorSubType))  {
                         NeedSensor = TRUE; // found one, stop searching this result
                         break;
                     }
@@ -649,7 +719,7 @@ static int16_t DeactivateResultSensors(SensorType_t ResultType)
         if(NeedSensor == FALSE) {
             // if we get here, no other result uses this sensor type, mark it "not in use" and send
             // a "turn off" command to it, and mark all data in the input queues as stale
-            j = FindSensorTableIndexByType(_ResultResourceMap[index].Sensors[i]);
+            j = FindSensorTableIndexByType(&_ResultResourceMap[index].Sensors[i]);
             _SensorTable[j].Flags &= ~SENSOR_FLAG_IN_USE;   // Mark sensor "not in use"
             // mark all previously queued data for this sensor type as invalid
             InvalidateQueuedDataByHandle((InputSensorHandle_t)&_SensorTable[j]);
@@ -828,15 +898,37 @@ static int16_t ConvertSensorData(
     unsigned char source;
     InputSensorSpecificData_t *pInpSensData;
 
-    switch( ((_SenDesc_t *)(pRawData->Handle))->pSenDesc->SensorType ) {
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-    case SENSOR_GYROSCOPE_CALIBRATED:
-    case SENSOR_ACCELEROMETER_CALIBRATED:
+    switch( ((_SenDesc_t *)(pRawData->Handle))->pSenDesc->sensorId.sensorType ) {
+    case SENSOR_ACCELEROMETER:
+        switch( ((_SenDesc_t *)(pRawData->Handle))->pSenDesc->sensorId.sensorSubType ) {
+        case SENSOR_ACCELEROMETER_RAW:
+        case SENSOR_ACCELEROMETER_UNCALIBRATED:
+        case SENSOR_ACCELEROMETER_CALIBRATED:
+            break;
+        default:
+            return ERROR;
+        }
         break;
-
+    case SENSOR_MAGNETIC_FIELD:
+        switch( ((_SenDesc_t *)(pRawData->Handle))->pSenDesc->sensorId.sensorSubType ) {        
+        case SENSOR_MAGNETIC_FIELD_RAW:
+        case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+        case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+            break;
+        default:
+            return ERROR;
+        }
+        break;
+    case SENSOR_GYROSCOPE:
+        switch( ((_SenDesc_t *)(pRawData->Handle))->pSenDesc->sensorId.sensorSubType ) {        
+        case SENSOR_GYROSCOPE_RAW:
+        case SENSOR_GYROSCOPE_UNCALIBRATED:
+        case SENSOR_GYROSCOPE_CALIBRATED:
+            break;
+        default:
+            return ERROR;
+        }
+        break;
     default:
         return ERROR;
     }
@@ -983,7 +1075,7 @@ osp_status_t OSP_RegisterInputSensor(SensorDescriptor_t *pSensorDescriptor,
     if((pSensorDescriptor == NULL) || (pReturnedHandle == NULL))      // just in case
         return OSP_STATUS_NULL_POINTER;
 
-    if(FindSensorTableIndexByType(pSensorDescriptor->SensorType) != ERROR) { // is this sensor type already registered?
+    if(FindSensorTableIndexByType(&pSensorDescriptor->sensorId) != ERROR) { // is this sensor type already registered?
         *pReturnedHandle = NULL;
         return OSP_STATUS_ALREADY_REGISTERED;
     }
@@ -1130,7 +1222,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
     AndroidUnCalResult_t AndoidUncalProcessedData;
     int16_t index;
     Common_3AxisResult_t algConvention;
-    uint8_t sensorType;
+    enum SensorType_t sensorType;
+    uint8_t sensorSubType;
     
     // Get next sensor data packet from the queue. If nothing in the queue, return OSP_STATUS_IDLE.
     // If we get a data packet that has a sensor handle of NULL, we should drop it and get the next one,
@@ -1158,168 +1251,167 @@ osp_status_t OSP_DoForegroundProcessing(void)
         _SensorFgDataDqPtr = 0;
     ExitCritical();
 
-    sensorType = ((_SenDesc_t*)data.Handle)->pSenDesc->SensorType;
+    sensorType = (enum SensorType_t) ((_SenDesc_t*)data.Handle)->pSenDesc->sensorId.sensorType;
+    sensorSubType = ((_SenDesc_t*)data.Handle)->pSenDesc->sensorId.sensorSubType;
     // now send the processed data to the appropriate entry points in the alg code.
     switch(sensorType) {
+    case SENSOR_ACCELEROMETER:
+        switch (sensorSubType) {
+        case SENSOR_ACCELEROMETER_RAW:
+        case SENSOR_ACCELEROMETER_UNCALIBRATED:
+            // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
+            if (sensorSubType == SENSOR_ACCELEROMETER_RAW) {
+                ConvertSensorData(
+                    &data,
+                    &AndoidProcessedData,
+                    QFIXEDPOINTPRECISE,
+                    &_accelLastForegroundTimeStamp,
+                    &_accelLastForegroundTimeStampExtension);
 
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-    case SENSOR_ACCELEROMETER_CALIBRATED:
-        // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
-        if (((_SenDesc_t*)data.Handle)->pSenDesc->DataConvention == DATA_CONVENTION_RAW) {
-            ConvertSensorData(
-                &data,
-                &AndoidProcessedData,
-                QFIXEDPOINTPRECISE,
-                &_accelLastForegroundTimeStamp,
-                &_accelLastForegroundTimeStampExtension);
-        } else {
-            //!TODO - Other data conventions support not implemented yet
-            return OSP_STATUS_NOT_IMPLEMENTED;
-        }
+            }
+            // Do uncalibrated accel call back here (Android conventions)
+            if ((sensorType == SENSOR_ACCELEROMETER_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_ACCELEROMETER_UNCALIBRATED))) {
+                const struct SensorId_t sensorId = {SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_UNCALIBRATED};
+                index = FindResultTableIndexByType(&sensorId);
+                if (index != ERROR) {
+                    if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
+                            memcpy(&AndoidUncalProcessedData.ucAccel.X,
+                                AndoidProcessedData.data.preciseData,
+                                (sizeof(NTPRECISE)*3));
+                            memcpy(&AndoidUncalProcessedData.ucAccel.X_offset,
+                                _accel_bias, (sizeof(NTPRECISE)*3));
+                            AndoidUncalProcessedData.ucAccel.TimeStamp = AndoidProcessedData.TimeStamp;
+                            
+                            AndoidUncalProcessedData.ucAccel.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
+                            AndoidUncalProcessedData.ucAccel.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
-        // Do uncalibrated accel call back here (Android conventions)
-        if ((sensorType == SENSOR_ACCELEROMETER_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_ACCELEROMETER_UNCALIBRATED))) {
-            index = FindResultTableIndexByType(SENSOR_ACCELEROMETER_UNCALIBRATED);
-            if (index != ERROR) {
-                if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
-                        memcpy(&AndoidUncalProcessedData.ucAccel.X,
-                            AndoidProcessedData.data.preciseData,
-                            (sizeof(NTPRECISE)*3));
-                        memcpy(&AndoidUncalProcessedData.ucAccel.X_offset,
-                            _accel_bias, (sizeof(NTPRECISE)*3));
-                        AndoidUncalProcessedData.ucAccel.TimeStamp = AndoidProcessedData.TimeStamp;
-                        
-                        AndoidUncalProcessedData.ucAccel.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
-                        AndoidUncalProcessedData.ucAccel.TickTimeStampLow = _accelLastForegroundTimeStamp;
-
-                        _ResultTable[index].pResDesc->pOutputReadyCallback(
-                            (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucAccel);
+                            _ResultTable[index].pResDesc->pOutputReadyCallback(
+                                (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucAccel);
+                    } else {
+                        return OSP_STATUS_ERROR;
+                    }
                 } else {
                     return OSP_STATUS_ERROR;
                 }
-            } else {
-                return OSP_STATUS_ERROR;
             }
+
+            // convert to algorithm convention before feeding data to algorithms.
+            algConvention.accuracy = QFIXEDPOINTPRECISE;
+            algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
+            algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
+            algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
+            algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
+
+            memcpy(&_LastAccelCookedData, &algConvention, sizeof(Common_3AxisResult_t));
+
+            //OSP_SetForegroundAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+            // Send data on to algorithms
+            OSP_SetAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+
+            // Do linear accel and gravity processing if needed
+            // ... TODO
+            break;
         }
-
-        // convert to algorithm convention before feeding data to algorithms.
-        algConvention.accuracy = QFIXEDPOINTPRECISE;
-        algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
-        algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
-        algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
-        algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
-
-        memcpy(&_LastAccelCookedData, &algConvention, sizeof(Common_3AxisResult_t));
-
-        //OSP_SetForegroundAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
-        // Send data on to algorithms
-        OSP_SetAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
-
-        // Do linear accel and gravity processing if needed
-        // ... TODO
         break;
-
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-        // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
-        if (((_SenDesc_t*)data.Handle)->pSenDesc->DataConvention == DATA_CONVENTION_RAW) {
+    case SENSOR_MAGNETIC_FIELD:
+        switch (sensorSubType) {
+        case SENSOR_MAGNETIC_FIELD_RAW:
+        case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+            // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
             ConvertSensorData(
                 &data,
                 &AndoidProcessedData,
                 QFIXEDPOINTEXTENDED,
                 &_magLastForegroundTimeStamp,
                 &_magLastForegroundTimeStampExtension);
-        } else {
-            //!TODO - Other data conventions support not implemented yet
-            return OSP_STATUS_NOT_IMPLEMENTED;
-        }
 
-        // Do uncalibrated mag call back here (Android conventions)
-        if ((sensorType == SENSOR_MAGNETIC_FIELD_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_MAGNETIC_FIELD_UNCALIBRATED))) {
-            index = FindResultTableIndexByType(SENSOR_MAGNETIC_FIELD_UNCALIBRATED);
-            if (index != ERROR) {
-                if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
-                        memcpy(&AndoidUncalProcessedData.ucMag.X,
-                            AndoidProcessedData.data.extendedData,
-                            (sizeof(NTEXTENDED)*3));
-                        memcpy(&AndoidUncalProcessedData.ucMag.X_hardIron_offset,
-                            _mag_bias, (sizeof(NTEXTENDED)*3));
-                        AndoidUncalProcessedData.ucMag.TimeStamp = AndoidProcessedData.TimeStamp;
-                        
-                        AndoidUncalProcessedData.ucMag.TickTimeStampHigh = _magLastForegroundTimeStampExtension;
-                        AndoidUncalProcessedData.ucMag.TickTimeStampLow = _magLastForegroundTimeStamp;
+            // Do uncalibrated mag call back here (Android conventions)
+            if ((sensorType == SENSOR_MAGNETIC_FIELD_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_MAGNETIC_FIELD_UNCALIBRATED))) {
+                const struct SensorId_t sensorId = {SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED};
+                index = FindResultTableIndexByType(&sensorId);
+                if (index != ERROR) {
+                    if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
+                            memcpy(&AndoidUncalProcessedData.ucMag.X,
+                                AndoidProcessedData.data.extendedData,
+                                (sizeof(NTEXTENDED)*3));
+                            memcpy(&AndoidUncalProcessedData.ucMag.X_hardIron_offset,
+                                _mag_bias, (sizeof(NTEXTENDED)*3));
+                            AndoidUncalProcessedData.ucMag.TimeStamp = AndoidProcessedData.TimeStamp;
+                            
+                            AndoidUncalProcessedData.ucMag.TickTimeStampHigh = _magLastForegroundTimeStampExtension;
+                            AndoidUncalProcessedData.ucMag.TickTimeStampLow = _magLastForegroundTimeStamp;
 
 
-                        _ResultTable[index].pResDesc->pOutputReadyCallback(
-                            (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucMag);
-                } else {
-                    return OSP_STATUS_ERROR;
+                            _ResultTable[index].pResDesc->pOutputReadyCallback(
+                                (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucMag);
+                    } else {
+                        return OSP_STATUS_ERROR;
+                    }
                 }
             }
+
+            // convert to algorithm convention before feeding data to algs.
+            algConvention.accuracy = QFIXEDPOINTEXTENDED;
+            algConvention.data.extendedData[0] = AndoidProcessedData.data.extendedData[1];  // x (ALG) =  Y (Android)
+            algConvention.data.extendedData[1] = -AndoidProcessedData.data.extendedData[0]; // y (ALG) = -X (Android)
+            algConvention.data.extendedData[2] = AndoidProcessedData.data.extendedData[2];  // z (ALG) =  Z (Android)
+            algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
+
+            memcpy(&_LastMagCookedData, &algConvention, sizeof(Common_3AxisResult_t));
+
+            //OSP_SetForegroundMagnetometerMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.extendedData);
+            break;
         }
-
-        // convert to algorithm convention before feeding data to algs.
-        algConvention.accuracy = QFIXEDPOINTEXTENDED;
-        algConvention.data.extendedData[0] = AndoidProcessedData.data.extendedData[1];  // x (ALG) =  Y (Android)
-        algConvention.data.extendedData[1] = -AndoidProcessedData.data.extendedData[0]; // y (ALG) = -X (Android)
-        algConvention.data.extendedData[2] = AndoidProcessedData.data.extendedData[2];  // z (ALG) =  Z (Android)
-        algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
-
-        memcpy(&_LastMagCookedData, &algConvention, sizeof(Common_3AxisResult_t));
-
-        //OSP_SetForegroundMagnetometerMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.extendedData);
         break;
-
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-    case SENSOR_GYROSCOPE_CALIBRATED:
-        // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
-        if (((_SenDesc_t*)data.Handle)->pSenDesc->DataConvention == DATA_CONVENTION_RAW) {
+    case SENSOR_GYROSCOPE:
+        switch (sensorSubType) {
+        case SENSOR_GYROSCOPE_RAW:
+        case SENSOR_GYROSCOPE_UNCALIBRATED:
+            // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
             ConvertSensorData(
                 &data,
                 &AndoidProcessedData,
                 QFIXEDPOINTPRECISE,
                 &_gyroLastForegroundTimeStamp,
                 &_gyroLastForegroundTimeStampExtension);
-        } else {
-            //!TODO - Other data conventions support not implemented yet
-            return OSP_STATUS_NOT_IMPLEMENTED;
-        }
 
-        // Do uncalibrated mag call back here (Android conventions)
-        if ((sensorType == SENSOR_GYROSCOPE_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_GYROSCOPE_UNCALIBRATED))) {
-            index = FindResultTableIndexByType(SENSOR_GYROSCOPE_UNCALIBRATED);
-            if (index != ERROR) {
-                if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
-                        memcpy(&AndoidUncalProcessedData.ucGyro.X,
-                            AndoidProcessedData.data.preciseData,
-                            (sizeof(NTPRECISE)*3));
-                        memcpy(&AndoidUncalProcessedData.ucGyro.X_drift_offset,
-                            _gyro_bias, (sizeof(NTPRECISE)*3));
-                        AndoidUncalProcessedData.ucGyro.TimeStamp = AndoidProcessedData.TimeStamp;
+            // Do uncalibrated mag call back here (Android conventions)
+            if ((sensorType == SENSOR_GYROSCOPE_UNCALIBRATED) && (_SubscribedResults & (1LL << SENSOR_GYROSCOPE_UNCALIBRATED))) {
+                const struct SensorId_t sensorId = {SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED};
+                index = FindResultTableIndexByType(&sensorId);
+                if (index != ERROR) {
+                    if (_ResultTable[index].pResDesc->DataConvention == DATA_CONVENTION_ANDROID) {
+                            memcpy(&AndoidUncalProcessedData.ucGyro.X,
+                                AndoidProcessedData.data.preciseData,
+                                (sizeof(NTPRECISE)*3));
+                            memcpy(&AndoidUncalProcessedData.ucGyro.X_drift_offset,
+                                _gyro_bias, (sizeof(NTPRECISE)*3));
+                            AndoidUncalProcessedData.ucGyro.TimeStamp = AndoidProcessedData.TimeStamp;
 
-                        AndoidUncalProcessedData.ucGyro.TickTimeStampHigh = _gyroLastForegroundTimeStampExtension;
-                        AndoidUncalProcessedData.ucGyro.TickTimeStampLow = _gyroLastForegroundTimeStamp;
+                            AndoidUncalProcessedData.ucGyro.TickTimeStampHigh = _gyroLastForegroundTimeStampExtension;
+                            AndoidUncalProcessedData.ucGyro.TickTimeStampLow = _gyroLastForegroundTimeStamp;
 
-                        _ResultTable[index].pResDesc->pOutputReadyCallback(
-                            (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucGyro);
-                } else {
-                    return OSP_STATUS_ERROR;
+                            _ResultTable[index].pResDesc->pOutputReadyCallback(
+                                (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucGyro);
+                    } else {
+                        return OSP_STATUS_ERROR;
+                    }
                 }
             }
+
+            // convert to algorithm convention before feeding data to algs.
+            algConvention.accuracy = QFIXEDPOINTPRECISE;
+            algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
+            algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
+            algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
+            algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
+
+            memcpy(&_LastGyroCookedData, &algConvention, sizeof(Common_3AxisResult_t));
+
+            //OSP_SetForegroundGyroscopeMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.preciseData);
+            break;
         }
-
-        // convert to algorithm convention before feeding data to algs.
-        algConvention.accuracy = QFIXEDPOINTPRECISE;
-        algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
-        algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
-        algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
-        algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
-
-        memcpy(&_LastGyroCookedData, &algConvention, sizeof(Common_3AxisResult_t));
-
-        //OSP_SetForegroundGyroscopeMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.preciseData);
         break;
-
     default:
         break;
     }
@@ -1346,6 +1438,10 @@ osp_status_t OSP_DoBackgroundProcessing(void)
 {
     _SensorDataBuffer_t data;
     Common_3AxisResult_t AndoidProcessedData;
+
+    enum SensorType_t sensorType;
+    uint8_t sensorSubType;
+
     //Common_3AxisResult_t algConvention;
 
     // Get next sensor data packet from the queue. If nothing in the queue, return OSP_STATUS_IDLE.
@@ -1376,74 +1472,85 @@ osp_status_t OSP_DoBackgroundProcessing(void)
     ExitCritical();
 
     // now send the processed data to the appropriate entry points in the alg calibration code.
-    switch( ((_SenDesc_t*)data.Handle)->pSenDesc->SensorType ) {
+    sensorType = (enum SensorType_t)((_SenDesc_t*)data.Handle)->pSenDesc->sensorId.sensorType;
+    sensorSubType = ((_SenDesc_t*)data.Handle)->pSenDesc->sensorId.sensorSubType;
+    
+    switch(sensorType) {
+    case SENSOR_ACCELEROMETER:
+        switch (sensorSubType) {
+        case SENSOR_ACCELEROMETER_RAW:
+        case SENSOR_ACCELEROMETER_UNCALIBRATED:
+            // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
+            ConvertSensorData(
+                &data,
+                &AndoidProcessedData,
+                QFIXEDPOINTPRECISE,
+                &_sensorLastBackgroundTimeStamp,
+                &_sensorLastBackgroundTimeStampExtension);
 
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-    case SENSOR_ACCELEROMETER_CALIBRATED:
-        // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
-        ConvertSensorData(
-            &data,
-            &AndoidProcessedData,
-            QFIXEDPOINTPRECISE,
-            &_sensorLastBackgroundTimeStamp,
-            &_sensorLastBackgroundTimeStampExtension);
+    #if 0 //Nothing to be done for background processing at this time!
+            // convert to algorithm convention.
+            algConvention.accuracy = QFIXEDPOINTPRECISE;
+            algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
+            algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
+            algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
+            algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
 
-#if 0 //Nothing to be done for background processing at this time!
-        // convert to algorithm convention.
-        algConvention.accuracy = QFIXEDPOINTPRECISE;
-        algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
-        algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
-        algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
-        algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
-
-        //OSP_SetBackgroundAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
-#endif
+            //OSP_SetBackgroundAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+    #endif
+            break;
+        }
         break;
+    case SENSOR_MAGNETIC_FIELD:
+        switch (sensorSubType) {      
+        case SENSOR_MAGNETIC_FIELD_RAW:
+        case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+            // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
+            ConvertSensorData(
+                &data,
+                &AndoidProcessedData,
+                QFIXEDPOINTEXTENDED,
+                &_sensorLastBackgroundTimeStamp,
+                &_sensorLastBackgroundTimeStampExtension);
 
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-        // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
-        ConvertSensorData(
-            &data,
-            &AndoidProcessedData,
-            QFIXEDPOINTEXTENDED,
-            &_sensorLastBackgroundTimeStamp,
-            &_sensorLastBackgroundTimeStampExtension);
+    #if 0 //Nothing to be done for background processing at this time!
+            // convert to algorithm convention.
+            algConvention.accuracy = QFIXEDPOINTEXTENDED;
+            algConvention.data.extendedData[0] = AndoidProcessedData.data.extendedData[1];   // x (ALG) =  Y (Android)
+            algConvention.data.extendedData[1] = -AndoidProcessedData.data.extendedData[0];  // y (ALG) = -X (Android)
+            algConvention.data.extendedData[2] = AndoidProcessedData.data.extendedData[2];   // z (ALG) =  Z (Android)
+            algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
 
-#if 0 //Nothing to be done for background processing at this time!
-        // convert to algorithm convention.
-        algConvention.accuracy = QFIXEDPOINTEXTENDED;
-        algConvention.data.extendedData[0] = AndoidProcessedData.data.extendedData[1];   // x (ALG) =  Y (Android)
-        algConvention.data.extendedData[1] = -AndoidProcessedData.data.extendedData[0];  // y (ALG) = -X (Android)
-        algConvention.data.extendedData[2] = AndoidProcessedData.data.extendedData[2];   // z (ALG) =  Z (Android)
-        algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
-
-        //OSP_SetBackgroundMagnetometerMeasurement(algConvention.TimeStamp, algConvention.data.extendedData);
-#endif
+            //OSP_SetBackgroundMagnetometerMeasurement(algConvention.TimeStamp, algConvention.data.extendedData);
+    #endif
+            break;
+        }
         break;
+    case SENSOR_GYROSCOPE:
+        switch (sensorSubType) {              
+        case SENSOR_GYROSCOPE_UNCALIBRATED:
+        case SENSOR_GYROSCOPE_CALIBRATED:
+            // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
+            ConvertSensorData(
+                &data,
+                &AndoidProcessedData,
+                QFIXEDPOINTPRECISE,
+                &_sensorLastBackgroundTimeStamp,
+                &_sensorLastBackgroundTimeStampExtension);
 
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-    case SENSOR_GYROSCOPE_CALIBRATED:
-        // Now we have a copy of the data to be processed. We need to apply any and all input conversions.
-        ConvertSensorData(
-            &data,
-            &AndoidProcessedData,
-            QFIXEDPOINTPRECISE,
-            &_sensorLastBackgroundTimeStamp,
-            &_sensorLastBackgroundTimeStampExtension);
+    #if 0 //Nothing to be done for background processing at this time!
+            // convert to algorithm convention.
+            algConvention.accuracy = QFIXEDPOINTPRECISE;
+            algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
+            algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
+            algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
+            algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
 
-#if 0 //Nothing to be done for background processing at this time!
-        // convert to algorithm convention.
-        algConvention.accuracy = QFIXEDPOINTPRECISE;
-        algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
-        algConvention.data.preciseData[1] = -AndoidProcessedData.data.preciseData[0]; // y (ALG) = -X (Android)
-        algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
-        algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
-
-        //OSP_SetBackgroundGyroscopeMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
-#endif
+            //OSP_SetBackgroundGyroscopeMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+    #endif
+            break;
+        }
         break;
-
     default:
         break;
     }
@@ -1474,12 +1581,13 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 {
     int16_t index;
     uint8_t sensorType;
-    
+    uint8_t sensorSubType;
+
     if((pSensorDescriptor == NULL) || (pOutputHandle == NULL) ||
         (pSensorDescriptor->pOutputReadyCallback == NULL)) // just in case
         return OSP_STATUS_NULL_POINTER;
 
-    if(FindResultTableIndexByType(pSensorDescriptor->SensorType) != ERROR) { // is this result type already subscribed?
+    if(FindResultTableIndexByType(&pSensorDescriptor->sensorId) != ERROR) { // is this result type already subscribed?
         *pOutputHandle = NULL;
         return OSP_STATUS_ALREADY_SUBSCRIBED;
     }
@@ -1500,48 +1608,75 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
     // check to be sure that we have all sensors registered that we need for this result. If so, mark them as "in use".
     // if not, return OSP_STATUS_NOT_REGISTERED, and set the result handle to NULL.
 
-    if(ActivateResultSensors(pSensorDescriptor->SensorType) == ERROR) {
+    if(ActivateResultSensors(&pSensorDescriptor->sensorId) == ERROR) {
         *pOutputHandle = NULL;                              //  and set the handle to NULL, so we can check for it later
         return OSP_STATUS_NOT_REGISTERED;
     }
-    sensorType = pSensorDescriptor->SensorType;
+    sensorType = pSensorDescriptor->sensorId.sensorType;
+    sensorSubType = pSensorDescriptor->sensorId.sensorSubType;
+    
     // Setup the alg callbacks, and any thing else that is needed for this result.
     switch (sensorType) {
-
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-    case SENSOR_ACCELEROMETER_CALIBRATED:
-        _SubscribedResults |= (1 << sensorType);
-        //Note: Calibrated or uncalibrated result is specified in the descriptor flags
-        //For Uncalibrated result no callback needs to be registered with the algorithms
+    case SENSOR_ACCELEROMETER:
+        switch (sensorSubType) {
+        case SENSOR_ACCELEROMETER_UNCALIBRATED:
+        case SENSOR_ACCELEROMETER_CALIBRATED:
+            _SubscribedResults |= (1 << sensorType);
+            //Note: Calibrated or uncalibrated result is specified in the descriptor flags
+            //For Uncalibrated result no callback needs to be registered with the algorithms
+            break;
+        }
         break;
-
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-        _SubscribedResults |= (1 << sensorType);
-        //Note: Calibrated or uncalibrated result is specified in the descriptor flags
-        //For Uncalibrated result no callback needs to be registered with the algorithms
+    case SENSOR_MAGNETIC_FIELD:
+        switch (sensorSubType) {        
+        case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+        case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+            _SubscribedResults |= (1 << sensorType);
+            //Note: Calibrated or uncalibrated result is specified in the descriptor flags
+            //For Uncalibrated result no callback needs to be registered with the algorithms
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
         break;
-
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-    case SENSOR_GYROSCOPE_CALIBRATED:
-        _SubscribedResults |= (1 << sensorType);
-        //Note: Calibrated or uncalibrated result is specified in the descriptor flags
-        //For Uncalibrated result no callback needs to be registered with the algorithms
+    case SENSOR_GYROSCOPE:
+        switch (sensorSubType) {                
+        case SENSOR_GYROSCOPE_UNCALIBRATED:
+        case SENSOR_GYROSCOPE_CALIBRATED:
+            _SubscribedResults |= (1 << sensorType);
+            //Note: Calibrated or uncalibrated result is specified in the descriptor flags
+            //For Uncalibrated result no callback needs to be registered with the algorithms
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
         break;
-
     case SENSOR_CONTEXT_DEVICE_MOTION:
-        _SubscribedResults |= (1LL << SENSOR_CONTEXT_DEVICE_MOTION);
-        OSP_RegisterSignificantMotionCallback(OnSignificantMotionResult);
+        switch (sensorSubType) {        
+        case SENSOR_CONTEXT_DEVICE_MOTION:
+            _SubscribedResults |= (1LL << SENSOR_CONTEXT_DEVICE_MOTION);
+            OSP_RegisterSignificantMotionCallback(OnSignificantMotionResult);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
         break;
-
-    case SENSOR_STEP_COUNTER:
-        _SubscribedResults |= (1LL << SENSOR_STEP_COUNTER);
-        OSP_RegisterStepCallback(OnStepResultsReady);
+    case SENSOR_STEP:
+        switch (sensorSubType) {        
+        case SENSOR_STEP_COUNTER:
+            _SubscribedResults |= (1LL << SENSOR_STEP_COUNTER);
+            OSP_RegisterStepCallback(OnStepResultsReady);
+            break;
+        case SENSOR_STEP_DETECTOR:
+            _SubscribedResults |= (1LL << SENSOR_STEP_COUNTER);
+            OSP_RegisterStepCallback(OnStepResultsReady);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
         break;
-
     default:
         return OSP_STATUS_UNKNOWN_REQUEST;
-
     }
 
     // Everything is setup, update our result table and return a handle
@@ -1566,6 +1701,8 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 {
     int16_t index;
+    uint8_t sensorType;
+    uint8_t sensorSubType;
 
     // Check the result table to be sure that this is a valid handle, if not return OSP_STATUS_INVALID_HANDLE error.
     // Also check that the handle points to a currently subscribed result, if not return OSP_STATUS_NOT_SUBSCRIBED.
@@ -1579,47 +1716,72 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
     // that we used. If not, mark those sensors as unused so that data from them will not be processed.
     // All data in the input queues from sensors that we mark as unused should be marked as stale. We
     // will also send a "sensor off" if that facility is available.
-    DeactivateResultSensors(_ResultTable[index].pResDesc->SensorType);
+    DeactivateResultSensors(&_ResultTable[index].pResDesc->sensorId);
 
+    sensorType = _ResultTable[index].pResDesc->sensorId.sensorType;
+    sensorSubType= _ResultTable[index].pResDesc->sensorId.sensorSubType;
+    
     // Now make sure that we won't call the users callback for this result
-    switch (_ResultTable[index].pResDesc->SensorType) {
-
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-        _SubscribedResults &= ~(1LL << SENSOR_ACCELEROMETER_UNCALIBRATED);
-        break;
-
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-        _SubscribedResults &= ~(1LL << SENSOR_MAGNETIC_FIELD_UNCALIBRATED);
-        break;
-
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-        _SubscribedResults &= ~(1LL << SENSOR_GYROSCOPE_UNCALIBRATED);
-        break;
-
-    case SENSOR_ACCELEROMETER_CALIBRATED:
-        _SubscribedResults &= ~(1LL << SENSOR_ACCELEROMETER_CALIBRATED);
-        break;
-
-    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-        _SubscribedResults &= ~(1LL << SENSOR_MAGNETIC_FIELD_CALIBRATED);
-        break;
-
-    case SENSOR_GYROSCOPE_CALIBRATED:
-        _SubscribedResults &= ~(1LL << SENSOR_GYROSCOPE_CALIBRATED);
-        break;
-
-
+    switch (sensorType) {
+    case SENSOR_ACCELEROMETER:
+        switch (sensorSubType) {
+        case SENSOR_ACCELEROMETER_UNCALIBRATED:
+            _SubscribedResults &= ~(1LL << SENSOR_ACCELEROMETER_UNCALIBRATED);
+            break;
+        case SENSOR_ACCELEROMETER_CALIBRATED:
+            _SubscribedResults &= ~(1LL << SENSOR_ACCELEROMETER_CALIBRATED);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
+        break;        
+    case SENSOR_MAGNETIC_FIELD:
+        switch (sensorSubType) {
+        case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+            _SubscribedResults &= ~(1LL << SENSOR_MAGNETIC_FIELD_UNCALIBRATED);
+            break;
+        case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+            _SubscribedResults &= ~(1LL << SENSOR_MAGNETIC_FIELD_CALIBRATED);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
+        break;        
+    case SENSOR_GYROSCOPE:
+        switch (sensorSubType) {        
+        case SENSOR_GYROSCOPE_UNCALIBRATED:
+            _SubscribedResults &= ~(1LL << SENSOR_GYROSCOPE_UNCALIBRATED);
+            break;
+        case SENSOR_GYROSCOPE_CALIBRATED:
+            _SubscribedResults &= ~(1LL << SENSOR_GYROSCOPE_CALIBRATED);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
+        break;        
     case SENSOR_CONTEXT_DEVICE_MOTION:
-        _SubscribedResults &= ~(1LL << SENSOR_CONTEXT_DEVICE_MOTION);
-        break;
-
-    case SENSOR_STEP_COUNTER:
-        _SubscribedResults &= ~(1LL << SENSOR_STEP_COUNTER);
-        break;
-
+        switch (sensorSubType) {        
+        case CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION:
+            _SubscribedResults &= ~(1LL << SENSOR_CONTEXT_DEVICE_MOTION);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
+        break;        
+    case SENSOR_STEP:
+        switch (sensorSubType) {        
+        case SENSOR_STEP_COUNTER:
+            _SubscribedResults &= ~(1LL << SENSOR_STEP_COUNTER);
+            break;
+        case SENSOR_STEP_DETECTOR:
+            _SubscribedResults &= ~(1LL << SENSOR_STEP_COUNTER);
+            break;
+        default:
+            return OSP_STATUS_UNKNOWN_REQUEST;
+        }
+        break;        
     default:
         return OSP_STATUS_UNKNOWN_REQUEST;
-
     }
 
     // remove result table entry.

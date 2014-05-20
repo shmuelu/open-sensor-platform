@@ -177,7 +177,8 @@ static InputSensorSpecificData_t _AccInputSensor =
 
 static SensorDescriptor_t _AccSensDesc =
 {
-    SENSOR_ACCELEROMETER_UNCALIBRATED,
+    SENSOR_ACCELEROMETER,
+    SENSOR_ACCELEROMETER_RAW,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -207,7 +208,8 @@ static InputSensorSpecificData_t _MagInputSensor =
 
 static SensorDescriptor_t _MagSensDesc =
 {
-    SENSOR_MAGNETIC_FIELD_UNCALIBRATED,
+    SENSOR_MAGNETIC_FIELD,
+    SENSOR_MAGNETIC_FIELD_RAW,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -237,7 +239,8 @@ static InputSensorSpecificData_t _GyroInputSensor =
 
 static SensorDescriptor_t _GyroSensDesc =
 {
-    SENSOR_GYROSCOPE_UNCALIBRATED,
+    SENSOR_GYROSCOPE,
+    SENSOR_GYROSCOPE_RAW,
     DATA_CONVENTION_RAW,
     OSP_NO_OUTPUT_READY_CALLBACK,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -254,6 +257,7 @@ static SensorDescriptor_t _GyroSensDesc =
 
 
 static SensorDescriptor_t  stepCounterRequest = {
+    SENSOR_STEP,
     SENSOR_STEP_COUNTER,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)stepCounterOutputCallback,
@@ -265,6 +269,7 @@ static SensorDescriptor_t  stepCounterRequest = {
 };
 
 static SensorDescriptor_t  stepDetectorRequest = {
+    SENSOR_STEP,
     SENSOR_STEP_DETECTOR,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)stepDetectorOutputCallback,
@@ -278,6 +283,7 @@ static SensorDescriptor_t  stepDetectorRequest = {
 /* Output result descriptor for subscribing to significant motion */
 static SensorDescriptor_t  sigMotionRequest = {
     SENSOR_CONTEXT_DEVICE_MOTION,
+    CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)sigMotionOutputCallback,
     OSP_NO_NVM_WRITE_CALLBACK,
@@ -292,6 +298,7 @@ static ResultOptionalData_t accelUnscaleFactor = { QFIXEDPOINTPRECISE, {ACCEL_UN
 
 /* Output result descriptor for subscribing to uncalibrated accelerometer data */
 static SensorDescriptor_t UnCalAccelRequest = {
+    SENSOR_ACCELEROMETER,
     SENSOR_ACCELEROMETER_UNCALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalAccelDataResultCallback,
@@ -305,6 +312,7 @@ static SensorDescriptor_t UnCalAccelRequest = {
 
 /* Output result descriptor for subscribing to uncalibrated accelerometer data */
 static SensorDescriptor_t CalAccelRequest = {
+    SENSOR_ACCELEROMETER,
     SENSOR_ACCELEROMETER_CALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)CalAccelDataResultCallback,
@@ -319,6 +327,7 @@ static ResultOptionalData_t magUnscaleFactor = { QFIXEDPOINTEXTENDED, { MAG_UNSC
 
 /* Output result descriptor for subscribing to uncalibrated magnetometer data */
 static SensorDescriptor_t UnCalMagRequest = {
+    SENSOR_MAGNETIC_FIELD,
     SENSOR_MAGNETIC_FIELD_UNCALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalMagDataResultCallback,
@@ -331,6 +340,7 @@ static SensorDescriptor_t UnCalMagRequest = {
 
 /* Output result descriptor for subscribing to uncalibrated magnetometer data */
 static SensorDescriptor_t CalMagRequest = {
+    SENSOR_MAGNETIC_FIELD,
     SENSOR_MAGNETIC_FIELD_CALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)CalMagDataResultCallback,
@@ -345,6 +355,7 @@ static ResultOptionalData_t gyroUnscaleFactor = { QFIXEDPOINTPRECISE, { GYRO_UNS
 
 /* Output result descriptor for subscribing to uncalibrated gyroscope data */
 static SensorDescriptor_t UnCalGyroRequest = {
+    SENSOR_GYROSCOPE,
     SENSOR_GYROSCOPE_UNCALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)UnCalGyroDataResultCallback,
@@ -357,6 +368,7 @@ static SensorDescriptor_t UnCalGyroRequest = {
 
 /* Output result descriptor for subscribing to uncalibrated gyroscope data */
 static SensorDescriptor_t CalGyroRequest = {
+    SENSOR_GYROSCOPE,
     SENSOR_GYROSCOPE_CALIBRATED,
     DATA_CONVENTION_ANDROID,
     (OSP_OutputReadyCallback_t)CalGyroDataResultCallback,
@@ -811,114 +823,135 @@ ASF_TASK  void AlgorithmTask ( ASF_TASK_ARG )
                 ; //keep doing foreground computation until its finished
             break;
         case MSG_SENSOR_ENABLE_DATA:
-            switch (rcvMsg->msg.msgSensorEnable.sensorId) {
-            case SENSOR_ACCELEROMETER_UNCALIBRATED:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_unCalAccelHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&UnCalAccelRequest, &_unCalAccelHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER_UNCALIBRATED) Failed");
+            switch (rcvMsg->msg.msgSensorEnable.sensorId.sensorType) {
+            case SENSOR_ACCELEROMETER:
+                switch (rcvMsg->msg.msgSensorEnable.sensorId.sensorSubType) {
+                case SENSOR_ACCELEROMETER_UNCALIBRATED:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_unCalAccelHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&UnCalAccelRequest, &_unCalAccelHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER_UNCALIBRATED) Failed");
+                        }
+                    } else {
+                        if (_unCalAccelHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_unCalAccelHandle);
+                        }
                     }
-                } else {
-                    if (_unCalAccelHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_unCalAccelHandle);
+                    break;
+                case SENSOR_ACCELEROMETER_CALIBRATED:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_calAccelHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&CalAccelRequest, &_calAccelHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER_CALIBRATED) Failed");
+                        }
+                    } else {
+                        if (_calAccelHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_calAccelHandle);
+                        }
                     }
+                    break;
                 }
                 break;
-            case SENSOR_ACCELEROMETER_CALIBRATED:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_calAccelHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&CalAccelRequest, &_calAccelHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_ACCELEROMETER_CALIBRATED) Failed");
+            case SENSOR_MAGNETIC_FIELD:
+                switch (rcvMsg->msg.msgSensorEnable.sensorId.sensorSubType) {
+                
+                case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_unCalMagHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&UnCalMagRequest, &_unCalMagHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD_UNCALIBRATED) Failed");
+                        }
+                    } else {
+                        if (_unCalMagHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_unCalMagHandle);
+                        }
                     }
-                } else {
-                    if (_calAccelHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_calAccelHandle);
+                    break;                    
+                case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_calMagHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&CalMagRequest, &_calMagHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD_CALIBRATED) Failed");
+                        }
+                    } else {
+                        if (_calMagHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_calMagHandle);
+                        }
                     }
+                    break;
                 }
                 break;
-            case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_unCalMagHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&UnCalMagRequest, &_unCalMagHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD_UNCALIBRATED) Failed");
-                    }
-                } else {
-                    if (_unCalMagHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_unCalMagHandle);
-                    }
-                }
-                break;
-            case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_calMagHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&CalMagRequest, &_calMagHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_MAGNETIC_FIELD_CALIBRATED) Failed");
-                    }
-                } else {
-                    if (_calMagHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_calMagHandle);
-                    }
-                }
-                break;
-            case SENSOR_GYROSCOPE_UNCALIBRATED:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_unCalGyroHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&UnCalGyroRequest, &_unCalGyroHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE_UNCALIBRATED) Failed");
+            case SENSOR_GYROSCOPE:
+                switch (rcvMsg->msg.msgSensorEnable.sensorId.sensorSubType) {
+                case SENSOR_GYROSCOPE_UNCALIBRATED:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_unCalGyroHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&UnCalGyroRequest, &_unCalGyroHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE_UNCALIBRATED) Failed");
 
+                        }
+                    } else {
+                        if (_unCalGyroHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_unCalGyroHandle);
+                        }
                     }
-                } else {
-                    if (_unCalGyroHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_unCalGyroHandle);
+                    break;
+                case SENSOR_GYROSCOPE_CALIBRATED:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_calGyroHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&CalGyroRequest, &_calGyroHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE_CALIBRATED) Failed");
+                        }
+                    } else {
+                        if (_calGyroHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_calGyroHandle);
+                        }
                     }
+                    break;
                 }
                 break;
-            case SENSOR_GYROSCOPE_CALIBRATED:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_calGyroHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&CalGyroRequest, &_calGyroHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_GYROSCOPE_CALIBRATED) Failed");
+            case SENSOR_STEP:
+                switch (rcvMsg->msg.msgSensorEnable.sensorId.sensorSubType) {
+                case SENSOR_STEP_COUNTER:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_stepCounterHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&stepCounterRequest, &_stepCounterHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_COUNTER) Failed");
+                        }
+                    } else {
+                        if (_stepCounterHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_stepCounterHandle);
+                        }
                     }
-                } else {
-                    if (_calGyroHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_calGyroHandle);
+                    break;
+                case SENSOR_STEP_DETECTOR:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_stepDetectorHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&stepDetectorRequest, &_stepDetectorHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_DETECTOR) Failed");
+                        }
+                    } else {
+                        if (_stepDetectorHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_stepDetectorHandle);
+                        }
                     }
-                }
-                break;
-            case SENSOR_STEP_COUNTER:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_stepCounterHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&stepCounterRequest, &_stepCounterHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_COUNTER) Failed");
-                    }
-                } else {
-                    if (_stepCounterHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_stepCounterHandle);
-                    }
-                }
-                break;
-            case SENSOR_STEP_DETECTOR:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_stepDetectorHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&stepDetectorRequest, &_stepDetectorHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_STEP_DETECTOR) Failed");
-                    }
-                } else {
-                    if (_stepDetectorHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_stepDetectorHandle);
-                    }
+                    break;
                 }
                 break;
             case SENSOR_CONTEXT_DEVICE_MOTION:
-				if (rcvMsg->msg.msgSensorEnable.enabled) {
-                    if (_sigMotionHandle == NULL) {
-                        OSP_Status =  OSP_SubscribeOutputSensor(&sigMotionRequest, &_sigMotionHandle);
-                        ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_CONTEXT_DEVICE_MOTION) Failed");
+                switch (rcvMsg->msg.msgSensorEnable.sensorId.sensorSubType) {
+                case CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION:
+                    if (rcvMsg->msg.msgSensorEnable.enabled) {
+                        if (_sigMotionHandle == NULL) {
+                            OSP_Status =  OSP_SubscribeOutputSensor(&sigMotionRequest, &_sigMotionHandle);
+                            ASF_assert_msg(OSP_STATUS_OK == OSP_Status, "SensorManager: OSP_SubscribeResult (SENSOR_CONTEXT_DEVICE_MOTION) Failed");
+                        }
+                    } else {
+                        if (_sigMotionHandle != NULL) {
+                            OSP_UnsubscribeOutputSensor(&_sigMotionHandle);
+                        }
                     }
-                } else {
-                    if (_sigMotionHandle != NULL) {
-                        OSP_UnsubscribeOutputSensor(&_sigMotionHandle);
-                    }
+                    break;
                 }
                 break;
             }

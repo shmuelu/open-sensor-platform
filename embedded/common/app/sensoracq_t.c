@@ -52,7 +52,7 @@ void WaitForHostSync( void );
 /*-------------------------------------------------------------------------------------------------*\
  |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp );
+static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeStamp );
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E     F U N C T I O N S
@@ -67,7 +67,8 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp );
 static void HandleTimers( MsgTimerExpiry *pTimerExp )
 {
     uint32_t timeStamp;
-
+    struct SensorId_t sensorId;
+    
     switch (pTimerExp->userValue)
     {
         case TIMER_REF_SENSOR_READ:
@@ -76,9 +77,18 @@ static void HandleTimers( MsgTimerExpiry *pTimerExp )
 
             /* Call data handler for each sensors */
             timeStamp = RTC_GetCounter();
-            SensorDataHandler( SENSOR_TYPE_ACCELEROMETER, timeStamp );
-            SensorDataHandler( SENSOR_TYPE_MAGNETIC_FIELD, timeStamp );
-            SensorDataHandler( SENSOR_TYPE_GYROSCOPE, timeStamp );
+            
+            sensorId.sensorType = SENSOR_TYPE_ACCELEROMETER;
+            sensorId.sensorSubType = SENSOR_TYPE_ACCELEROMETER_RAW;
+            SensorDataHandler( &sensorId, timeStamp );
+            
+            sensorId.sensorType = SENSOR_TYPE_MAGNETIC_FIELD;
+            sensorId.sensorSubType = SENSOR_TYPE_MAGNETIC_FIELD_RAW;
+            SensorDataHandler( &sensorId, timeStamp );
+
+            sensorId.sensorType = SENSOR_TYPE_GYROSCOPE;
+            sensorId.sensorSubType = SENSOR_TYPE_GYROSCOPE_RAW;
+            SensorDataHandler( &sensorId, timeStamp );
             break;
 
         default:
@@ -106,7 +116,7 @@ static void StoreCalibrationData( CalEvent_t event )
  *          Handle data ready indications from ISR for various sensors
  *
  ***************************************************************************************************/
-static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
+static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeStamp )
 {
     MsgAccelData accelData;
     MsgMagData magData;
@@ -121,75 +131,84 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
     MessageBuffer *pGyroSample = NULLP;
 #endif
 
-    switch (sensorId)
+    switch (sensorId->sensorType)
     {
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-        if ((sMagDecimateCount++ % MAG_DECIMATE_FACTOR) == 0 )
-        {
-            /* Read mag Data - reading would clear interrupt also */
-            Mag_ReadData( &magData );
-            /* Replace time stamp with that captured by interrupt handler */
-            magData.timeStamp = timeStamp;
-#ifdef ALGORITHM_TASK
-            ASF_assert( ASFCreateMessage( MSG_MAG_DATA, sizeof(MsgMagData), &pMagSample ) == ASF_OK );
-            pMagSample->msg.msgMagData = magData;
-            ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pMagSample ) == ASF_OK );
-#endif
+    case SENSOR_MAGNETIC_FIELD:
+        switch (sensorId->sensorSubType) {            
+        case SENSOR_MAGNETIC_FIELD_RAW:
+            if ((sMagDecimateCount++ % MAG_DECIMATE_FACTOR) == 0 )
+            {
+                /* Read mag Data - reading would clear interrupt also */
+                Mag_ReadData( &magData );
+                /* Replace time stamp with that captured by interrupt handler */
+                magData.timeStamp = timeStamp;
+    #ifdef ALGORITHM_TASK
+                ASF_assert( ASFCreateMessage( MSG_MAG_DATA, sizeof(MsgMagData), &pMagSample ) == ASF_OK );
+                pMagSample->msg.msgMagData = magData;
+                ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pMagSample ) == ASF_OK );
+    #endif
+            }
+            else
+            {
+                Mag_ClearDataInt();
+            }
+            break;
         }
-        else
-        {
-            Mag_ClearDataInt();
+        break;
+    case SENSOR_GYROSCOPE:
+        switch (sensorId->sensorSubType) {                    
+        case SENSOR_GYROSCOPE_RAW:
+            if ((gyroSampleCount++ % GYRO_SAMPLE_DECIMATE) == 0)
+            {
+                /* Read Gyro Data - reading typically clears interrupt as well */
+                Gyro_ReadData( &gyroData ); //Reads also clears DRDY interrupt
+                /* Replace time stamp with that captured by interrupt handler */
+                gyroData.timeStamp = timeStamp;
+    #ifdef ALGORITHM_TASK
+                ASF_assert( ASFCreateMessage( MSG_GYRO_DATA, sizeof(MsgGyroData), &pGyroSample ) == ASF_OK );
+                pGyroSample->msg.msgGyroData = gyroData;
+                ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pGyroSample ) == ASF_OK );
+    #endif
+
+            }
+            else
+            {
+                Gyro_ClearDataInt();
+            }
+            break;
         }
         break;
 
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-        if ((gyroSampleCount++ % GYRO_SAMPLE_DECIMATE) == 0)
-        {
-            /* Read Gyro Data - reading typically clears interrupt as well */
-            Gyro_ReadData( &gyroData ); //Reads also clears DRDY interrupt
-            /* Replace time stamp with that captured by interrupt handler */
-            gyroData.timeStamp = timeStamp;
-#ifdef ALGORITHM_TASK
-            ASF_assert( ASFCreateMessage( MSG_GYRO_DATA, sizeof(MsgGyroData), &pGyroSample ) == ASF_OK );
-            pGyroSample->msg.msgGyroData = gyroData;
-            ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pGyroSample ) == ASF_OK );
-#endif
-
-        }
-        else
-        {
-            Gyro_ClearDataInt();
-        }
-        break;
-
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-#if defined TRIGGERED_MAG_SAMPLING
-        if (accSampleCount % MAG_TRIGGER_RATE_DECIMATE == 0)
-        {
-            Mag_TriggerDataAcq(); //Mag is triggered relative to Accel to avoid running separate timer
-        }
-#endif
-        if (accSampleCount++ % ACCEL_SAMPLE_DECIMATE == 0)
-        {
-            /* Read Accel Data - reading typically clears interrupt as well */
-            Accel_ReadData( &accelData );
-            /* Replace time stamp with that captured by interrupt handler */
-            accelData.timeStamp = timeStamp;
-#ifdef ALGORITHM_TASK
-            ASF_assert( ASFCreateMessage( MSG_ACC_DATA, sizeof(MsgAccelData), &pAccSample ) == ASF_OK );
-            pAccSample->msg.msgAccelData = accelData;
-            ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pAccSample ) == ASF_OK );
-#endif
-        }
-        else
-        {
-            Accel_ClearDataInt();
+    case SENSOR_ACCELEROMETER:
+        switch (sensorId->sensorSubType) {                    
+        case SENSOR_ACCELEROMETER_RAW:
+    #if defined TRIGGERED_MAG_SAMPLING
+            if (accSampleCount % MAG_TRIGGER_RATE_DECIMATE == 0)
+            {
+                Mag_TriggerDataAcq(); //Mag is triggered relative to Accel to avoid running separate timer
+            }
+    #endif
+            if (accSampleCount++ % ACCEL_SAMPLE_DECIMATE == 0)
+            {
+                /* Read Accel Data - reading typically clears interrupt as well */
+                Accel_ReadData( &accelData );
+                /* Replace time stamp with that captured by interrupt handler */
+                accelData.timeStamp = timeStamp;
+    #ifdef ALGORITHM_TASK
+                ASF_assert( ASFCreateMessage( MSG_ACC_DATA, sizeof(MsgAccelData), &pAccSample ) == ASF_OK );
+                pAccSample->msg.msgAccelData = accelData;
+                ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pAccSample ) == ASF_OK );
+    #endif
+            }
+            else
+            {
+                Accel_ClearDataInt();
+            }
+            break;
         }
         break;
-
     default:
         break;
-
     }
 }
 
@@ -204,12 +223,13 @@ static void SensorDataHandler( SensorType_t sensorId, uint32_t timeStamp )
  * @return None
  *
  ***************************************************************************************************/
-void SendDataReadyIndication( uint8_t sensorId, uint32_t timeStamp )
+void SendDataReadyIndication( const struct SensorId_t *sensorId, uint32_t timeStamp )
 {
     MessageBuffer *pSendMsg = NULLP;
 
     ASF_assert( ASFCreateMessage( MSG_SENSOR_DATA_RDY, sizeof(MsgSensorDataRdy), &pSendMsg ) == ASF_OK );
-    pSendMsg->msg.msgSensorDataRdy.sensorId = sensorId;
+    pSendMsg->msg.msgSensorDataRdy.sensorId.sensorType = sensorId->sensorType;
+    pSendMsg->msg.msgSensorDataRdy.sensorId.sensorSubType = sensorId->sensorSubType;
     pSendMsg->msg.msgSensorDataRdy.timeStamp = timeStamp;
     ASF_assert( ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg ) == ASF_OK );
 
@@ -283,7 +303,7 @@ ASF_TASK void SensorAcqTask( ASF_TASK_ARG )
 
             case MSG_SENSOR_DATA_RDY:
 #ifdef INTERRUPT_BASED_SAMPLING
-                SensorDataHandler( (SensorType_t)rcvMsg->msg.msgSensorDataRdy.sensorId,
+                SensorDataHandler(&rcvMsg->msg.msgSensorDataRdy.sensorId,
                     rcvMsg->msg.msgSensorDataRdy.timeStamp);
 #endif
                 break;

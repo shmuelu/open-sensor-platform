@@ -9,6 +9,7 @@
 
 #include "common.h"
 #include "osp-api.h"
+#include "osp-sensors.h"
 
 #include "osp_HostInterface.h"
 #include "HostFunctions.h"
@@ -37,24 +38,24 @@ static SH_RegArea_t SlaveRegMap;
  * @return None
  *
  ***************************************************************************************************/
-static void AlgSendSensorEnabledIndication( uint8_t sensorId, uint8_t enabled, uint16_t  subResultMask)
+static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, uint8_t enabled, uint16_t  subResultMask)
 {
     MessageBuffer *pSendMsg = NULLP;
 
     ASF_assert( ASFCreateMessage( MSG_SENSOR_ENABLE_DATA, sizeof(MsgSensorEnable), &pSendMsg ) == ASF_OK );
-    pSendMsg->msg.msgSensorEnable.sensorId = sensorId;
+    pSendMsg->msg.msgSensorEnable.sensorId.sensorType = sensorId->sensorType;
+    pSendMsg->msg.msgSensorEnable.sensorId.sensorSubType = sensorId->sensorSubType;
     pSendMsg->msg.msgSensorEnable.enabled = enabled ? 1 : 0;
-    pSendMsg->msg.msgSensorEnable.subResultMask = subResultMask;
 
     ASFSendMessage( ALGORITHM_TASK_ID, pSendMsg);
 }
 
 
-static void controlSensorEnable(uint8_t sensorId, uint8_t enable, unsigned short  subResultMask) {
+static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enable, unsigned short  subResultMask) {
     uint8_t update = 0;
     uint64_t sensorEnable = OSP_GetSubsctibedResults();
     
-    if (sensorId < SENSOR_ENUM_COUNT) {
+    if (sensorId->sensorType < SENSOR_ENUM_COUNT) {
         if (enable) {
             if (!(sensorEnable & (1LL << sensorId))) {
                     update = 1;
@@ -418,8 +419,8 @@ static uint8_t currentOpCode;
 uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
 {
     uint8_t remaining = 0;
-	int sensorId = 0;
-	
+    struct SensorId_t sensorId;
+
 //	WorkerMessage message;
 
 	if  (length)
@@ -443,8 +444,8 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
              break;
 		case OSP_HOST_RESET:
 			{
-				for (sensorId = 0; sensorId < SENSOR_ENUM_COUNT; sensorId++)
-					controlSensorEnable(sensorId, false, 0);
+				for (sensorId.sensorType = 0; sensorId.sensorType < SENSOR_ENUM_COUNT; sensorId.sensorType++)
+					controlSensorEnable(&sensorId, false, 0);
 
 				init_android_broadcast_buffers();
 			}

@@ -22,6 +22,7 @@
  |    I N C L U D E   F I L E S
 \*-------------------------------------------------------------------------------------------------*/
 #include <stdint.h>
+#include "osp-sensors.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
@@ -65,7 +66,7 @@ typedef struct MsgQuaternionDataTag
 typedef struct MsgSensorDataRdyTag
 {
     uint32_t     timeStamp;
-    uint8_t      sensorId;
+    struct SensorId_t sensorId;
 } MsgSensorDataRdy;
 
 typedef struct MsgCDSegmentDataTag
@@ -78,14 +79,15 @@ typedef struct MsgCDSegmentDataTag
 
 typedef struct MsgSensorEnableTag
 {
-    uint8_t         sensorId;
+    struct SensorId_t sensorId;
     uint8_t         enabled;
-    uint16_t        subResultMask;
+    uint16_t        subResult;
 } MsgSensorEnable;
 
 typedef struct MsgSensorDelayTag
 {
-    uint8_t      sensorId;
+    struct SensorId_t sensorId;
+    uint16_t     subResult;
     uint16_t    delayMiliSec;
 } MsgSensorDelay;
 

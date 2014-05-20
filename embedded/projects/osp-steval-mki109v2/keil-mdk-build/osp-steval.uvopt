@@ -561,7 +561,7 @@
       <Focus>0</Focus>
       <ColumnNumber>42</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>129</TopLine>
+      <TopLine>131</TopLine>
       <CurrentLine>157</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\common\alg\osp_embeddedalgcalls.c</PathWithFileName>
@@ -625,7 +625,7 @@
       <Focus>0</Focus>
       <ColumnNumber>32</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>91</TopLine>
+      <TopLine>92</TopLine>
       <CurrentLine>99</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\common\alg\significantmotiondetector.c</PathWithFileName>
@@ -647,10 +647,10 @@
       <FileType>1</FileType>
       <tvExp>1</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>53</ColumnNumber>
+      <ColumnNumber>74</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>16</TopLine>
-      <CurrentLine>40</CurrentLine>
+      <TopLine>972</TopLine>
+      <CurrentLine>942</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\common\app\algorithm_t.c</PathWithFileName>
       <FilenameWithoutPath>algorithm_t.c</FilenameWithoutPath>
@@ -727,10 +727,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>55</ColumnNumber>
+      <ColumnNumber>71</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>1640</TopLine>
-      <CurrentLine>1665</CurrentLine>
+      <TopLine>1697</TopLine>
+      <CurrentLine>1722</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\common\app\osp-api.c</PathWithFileName>
       <FilenameWithoutPath>osp-api.c</FilenameWithoutPath>
@@ -743,10 +743,10 @@
       <FileType>1</FileType>
       <tvExp>0</tvExp>
       <Focus>0</Focus>
-      <ColumnNumber>26</ColumnNumber>
+      <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>117</TopLine>
-      <CurrentLine>118</CurrentLine>
+      <TopLine>218</TopLine>
+      <CurrentLine>233</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\..\..\common\app\sensoracq_t.c</PathWithFileName>
       <FilenameWithoutPath>sensoracq_t.c</FilenameWithoutPath>
@@ -785,8 +785,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>20</TopLine>
-      <CurrentLine>28</CurrentLine>
+      <TopLine>140</TopLine>
+      <CurrentLine>163</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\sources\app\i2c_slavecomm_t.c</PathWithFileName>
       <FilenameWithoutPath>i2c_slavecomm_t.c</FilenameWithoutPath>
@@ -801,7 +801,7 @@
       <Focus>0</Focus>
       <ColumnNumber>24</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>94</TopLine>
+      <TopLine>95</TopLine>
       <CurrentLine>102</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\sources\app\main.c</PathWithFileName>
@@ -833,8 +833,8 @@
       <Focus>0</Focus>
       <ColumnNumber>0</ColumnNumber>
       <tvExpOptDlg>0</tvExpOptDlg>
-      <TopLine>60</TopLine>
-      <CurrentLine>85</CurrentLine>
+      <TopLine>79</TopLine>
+      <CurrentLine>89</CurrentLine>
       <bDave2>0</bDave2>
       <PathWithFileName>..\sources\app\HostFunctions.c</PathWithFileName>
       <FilenameWithoutPath>HostFunctions.c</FilenameWithoutPath>
