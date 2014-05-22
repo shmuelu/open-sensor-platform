@@ -1,9 +1,24 @@
-/*
- * androidHostinterface.c
+/* Open Sensor Platform Project
+ * https://github.com/sensorplatforms/open-sensor-platform
  *
- *  Created on: Mar 8, 2013
- *      Author: sungerfeld
+ * Copyright (C) 2013 Sensor Platforms Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+/*-------------------------------------------------------------------------------------------------*\
+ |    I N C L U D E   F I L E S
+\*-------------------------------------------------------------------------------------------------*/
+
 #include <stdint.h>
 #include <string.h>
 
@@ -14,10 +29,48 @@
 #include "osp_HostInterface.h"
 #include "HostFunctions.h"
 #include "i2c_slavecomm_t.h"
-//#include "Algorithm_T.h"
-//#include "SensorAcq_T.h"
 
-//#include "msp430_board.h"
+
+/*-------------------------------------------------------------------------------------------------*\
+ |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
+\*-------------------------------------------------------------------------------------------------*/
+
+/*-------------------------------------------------------------------------------------------------*\
+ |    P U B L I C   V A R I A B L E S   D E F I N I T I O N S
+\*-------------------------------------------------------------------------------------------------*/
+
+uint16_t timeStampExpansion;
+uint16_t broadcast_buf_wr = 0, broadcast_buf_rd = 0;
+
+
+
+uint8_t broadcast_buf[SLAVE_NUM_TX_BUFFERS][OSP_HOST_MAX_BROADCAST_BUFFER_SIZE];
+uint8_t broadcast_buf_flags[SLAVE_NUM_TX_BUFFERS];
+uint16_t broadcast_buf_used[SLAVE_NUM_TX_BUFFERS];
+uint16_t last_transmitted_offset[SLAVE_NUM_TX_BUFFERS];
+uint8_t broadcastPacketNextTransmittedIndex[SLAVE_NUM_TX_BUFFERS];
+
+uint16_t sensorDelay[SENSOR_ENUM_COUNT] = {0};
+
+uint16_t commited_length;
+uint16_t commited_index;
+uint8_t hostInterruptState;
+
+uint8_t sendfullNode;
+
+uint8_t androidBroadcastTrigger = 0;
+
+/*-------------------------------------------------------------------------------------------------*\
+ |    P R I V A T E   C O N S T A N T S   &   M A C R O S
+\*-------------------------------------------------------------------------------------------------*/
+// 256 / 5 (spi_sh_motion_sensor_broadcast_delta_time1_data_node (size of 5) is smallest packet possible)
+// leave one extra entry for end of used buffer.
+#define MAX_SENSOR_PACKETS_IN_BROADCAST_BUFFER \
+	((OSP_HOST_MAX_BROADCAST_BUFFER_SIZE / (sizeof(struct spi_sh_motion_sensor_broadcast_delta_time1_data_node))) + 1)
+
+/*-------------------------------------------------------------------------------------------------*\
+ |    P R I V A T E   T Y P E   D E F I N I T I O N S
+\*-------------------------------------------------------------------------------------------------*/
 
 /* Register Area for slave device */
 typedef struct SH_RegArea_tag
@@ -28,10 +81,14 @@ typedef struct SH_RegArea_tag
     struct ShCmdGetHeader_get_16bits_param_t delay;
 } SH_RegArea_t;
 
+/*-------------------------------------------------------------------------------------------------*\
+ |    S T A T I C   V A R I A B L E S   D E F I N I T I O N S
+\*-------------------------------------------------------------------------------------------------*/
 static SH_RegArea_t SlaveRegMap;
+static uint8_t currentOpCode;
 
 /****************************************************************************************************
- * @fn      SendSensorEnabledIndication
+ * @fn     AlgSendSensorEnabledIndication
  * @brief  This helper function sends Sensor Enabled indication to Sensor Acq task. Called from ISR
  * @param  sensorId: Sensor identifier whose data is ready to be read
  * @param  enabled: boolean (0/1) to indicate sensor is disabled/enabled
@@ -51,6 +108,12 @@ static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, u
 }
 
 
+/****************************************************************************************************
+ * @fn      controlSensorEnable
+ *          Helper function check for current enable status on a sensor and generates request if
+ *          change of state is needed.
+ *
+ ***************************************************************************************************/
 static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enable, unsigned short  subResultMask) {
     uint8_t update = 0;
     uint64_t sensorEnable = OSP_GetSubsctibedResults();
@@ -85,7 +148,15 @@ static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enabl
     }
 }
 
-uint8_t isSensorEnable(uint8_t sensorId) {
+
+/****************************************************************************************************
+ * @fn      isSensorEnable
+ * @brief  This helper function returns an indication if specified sensor is enabled. Called from ISR
+ * @param  sensorId: Sensor identifier
+ * @return boolean - 0 if sensor is disabled, !=0 if sensor is enabled
+ *
+ ***************************************************************************************************/
+uint8_t isSensorEnable(const struct SensorId_t *sensorId) {
     uint64_t sensorEnable = OSP_GetSubsctibedResults();
 
     if (sensorId < SENSOR_ENUM_COUNT) {
@@ -105,20 +176,24 @@ uint8_t isSensorEnable(uint8_t sensorId) {
  * @return None
  *
  ***************************************************************************************************/
-static void SensorAcqSendSensorDelayIndication( uint8_t sensorId, uint16_t delayMiliSec)
+static void SensorAcqSendSensorDelayIndication( const struct SensorId_t *sensorId, uint16_t delayMiliSec)
 {
     MessageBuffer *pSendMsg = NULLP;
 
     ASF_assert( ASFCreateMessage( MSG_SENSOR_DELAY_DATA, sizeof(MsgSensorDelay), &pSendMsg)  == ASF_OK );
-    pSendMsg->msg.msgSensorDelay.sensorId = sensorId;
+    pSendMsg->msg.msgSensorDelay.sensorId.sensorType = sensorId->sensorType;
+    pSendMsg->msg.msgSensorDelay.sensorId.sensorSubType = sensorId->sensorSubType;
     pSendMsg->msg.msgSensorDelay.delayMiliSec = delayMiliSec;
     ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg);
 }
 
 
-uint16_t sensorDelay[SENSOR_ENUM_COUNT] = {0};
-
-static void controlSensorDelay(uint8_t sensorId, uint16_t miliSecondsDelay) {
+/****************************************************************************************************
+ * @fn      controlSensorDelay
+ *          Helper function for implementing sensor delay control
+ *
+ ***************************************************************************************************/
+static void controlSensorDelay(const struct SensorId_t *sensorId, uint16_t miliSecondsDelay) {
     if (sensorId < SENSOR_ENUM_COUNT) {
         if (miliSecondsDelay != sensorDelay[sensorId]) {
             sensorDelay[sensorId] = miliSecondsDelay;
@@ -127,57 +202,42 @@ static void controlSensorDelay(uint8_t sensorId, uint16_t miliSecondsDelay) {
     }
 }
 
-uint16_t getSensorDelay(uint8_t sensorId) {
+/****************************************************************************************************
+ * @fn      getSensorDelay
+ *          Returns the current settings for sensor delay value
+ *
+ ***************************************************************************************************/
+uint16_t getSensorDelay(const struct SensorId_t *sensorId) {
     if (sensorId < SENSOR_ENUM_COUNT) {
         return sensorDelay[sensorId] ;
     }
     return 0;
 }
 
-uint16_t timeStampExpansion;
-uint16_t broadcast_buf_wr = 0, broadcast_buf_rd = 0;
+/*-------------------------------------------------------------------------------------------------*\
+ |    P U B L I C     F U N C T I O N S
+\*-------------------------------------------------------------------------------------------------*/
 
-
-static SH_RegArea_t SlaveRegMap;
-
-uint8_t broadcast_buf[SLAVE_NUM_TX_BUFFERS][OSP_HOST_MAX_BROADCAST_BUFFER_SIZE];
-uint8_t broadcast_buf_flags[SLAVE_NUM_TX_BUFFERS];
-uint16_t broadcast_buf_used[SLAVE_NUM_TX_BUFFERS];
-uint16_t last_transmitted_offset[SLAVE_NUM_TX_BUFFERS];
-uint8_t broadcastPacketNextTransmittedIndex[SLAVE_NUM_TX_BUFFERS];
-
-
-
-// 256 / 5 (spi_sh_motion_sensor_broadcast_delta_time1_data_node (size of 5) is smallest packet possible)
-// leave one extra entry for end of used buffer.
-#define MAX_SENSOR_PACKETS_IN_BROADCAST_BUFFER \
-	((OSP_HOST_MAX_BROADCAST_BUFFER_SIZE / (sizeof(struct spi_sh_motion_sensor_broadcast_delta_time1_data_node))) + 1)
-
-
-
-uint16_t commited_length;
-uint16_t commited_index;
-uint8_t hostInterruptState;
-
-uint8_t sendfullNode;
-
-uint8_t androidBroadcastTrigger = 0;
-
-union spi_pack
-{
-	uint16_t shortVal[2];
-	uint32_t val;
-}lastTimeValue[SENSOR_ENUM_COUNT];
-
+/****************************************************************************************************
+ * @fn      init_android_broadcast_buffers
+ *          Initializer for android host communication buffers
+ *
+ ***************************************************************************************************/
 void init_android_broadcast_buffers(void)
 {
     
 
 	// mark all TX buffers empty
 #ifdef USE_I2C_SLAVE_DRIVER
-	memset(broadcast_buf_flags,       0, sizeof(broadcast_buf_flags));			// all buffers unused
+	memset(
+        broadcast_buf_flags,
+        0,
+        sizeof(broadcast_buf_flags));			// all buffers unused
 #endif
-    memset(&SlaveRegMap, 0, sizeof(SlaveRegMap));
+    memset(
+        &SlaveRegMap,
+        0,
+        sizeof(SlaveRegMap));
 
     SlaveRegMap.version = (uint16_t)SH_VERSION0 | ((uint16_t) SH_VERSION1 << 8);
     SlaveRegMap.whoami   = SH_WHO_AM_I;
@@ -192,11 +252,6 @@ void init_android_broadcast_buffers(void)
 	memset(last_transmitted_offset, 0, sizeof(last_transmitted_offset));		// nothing TX from any buffer
 	memset(broadcastPacketNextTransmittedIndex,    0, sizeof(broadcastPacketNextTransmittedIndex));		// nothing commited in any buffer
 
-	memset(lastTimeValue,         0, sizeof(lastTimeValue));					// no time reported
-
-
-
-#
 	androidBroadcastTrigger = 0;
 
 	timeStampExpansion = 0;
@@ -208,6 +263,12 @@ void init_android_broadcast_buffers(void)
 }
 
 
+
+/****************************************************************************************************
+ * @fn      post_on_broadcast_buffer
+ *          desc
+ *
+ ***************************************************************************************************/
 uint8_t post_on_boardcast_buffer(uint8_t *buffer, uint16_t length, struct Timestamp40_t *timeStamp)
 {
 	uint8_t err = 0;
@@ -288,8 +349,11 @@ uint8_t post_on_boardcast_buffer(uint8_t *buffer, uint16_t length, struct Timest
 	return err;
 }
 
-
-
+/****************************************************************************************************
+ * @fn      calculate_commited_tx_buffer_size
+ *          desc
+ *
+ ***************************************************************************************************/
 void  calculate_commited_tx_buffer_size(void)
 {
 	commited_length = 0;
@@ -336,49 +400,11 @@ void  calculate_commited_tx_buffer_size(void)
 }
 
 
-void send_commited_tx_buffer_size(void)
-{
-
-//	boardCountPort6Bit(DEBUG6_GPIO_RD_PKT, broadcast_buf_rd + 1);
-
-	if (broadcast_buf_used[broadcast_buf_rd] < last_transmitted_offset[broadcast_buf_rd] )
-	{
-		while(1);
-	}
-
-	// if buffer writting is done, and nothing left in it, goto next buffer
-	if ((broadcast_buf_flags[broadcast_buf_rd]) &&
-		(last_transmitted_offset[broadcast_buf_rd] == broadcast_buf_used[broadcast_buf_rd]))
-	{
-		last_transmitted_offset[broadcast_buf_rd] = 0;
-		broadcastPacketNextTransmittedIndex[broadcast_buf_rd] = 0;
-
-		broadcast_buf_used[broadcast_buf_rd] = 0;
-
-		broadcast_buf_flags[broadcast_buf_rd] = 0;
-
-		// point to next circular TX buffer
-		broadcast_buf_rd = (++broadcast_buf_rd) % SLAVE_NUM_TX_BUFFERS;
-
-//		boardCountPort6Bit(DEBUG6_GPIO_RD_PKT, broadcast_buf_rd + 1);
-	}
-
-	// if buffer has some records
-	if (broadcast_buf_used[broadcast_buf_rd] <= last_transmitted_offset[broadcast_buf_rd])
-	{
-		commited_length = 0;
-		commited_index = 0;
-	}
-#ifdef USE_I2C_SLAVE_DRIVER
-	SH_Slave_setup_I2c_Tx((uint8_t *)&commited_length, sizeof(commited_length));
-#endif
-
-#ifdef USE_SPI_SLAVE_DRIVER
-	setup_spi_Tx((uint8_t *)&commited_length, sizeof(commited_length));
-#endif
-}
-
-
+/****************************************************************************************************
+ * @fn      hostCommitDataTx
+ *          desc
+ *
+ ***************************************************************************************************/
 void hostCommitDataTx(void)
 {
 //	boardCountPort6Bit(DEBUG6_GPIO_RD_PKT, broadcast_buf_rd + 1);
@@ -414,8 +440,12 @@ void hostCommitDataTx(void)
 *
 **/ 
 
-static uint8_t currentOpCode;
 
+/****************************************************************************************************
+ * @fn      process_command
+ *          Processes any pending read requests
+ *
+ ***************************************************************************************************/
 uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
 {
     uint8_t remaining = 0;
@@ -564,6 +594,11 @@ void androidTimerCallback( xTimerHandle pxTimer )
 #endif
 
 
+/****************************************************************************************************
+ * @fn      activateHostInterrupt
+ *          Checks for interrupt state & asserts if not already asserted.
+ *
+ ***************************************************************************************************/
 void activateHostInterrupt(void)
 {
 	if (!isHostInterruptAsserted())
@@ -574,17 +609,33 @@ void activateHostInterrupt(void)
 }
 
 
+/****************************************************************************************************
+ * @fn      deactivateHostInterrupt
+ *          De-asserts the host interrupt line
+ *
+ ***************************************************************************************************/
 void deactivateHostInterrupt(void)
 {
 	SensorHubIntLow();
 	hostInterruptState = 0;
 }
 
+/****************************************************************************************************
+ * @fn      isHostInterruptAsserted
+ *          Checks for interrupt state & returns the state
+ *
+ ***************************************************************************************************/
 uint8_t isHostInterruptAsserted(void)
 {
     return isSensorHubIntHigh();
 }
 
+
+/****************************************************************************************************
+ * @fn      getLastCommand
+ *          returns the last command
+ *
+ ***************************************************************************************************/
 uint8_t getLastCommand(void)
 {
 	return currentOpCode;

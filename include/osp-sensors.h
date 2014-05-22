@@ -158,7 +158,7 @@ enum RotationVectorType_t {
     SENSOR_GEOMAGNETIC_ROTATION_VECTOR     = 1, //!< accel+mag quaternion
     SENSOR_GAME_ROTATION_VECTOR            = 2, //!< accel+gyro quaternion
 
-    SENSOR_GAME_ROTATION_ENUM_COUNT
+    SENSOR_ROTATION_ENUM_COUNT
 };
 
 //! Use these enums as a sub-result for CONTEXT_DEVICE_MOTION result
@@ -221,6 +221,13 @@ enum GestureType_t {
     GESTURE_SHAKE       = 2,
     GESTURE_ENUM_COUNT
 };
+
+enum HeartRateType_t {
+    SENSOR_HEART_RATE_STD        = 0,
+    
+    SENSOR_HEART_RATE_ENUM_COUNT
+}; 
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
