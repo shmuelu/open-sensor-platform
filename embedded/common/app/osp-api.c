@@ -21,7 +21,8 @@
 #include "common.h"
 #include "osp-api.h"
 #include <string.h>
-#include "osp_embeddedalgcalls.h"
+#include "osp_embeddedforegroundalgcalls.h"
+#include "osp_embeddedbackgroundalgcalls.h"
 #include "osp-version.h"
 
 
@@ -1066,7 +1067,8 @@ osp_status_t OSP_Initialize(const SystemDescriptor_t* pSystemDesc)
 		ExitCritical = pSystemDesc->ExitCritical;
 	}
 
-	OSP_InitializeAlgorithms();
+	OSPForegroundAlg_InitializeAlgorithms();
+	OSPBackgroundAlg_InitializeAlgorithms();
 
 	return OSP_STATUS_OK;
 }
@@ -1321,9 +1323,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
 
 			memcpy(&_LastAccelCookedData, &algConvention, sizeof(Common_3AxisResult_t));
 
-			//OSP_SetForegroundAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
 			// Send data on to algorithms
-			OSP_SetAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+			OSPForegroundAlg_SetAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
 
 			// Do linear accel and gravity processing if needed
 			// ... TODO
@@ -1375,7 +1376,7 @@ osp_status_t OSP_DoForegroundProcessing(void)
 
 			memcpy(&_LastMagCookedData, &algConvention, sizeof(Common_3AxisResult_t));
 
-			//OSP_SetForegroundMagnetometerMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.extendedData);
+			//OSPForegroundAlg_SetMagnetometerMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.extendedData);
 			break;
 		}
 		break;
@@ -1423,7 +1424,7 @@ osp_status_t OSP_DoForegroundProcessing(void)
 
 			memcpy(&_LastGyroCookedData, &algConvention, sizeof(Common_3AxisResult_t));
 
-			//OSP_SetForegroundGyroscopeMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.preciseData);
+			//OSPForegroundAlg_SetGyroscopeMeasurement(AndoidProcessedData.TimeStamp, algConvention.data.preciseData);
 			break;
 		}
 		break;
@@ -1511,7 +1512,7 @@ osp_status_t OSP_DoBackgroundProcessing(void)
 			algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
 			algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
 
-			//OSP_SetBackgroundAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+			OSPBackgroundAlg_SetAccelerometerMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
 	#endif
 			break;
 		}
@@ -1536,7 +1537,7 @@ osp_status_t OSP_DoBackgroundProcessing(void)
 			algConvention.data.extendedData[2] = AndoidProcessedData.data.extendedData[2];   // z (ALG) =  Z (Android)
 			algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
 
-			//OSP_SetBackgroundMagnetometerMeasurement(algConvention.TimeStamp, algConvention.data.extendedData);
+			//OSPBackgroundAlg_SetMagnetometerMeasurement(algConvention.TimeStamp, algConvention.data.extendedData);
 	#endif
 			break;
 		}
@@ -1561,7 +1562,7 @@ osp_status_t OSP_DoBackgroundProcessing(void)
 			algConvention.data.preciseData[2] = AndoidProcessedData.data.preciseData[2];  // z (ALG) =  Z (Android)
 			algConvention.TimeStamp = AndoidProcessedData.TimeStamp;
 
-			//OSP_SetBackgroundGyroscopeMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
+			//OSPBackgroundAlg_SetGyroscopeMeasurement(algConvention.TimeStamp, algConvention.data.preciseData);
 	#endif
 			break;
 		}
@@ -1670,7 +1671,7 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		switch (sensorId.sensorSubType) {
 		case SENSOR_CONTEXT_DEVICE_MOTION:
             controlSensorSubscription(&sensorId, &subscribe );
-			OSP_RegisterSignificantMotionCallback(OnSignificantMotionResult);
+			OSPForegroundAlg_RegisterSignificantMotionCallback(OnSignificantMotionResult);
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;
@@ -1680,11 +1681,11 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		switch (sensorId.sensorSubType) {
 		case SENSOR_STEP_COUNTER:
             controlSensorSubscription(&sensorId, &subscribe );
-			OSP_RegisterStepCallback(OnStepResultsReady);
+			OSPForegroundAlg_RegisterStepCallback(OnStepResultsReady);
 			break;
 		case SENSOR_STEP_DETECTOR:
             controlSensorSubscription(&sensorId, &subscribe );
-			OSP_RegisterStepCallback(OnStepResultsReady);
+			OSPForegroundAlg_RegisterStepCallback(OnStepResultsReady);
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;

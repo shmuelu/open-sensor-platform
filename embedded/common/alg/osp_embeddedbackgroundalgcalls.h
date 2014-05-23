@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if !defined (_OSPEMBEDDEDALGCALLS_H_)
-#define   _OSPEMBEDDEDALGCALLS_H_
+#if !defined (_OSPEMBEDDEDBACKGROUNDALGCALLS_H_)
+#define   _OSPEMBEDDEDBACKGROUNDALGCALLS_H_
 
 /*-------------------------------------------------------------------------------------------------*\
  |    I N C L U D E   F I L E S
@@ -28,21 +28,21 @@ extern "C" {
 #endif
 
 /*
- * This is the embedded API for OSP algorithms.
+ * This is the embedded API for OSP background algorithms.
  * Note that all data passed in/out is in fixed point formats.
  *
  * On start-up, call:
- * -) OSP_InitializeAlgorithms();
+ * -) OSPBackgroundAlg_InitializeAlgorithms();
  *
  * When registering for a result, call:
- * -) OSP_RegisterXXCallback(); (for all XX results desired)
- * -) OSP_ResetAlgorithms();
+ * -) OSPBackgroundAlg_RegisterBackgroundResultCallback(pCallback);
+ * -) OSPBackgroundAlg_ResetAlgorithms();
  *
  * On new accel data, call:
- * -) OSP_SetAccelerometerMeasurement(time, acc);
+ * -) OSPBackgroundAlg_SetAccelerometerMeasurement(time, acc);
  *
  * On shut-down, call:
- * -) OSP_DestroyAlgorithms();
+ * -) OSPBackgroundAlg_DestroyAlgorithms();
  *
  */
 
@@ -66,15 +66,28 @@ extern "C" {
  |    P U B L I C   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 //! Initialize call for algorithm code
-void OSP_InitializeAlgorithms(void);
+void OSPBackgroundAlg_InitializeAlgorithms(void);
 
 //! Call to reset algorithm internal state
-void OSP_ResetAlgorithms(void);
+void OSPBackgroundAlg_ResetAlgorithms(void);
 
 //! Tears down algorithm setup
-void OSP_DestroyAlgorithms(void);
+void OSPBackgroundAlg_DestroyAlgorithms(void);
 
-//! Sends sensor data into the underlying algorithms for processing
+//! Sets background data from persistent storage
+/*!
+ *  Passes stored background result data down into background algorithms.
+ *  This function should be called from the foreground and before sending
+ *  any sensor data into the background algorithms.
+ *  Example: setting initial stored calibration values
+ *
+ *  \param resultType IN integer indicating type of background result.
+ *  \param pData IN pointer to a background result storage object.
+ *
+ */
+void OSPBackgroundAlg_SetStoredResult(OSP_BackgroundAlgResultType_t resultType, OSP_BackgroundAlgResult_t * pData);
+
+//! Sends sensor data into the underlying algorithms for background processing
 /*!
 *  Passes raw accelerometer sensor data into the algorithm code for processing.
 *  When a result is triggered, the appropriate callback will be called.
@@ -86,42 +99,23 @@ void OSP_DestroyAlgorithms(void);
 *         Expected data format NTPRECISE is fixed point format 32 bit, Q24.
 *
 */
-void OSP_SetAccelerometerMeasurement(const NTTIME timeInSeconds, const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES]);
+void OSPBackgroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES]);
 
-//! Registers a callback for step detection results
+
+//! Registers a callback for background algorithm results
 /*!
-* Sets the callback for step detection results, where a step detection result
-* comes in the form of a StepDataOSP_t object (defined in OSP_Types.h)
+* Sets the callback for background algorithms.  There is only one callback for all algorithms.
 *
-*  \param fpCallback IN function pointer for step result callback.
+*  \param fpCallback IN function pointer for background algorithm results callback.
 */
-void OSP_RegisterStepCallback(OSP_StepResultCallback_t fpCallback);
+void OSPBackgroundAlg_RegisterBackgroundResultCallback(OSP_BackgroundAlgResultCallback_t fpCallback);
 
-
-//! Registers a callback for step segment results
-/*!
-* Sets the callback for step segment results, where a step segment result
-* comes in the form of a StepSegment_t object (defined in OSP_Types.h)
-*
-*  \param fpCallback IN function pointer for step segment callback.
-*/
-void OSP_RegisterStepSegmentCallback(OSP_StepSegmentResultCallback_t fpCallback);
-
-
-//! Registers a callback for significant motion results
-/*!
-* Sets the callback for significant motion results, where a significant motion result
-* comes in the form of a timestamp corresponding with the start of significant motion
-*
-*  \param fpCallback IN function pointer for significant motion callback.
-*/
-void OSP_RegisterSignificantMotionCallback(OSP_EventResultCallback_t fpCallback);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //_OSPEMBEDDEDALGCALLS_H_
+#endif //_OSPEMBEDDEDBACKGROUNDALGCALLS_H_
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E
 \*-------------------------------------------------------------------------------------------------*/
