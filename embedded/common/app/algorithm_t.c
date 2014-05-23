@@ -445,7 +445,8 @@ static void UnCalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
 {
    	struct sh_sensor_broadcast_node hostBuffer;
 
-	hostBuffer.sensorId = SENSOR_ACCELEROMETER_UNCALIBRATED;
+	hostBuffer.sensorId.sensorType = SENSOR_ACCELEROMETER;
+	hostBuffer.sensorId.sensorSubType = SENSOR_ACCELEROMETER_UNCALIBRATED;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
@@ -503,7 +504,8 @@ static void CalAccelDataResultCallback(OutputSensorHandle_t outputHandle,
 {
 	struct sh_sensor_broadcast_node hostBuffer;
 
-	hostBuffer.sensorId = SENSOR_ACCELEROMETER_CALIBRATED;
+	hostBuffer.sensorId.sensorType = SENSOR_ACCELEROMETER;
+	hostBuffer.sensorId.sensorSubType = SENSOR_ACCELEROMETER_CALIBRATED;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.sensorData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
@@ -548,7 +550,8 @@ static void UnCalMagDataResultCallback(OutputSensorHandle_t outputHandle,
 {
 	struct sh_sensor_broadcast_node hostBuffer;
 
-	hostBuffer.sensorId = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
+	hostBuffer.sensorId.sensorType = SENSOR_MAGNETIC_FIELD;
+	hostBuffer.sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp32  = pOutput->TickTimeStampLow;
@@ -607,7 +610,8 @@ static void CalMagDataResultCallback(OutputSensorHandle_t outputHandle,
 {
    struct sh_sensor_broadcast_node hostBuffer;
 
-	hostBuffer.sensorId = SENSOR_MAGNETIC_FIELD_CALIBRATED;
+	hostBuffer.sensorId.sensorType = SENSOR_MAGNETIC_FIELD;
+	hostBuffer.sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_CALIBRATED;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.sensorData.timeStamp.timeStamp32  = pOutput->TickTimeStampLow;
@@ -655,7 +659,8 @@ static void UnCalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
 {
    	struct sh_sensor_broadcast_node hostBuffer;
 
-	hostBuffer.sensorId = SENSOR_GYROSCOPE_UNCALIBRATED;
+	hostBuffer.sensorId.sensorType = SENSOR_GYROSCOPE;
+	hostBuffer.sensorId.sensorSubType = SENSOR_GYROSCOPE_UNCALIBRATED;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.uncalibratedSensordata.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
@@ -720,7 +725,8 @@ static void CalGyroDataResultCallback(OutputSensorHandle_t outputHandle,
 {
    	struct sh_sensor_broadcast_node hostBuffer;
 
-	hostBuffer.sensorId = SENSOR_GYROSCOPE_CALIBRATED;
+	hostBuffer.sensorId.sensorType = SENSOR_GYROSCOPE;
+	hostBuffer.sensorId.sensorSubType = SENSOR_GYROSCOPE_CALIBRATED;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.sensorData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
@@ -768,7 +774,8 @@ static void stepCounterOutputCallback(OutputSensorHandle_t OutputHandle,
 	Android_StepCounterOutputData_t* pOutput)
 {
 	struct sh_sensor_broadcast_node hostBuffer;
-	hostBuffer.sensorId = SENSOR_STEP_COUNTER;
+	hostBuffer.sensorId.sensorType = SENSOR_STEP;
+	hostBuffer.sensorId.sensorSubType = SENSOR_STEP_COUNTER;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.stepCounterData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
@@ -797,7 +804,8 @@ static void stepDetectorOutputCallback(OutputSensorHandle_t OutputHandle,
 	Android_StepDetectorOutputData_t* pOutput)
 {
 	struct sh_sensor_broadcast_node hostBuffer;
-	hostBuffer.sensorId = SENSOR_STEP_DETECTOR;
+	hostBuffer.sensorId.sensorType = SENSOR_STEP;
+	hostBuffer.sensorId.sensorSubType = SENSOR_STEP_DETECTOR;
 	hostBuffer.compression = 0;
 
 	hostBuffer.data.stepDetectorData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
@@ -819,6 +827,17 @@ static void stepDetectorOutputCallback(OutputSensorHandle_t OutputHandle,
 static void sigMotionOutputCallback(OutputSensorHandle_t outputHandle,
 	Android_SignificantMotionOutputData_t* pOutput)
 {
+    struct sh_sensor_broadcast_node hostBuffer;
+	hostBuffer.sensorId.sensorType = SENSOR_CONTEXT_DEVICE_MOTION;
+	hostBuffer.sensorId.sensorSubType = CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION;
+	hostBuffer.compression = 0;
+
+	hostBuffer.data.significantMotionData.timeStamp.timeStamp32 = pOutput->TickTimeStampLow;
+	hostBuffer.data.significantMotionData.timeStamp.timeStamp40 = pOutput->TickTimeStampHigh;
+
+	post_on_boardcast_buffer((uint8_t *)&hostBuffer, sizeof(hostBuffer.data.significantMotionData), &hostBuffer.data.significantMotionData.timeStamp);
+
+
 	Print_LIPS("SM,%+03.4f,%d",TOFLT_TIME(pOutput->TimeStamp), true);
 }
 

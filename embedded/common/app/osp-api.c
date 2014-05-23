@@ -255,6 +255,73 @@ __inline static uint32_t mult_uint16_uint16(uint16_t a, uint16_t b)
 	return ((uint32_t) a * (uint32_t)b);
 }
 
+static void OnCalibratedSensor(enum SensorType_t sensorType, const NTTIME time, const int32_t calibratedData[NUM_TRIAXIS_SENSOR_AXES]) {
+    struct SensorId_t sensorId;
+    int16_t index;
+
+    switch (sensorType) {
+    case SENSOR_ACCELEROMETER:
+        sensorId.sensorType = SENSOR_ACCELEROMETER;
+        sensorId.sensorSubType = SENSOR_ACCELEROMETER_CALIBRATED;
+
+        index = FindResultTableIndexByType(&sensorId);
+        if (index != ERROR) {
+            Android_CalibratedAccelOutputData_t callbackData;
+            
+            callbackData.TimeStamp = time;			            //!< Time in seconds
+            callbackData.X = calibratedData[0];		            //!< X axis 32Q24 fixed point data
+            callbackData.Y = calibratedData[1];		            //!< Y axis 32Q24 fixed point data
+            callbackData.Z = calibratedData[2];		            //!< Z axis 32Q24 fixed point data
+            callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;    //!< MSB portion of tick time stamp
+            callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;	            //!< LSB portion of tick time stamp
+
+            _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
+                &callbackData);
+        }
+        break;
+    case SENSOR_MAGNETIC_FIELD:
+        sensorId.sensorType = SENSOR_MAGNETIC_FIELD;
+        sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_CALIBRATED;
+
+        index = FindResultTableIndexByType(&sensorId);
+        if (index != ERROR) {
+            Android_CalibratedMagOutputData_t callbackData;
+            
+            callbackData.TimeStamp = time;			            //!< Time in seconds
+            callbackData.X = calibratedData[0];		            //!< X axis 32Q12 fixed point data
+            callbackData.Y = calibratedData[1];		            //!< Y axis 32Q12 fixed point data
+            callbackData.Z = calibratedData[2];		            //!< Z axis 32Q12 fixed point data
+            callbackData.TickTimeStampHigh = _magLastForegroundTimeStampExtension;    //!< MSB portion of tick time stamp
+            callbackData.TickTimeStampLow = _magLastForegroundTimeStamp;	          //!< LSB portion of tick time stamp
+
+            _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
+                &callbackData);
+        }
+        break;
+    case SENSOR_GYROSCOPE:
+        sensorId.sensorType = SENSOR_GYROSCOPE;
+        sensorId.sensorSubType = SENSOR_GYROSCOPE_CALIBRATED;
+        
+        index = FindResultTableIndexByType(&sensorId);
+        if (index != ERROR) {
+            Android_CalibratedGyroOutputData_t callbackData;
+            
+            callbackData.TimeStamp = time;			            //!< Time in seconds
+            callbackData.X = calibratedData[0];		            //!< X axis 32Q24 fixed point data
+            callbackData.Y = calibratedData[1];		            //!< Y axis 32Q24 fixed point data
+            callbackData.Z = calibratedData[2];		            //!< Z axis 32Q24 fixed point data
+            callbackData.TickTimeStampHigh = _gyroLastForegroundTimeStampExtension;    //!< MSB portion of tick time stamp
+            callbackData.TickTimeStampLow = _gyroLastForegroundTimeStamp;	          //!< LSB portion of tick time stamp
+
+            _ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
+                &callbackData);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 
 /****************************************************************************************************
  * @fn	  OnStepResultsReady
@@ -264,12 +331,13 @@ __inline static uint32_t mult_uint16_uint16(uint16_t a, uint16_t b)
 static void OnStepResultsReady( StepDataOSP_t* stepData )
 {
 	struct SensorId_t sensorId;
+    int16_t index;
     
     sensorId.sensorType = SENSOR_STEP;
     sensorId.sensorSubType = SENSOR_STEP_COUNTER;
     
-    if (isSensorSubscribed(&sensorId ) == OSP_STATUS_OK) {
-		int16_t index;
+	index = FindResultTableIndexByType(&sensorId);
+    if (index != ERROR) {
 		Android_StepCounterOutputData_t callbackData;
 
 		callbackData.StepCount = stepData->numStepsTotal;
@@ -277,15 +345,14 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
 		callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
 		callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
-		index = FindResultTableIndexByType(&sensorId);
 		_ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
 			&callbackData);
 	}
     sensorId.sensorType = SENSOR_STEP;
     sensorId.sensorSubType = SENSOR_STEP_DETECTOR;
     
-    if (isSensorSubscribed(&sensorId) == OSP_STATUS_OK) {
-		int16_t index;
+	index = FindResultTableIndexByType(&sensorId);
+    if (index != ERROR) {
 		Android_StepDetectorOutputData_t callbackData;
 
 		callbackData.TimeStamp = stepData->startTime; //!TODO - Double check if start time or stop time
@@ -293,7 +360,6 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
 		callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
 
-		index = FindResultTableIndexByType(&sensorId);
 		_ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
 			&callbackData);
 	}
@@ -308,19 +374,19 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
 static void OnSignificantMotionResult( NTTIME * eventTime )
 {
 	struct SensorId_t sensorId;
+    int16_t index;
 
     sensorId.sensorType = SENSOR_CONTEXT_DEVICE_MOTION;
     sensorId.sensorSubType = CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION;
 
-    if (isSensorSubscribed(&sensorId) != OSP_STATUS_OK) {
-		int16_t index;
+    index = FindResultTableIndexByType(&sensorId);
+    if (index != ERROR) {
 		Android_SignificantMotionOutputData_t callbackData;
 
 		callbackData.TimeStamp = *eventTime;
 		callbackData.TickTimeStampHigh = _accelLastForegroundTimeStampExtension;
 		callbackData.TickTimeStampLow = _accelLastForegroundTimeStamp;
 
-		index = FindResultTableIndexByType(&sensorId);
 		_ResultTable[index].pResDesc->pOutputReadyCallback((OutputSensorHandle_t)&_ResultTable[index],
 			&callbackData);
 	}
@@ -1260,12 +1326,9 @@ osp_status_t OSP_DoForegroundProcessing(void)
             // after conversion, RAW becomes Uncalibrated.
             sensorId.sensorSubType = SENSOR_ACCELEROMETER_UNCALIBRATED;
             
-            if (isSensorSubscribed(&sensorId) == OSP_STATUS_OK) {
+            index = FindResultTableIndexByType(&sensorId);
+            if (index != ERROR) {
                 // Do uncalibrated accel call back here (Android conventions)
-                index = FindResultTableIndexByType(&sensorId);
-                if (index == ERROR) {
-                    return OSP_STATUS_ERROR;
-                }
                 memcpy(&AndoidUncalProcessedData.ucAccel.X,
                     AndoidProcessedData.data.preciseData,
                     (sizeof(NTPRECISE)*3));
@@ -1279,7 +1342,6 @@ osp_status_t OSP_DoForegroundProcessing(void)
                 _ResultTable[index].pResDesc->pOutputReadyCallback(
                     (OutputSensorHandle_t)&_ResultTable[index], &AndoidUncalProcessedData.ucAccel);
             }
-
 			// convert to algorithm convention before feeding data to algorithms.
 			algConvention.accuracy = QFIXEDPOINTPRECISE;
 			algConvention.data.preciseData[0] = AndoidProcessedData.data.preciseData[1];  // x (ALG) =  Y (Android)
@@ -1313,11 +1375,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
              // after conversion, RAW becomes Uncalibrated.
             sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
             
-            if (isSensorSubscribed(&sensorId) != OSP_STATUS_OK) {
-				index = FindResultTableIndexByType(&sensorId);
-				if (index == ERROR) {
-					return OSP_STATUS_ERROR;
-				}
+            index = FindResultTableIndexByType(&sensorId);
+            if (index != ERROR) {
 				memcpy(&AndoidUncalProcessedData.ucMag.X,
 					AndoidProcessedData.data.extendedData,
 					(sizeof(NTEXTENDED)*3));
@@ -1362,11 +1421,8 @@ osp_status_t OSP_DoForegroundProcessing(void)
              // after conversion, RAW becomes Uncalibrated.
             sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
             
-            if (isSensorSubscribed(&sensorId ) != OSP_STATUS_OK) {
-				index = FindResultTableIndexByType(&sensorId);
-				if (index != ERROR) {
-					return OSP_STATUS_ERROR;
-				}
+            index = FindResultTableIndexByType(&sensorId);
+            if (index != ERROR) {
 				memcpy(&AndoidUncalProcessedData.ucGyro.X,
 					AndoidProcessedData.data.preciseData,
 					(sizeof(NTPRECISE)*3));
@@ -1600,8 +1656,9 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 	switch (sensorId.sensorType) {
 	case SENSOR_ACCELEROMETER:
 		switch (sensorId.sensorSubType) {
-		case SENSOR_ACCELEROMETER_UNCALIBRATED:
 		case SENSOR_ACCELEROMETER_CALIBRATED:
+            OSPForegroundAlg_RegisterCalibratedSensorDataCallback(OnCalibratedSensor);
+		case SENSOR_ACCELEROMETER_UNCALIBRATED:
 			//Note: Calibrated or uncalibrated result is specified in the descriptor flags
 			//For Uncalibrated result no callback needs to be registered with the algorithms
 			break;
@@ -1609,8 +1666,9 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		break;
 	case SENSOR_MAGNETIC_FIELD:
 		switch (sensorId.sensorSubType) {
-		case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
 		case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+            OSPForegroundAlg_RegisterCalibratedSensorDataCallback(OnCalibratedSensor);
+        case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
 			//Note: Calibrated or uncalibrated result is specified in the descriptor flags
 			//For Uncalibrated result no callback needs to be registered with the algorithms
 			break;
@@ -1620,8 +1678,9 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		break;
 	case SENSOR_GYROSCOPE:
 		switch (sensorId.sensorSubType) {
-		case SENSOR_GYROSCOPE_UNCALIBRATED:
 		case SENSOR_GYROSCOPE_CALIBRATED:
+            OSPForegroundAlg_RegisterCalibratedSensorDataCallback(OnCalibratedSensor);
+		case SENSOR_GYROSCOPE_UNCALIBRATED:
 			//Note: Calibrated or uncalibrated result is specified in the descriptor flags
 			//For Uncalibrated result no callback needs to be registered with the algorithms
 			break;

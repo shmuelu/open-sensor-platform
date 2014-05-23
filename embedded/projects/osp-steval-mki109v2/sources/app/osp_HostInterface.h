@@ -42,7 +42,12 @@
 #include <stdint.h>
 #endif
 #include "osp-types.h"
+
+#ifdef __KERNEL__
+#include "linux/osp-sensors.h"
+#else
 #include "osp-sensors.h"
+#endif
 
 struct osp_pack Timestamp40_t {
 	uint32_t timeStamp32;
@@ -120,7 +125,7 @@ struct osp_pack sh_orientation_broadcast_node {
 
 
 struct osp_pack sh_sensor_broadcast_node {
-	uint8_t sensorId;	/* enum SensorType_t */
+	struct SensorId_t sensorId;	/* enum SensorType_t + sensor sub-type*/
 	uint8_t compression;
 	union osp_pack {
 		struct sh_motion_sensor_broadcast_node			  sensorData;
