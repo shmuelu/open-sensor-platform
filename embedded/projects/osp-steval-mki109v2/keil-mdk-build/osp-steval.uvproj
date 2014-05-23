@@ -576,11 +576,6 @@
           <GroupName>Alg</GroupName>
           <Files>
             <File>
-              <FileName>osp_embeddedalgcalls.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\common\alg\osp_embeddedalgcalls.c</FilePath>
-            </File>
-            <File>
               <FileName>stepdetector.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\common\alg\stepdetector.c</FilePath>
@@ -599,6 +594,16 @@
               <FileName>significantmotiondetector.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\common\alg\significantmotiondetector.c</FilePath>
+            </File>
+            <File>
+              <FileName>osp_embeddedbackgroundalgcalls.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\common\alg\osp_embeddedbackgroundalgcalls.c</FilePath>
+            </File>
+            <File>
+              <FileName>osp_embeddedforegroundalgcalls.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\common\alg\osp_embeddedforegroundalgcalls.c</FilePath>
             </File>
           </Files>
         </Group>

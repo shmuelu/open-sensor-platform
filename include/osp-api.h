@@ -483,23 +483,13 @@ osp_status_t	 OSP_GetVersion(const OSP_Library_Version_t **pVersionStruct);
 
 /****************************************************************************************************
  * @fn	  isSensorSubscribed
- * @brief  This helper function a boolean if specified sensor is already subscribed
+ * @brief  This helper function returns OSP_STATUS_OK if specified sensor is already subscribed
  * @param  sensorId: Sensor identifier
- * @param  isSubscribed - pointer to store result
- * @return ERROR if invalid sensor id, NO_ERROR if results generate
+ * @return OSP_STATUS_OK if sensor is subscribed, otherwise OSP_STATUS_ERROR if invalid sensor id or not subscribed, 
  *
  ***************************************************************************************************/
-osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId, osp_bool_t *isSubscribed );
+osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId);
 
-/****************************************************************************************************
- * @fn	  controlSensorSubscription
- * @brief  This helper function a boolean if specified sensor is already subscribed
- * @param  sensorId: Sensor identifier
- * @param  subscribe - IO : IN: TRUE to subscribe, false to unsubscribe, OUT: TRUE if new state, FALSE if same state
- * @return ERROR if invalid sensor id, NO_ERROR if done
- *
- ***************************************************************************************************/
-osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bool_t *subscribe );
 
 /****************************************************************************************************
  * @fn	  validateDeviceId
@@ -508,6 +498,26 @@ osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bo
  * @return OSP_STATUS_ERROR if bad sensor ID, otherwise OSP_STATUS_OK
  ***************************************************************************************************/
 osp_status_t validateDeviceId(const struct SensorId_t *sensorId);
+
+/****************************************************************************************************
+ * @fn	  getSensorDelayMilliSeconds
+ * @brief  This function returns the Delay value of Sensor if specified sensor is already subscribed
+ * @param  sensorId: Sensor identifier
+ * @param  delayMilliSeconds - pointer to store result
+ * @return OSP_STATUS_OK if results generate,  OSP_STATUS_ERROR if invalid sensor id, or sensor not subscribed
+ *
+ ***************************************************************************************************/
+osp_status_t getSensorDelayMilliSeconds(const struct SensorId_t *sensorId, uint16_t *delayMilliSeconds );
+
+/****************************************************************************************************
+ * @fn	  setSensorDelayMilliSeconds
+ * @brief  This function sets the Delay value of Sensor if specified sensor is already subscribed
+ * @param  sensorId: Sensor identifier
+ * @param  delayMilliSeconds - delay value to be set in milli-seconds
+ * @return OSP_STATUS_OK if done,  OSP_STATUS_ERROR if invalid sensor id, or sensor not subscribed
+ *
+ ***************************************************************************************************/
+osp_status_t setSensorDelayMilliSeconds(const struct SensorId_t *sensorId, uint16_t delayMilliSeconds );
 
 
 #ifdef __cplusplus

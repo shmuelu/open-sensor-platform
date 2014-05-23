@@ -40,8 +40,6 @@ extern uint64_t sensorEnable;      // bit map of (1 << sensorId) to show if sens
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 
-extern uint16_t sensorDelay[SENSOR_ENUM_COUNT];
-uint16_t getSensorDelay(const struct SensorId_t *sensorId);
 extern uint16_t commited_length;
 
 extern uint16_t broadcast_buf_wr;
@@ -81,8 +79,6 @@ void configureTimeCaptureTimers (void);
 void configureSensorsTimeCapture (void);
 void getTimeCapture(enum SensorType_t sensorId, uint32_t *result);
 void calculate_commited_tx_buffer_size(void);
-uint8_t isSensorEnable(const struct SensorId_t *sensorId);
-uint16_t getSensorDelay(const struct SensorId_t *sensorId);
 
 #endif /* HOST_FUNCTIONS_H */
 /*-------------------------------------------------------------------------------------------------*\

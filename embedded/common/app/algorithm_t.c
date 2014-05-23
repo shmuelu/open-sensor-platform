@@ -1088,6 +1088,9 @@ ASF_TASK  void AlgorithmTask ( ASF_TASK_ARG )
 				break;
 			}
 			break;
+        case MSG_SENSOR_DELAY_DATA:
+            setSensorDelayMilliSeconds(&rcvMsg->msg.msgSensorDelay.sensorId, rcvMsg->msg.msgSensorDelay.delayMiliSec );
+            break;
 		default:
 			/* Unhandled messages */
 			D1_printf("Alg-FG:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);

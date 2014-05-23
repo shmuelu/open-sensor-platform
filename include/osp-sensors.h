@@ -46,7 +46,9 @@
  *  If a sensor type not is supported by the library implementation, an error will be returned on its usage
  */
  
-struct SensorId_t{               
+#define osp_pack __attribute__ ((__packed__))
+
+struct osp_pack SensorId_t{               
     uint8_t sensorType;
     uint8_t sensorSubType;
 };

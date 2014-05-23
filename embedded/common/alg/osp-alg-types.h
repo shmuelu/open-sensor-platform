@@ -105,7 +105,7 @@ typedef void (*OSP_StepSegmentResultCallback_t)(StepSegment_t * segment);
 typedef void (*OSP_StepResultCallback_t)(StepDataOSP_t* stepData);
 typedef void (*OSP_EventResultCallback_t)(NTTIME * eventTime);
 typedef void (*OSP_BackgroundAlgResultCallback_t)(OSP_BackgroundAlgResultType_t resultType, const NTTIME time, OSP_BackgroundAlgResult_t * cal, osp_bool_t storeResult);
-typedef void (*OSP_CalibratedSensorCallback_t)(SensorType_t sensorType, const NTTIME time, const int32_t calibratedData[NUM_TRIAXIS_SENSOR_AXES]);
+typedef void (*OSP_CalibratedSensorCallback_t)(enum SensorType_t sensorType, const NTTIME time, const int32_t calibratedData[NUM_TRIAXIS_SENSOR_AXES]);
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S

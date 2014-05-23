@@ -72,6 +72,7 @@ typedef struct {
 
 typedef struct {
 	SensorDescriptor_t *pResDesc;
+    uint16_t delayMiliSeconds;      // delay between result reporting in milli-seconds
 	uint16_t Flags;					// Paused, etc
 } _ResDesc_t;
 
@@ -111,11 +112,6 @@ static const OSP_Library_Version_t libVersion = {
 	(OSP_VERSION_MAJOR << 16) | (OSP_VERSION_MINOR << 8) | (OSP_VERSION_PATCH),
 	OSP_VERSION_STRING
 };
-
-static uint64_t _SubscribedResults[2];  // bit field of currently subscribed results,
-										// bit positionscalculated using sensorType & sensorSubType
-										// allocated space for 128 sensors.
-										
 
 
 // pointer to platform descriptor structure
@@ -268,12 +264,11 @@ __inline static uint32_t mult_uint16_uint16(uint16_t a, uint16_t b)
 static void OnStepResultsReady( StepDataOSP_t* stepData )
 {
 	struct SensorId_t sensorId;
-    osp_bool_t isSubscribed;
     
     sensorId.sensorType = SENSOR_STEP;
     sensorId.sensorSubType = SENSOR_STEP_COUNTER;
     
-    if ((isSensorSubscribed(&sensorId, &isSubscribed ) != ERROR) && (isSubscribed)) {
+    if (isSensorSubscribed(&sensorId ) == OSP_STATUS_OK) {
 		int16_t index;
 		Android_StepCounterOutputData_t callbackData;
 
@@ -289,7 +284,7 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
     sensorId.sensorType = SENSOR_STEP;
     sensorId.sensorSubType = SENSOR_STEP_DETECTOR;
     
-    if ((isSensorSubscribed(&sensorId, &isSubscribed ) != ERROR) && (isSubscribed)) {
+    if (isSensorSubscribed(&sensorId) == OSP_STATUS_OK) {
 		int16_t index;
 		Android_StepDetectorOutputData_t callbackData;
 
@@ -313,12 +308,11 @@ static void OnStepResultsReady( StepDataOSP_t* stepData )
 static void OnSignificantMotionResult( NTTIME * eventTime )
 {
 	struct SensorId_t sensorId;
-    osp_bool_t isSubscribed;
 
     sensorId.sensorType = SENSOR_CONTEXT_DEVICE_MOTION;
     sensorId.sensorSubType = CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION;
 
-    if ((isSensorSubscribed(&sensorId, &isSubscribed ) != ERROR) && (isSubscribed)) {
+    if (isSensorSubscribed(&sensorId) != OSP_STATUS_OK) {
 		int16_t index;
 		Android_SignificantMotionOutputData_t callbackData;
 
@@ -1029,8 +1023,6 @@ static int16_t ConvertSensorData(
  ***************************************************************************************************/
 osp_status_t OSP_Initialize(const SystemDescriptor_t* pSystemDesc)
 {
-	_SubscribedResults[0] = 0;								// by definition, we are not subscribed to any results
-	_SubscribedResults[1] = 0;
 	memset(_SensorTable, 0, sizeof(_SensorTable));	  // init the sensor table
 	memset(_ResultTable, 0, sizeof(_ResultTable));	  // init the result table also
 
@@ -1221,7 +1213,6 @@ osp_status_t OSP_DoForegroundProcessing(void)
 	int16_t index;
 	Common_3AxisResult_t algConvention;
     struct SensorId_t sensorId;
-    osp_bool_t isSubscribed;
 
 	// Get next sensor data packet from the queue. If nothing in the queue, return OSP_STATUS_IDLE.
 	// If we get a data packet that has a sensor handle of NULL, we should drop it and get the next one,
@@ -1269,7 +1260,7 @@ osp_status_t OSP_DoForegroundProcessing(void)
             // after conversion, RAW becomes Uncalibrated.
             sensorId.sensorSubType = SENSOR_ACCELEROMETER_UNCALIBRATED;
             
-            if ((isSensorSubscribed(&sensorId, &isSubscribed ) != ERROR) && (isSubscribed)) {
+            if (isSensorSubscribed(&sensorId) == OSP_STATUS_OK) {
                 // Do uncalibrated accel call back here (Android conventions)
                 index = FindResultTableIndexByType(&sensorId);
                 if (index == ERROR) {
@@ -1322,7 +1313,7 @@ osp_status_t OSP_DoForegroundProcessing(void)
              // after conversion, RAW becomes Uncalibrated.
             sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
             
-            if ((isSensorSubscribed(&sensorId, &isSubscribed ) != ERROR) && (isSubscribed)) {
+            if (isSensorSubscribed(&sensorId) != OSP_STATUS_OK) {
 				index = FindResultTableIndexByType(&sensorId);
 				if (index == ERROR) {
 					return OSP_STATUS_ERROR;
@@ -1371,7 +1362,7 @@ osp_status_t OSP_DoForegroundProcessing(void)
              // after conversion, RAW becomes Uncalibrated.
             sensorId.sensorSubType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED;
             
-            if ((isSensorSubscribed(&sensorId, &isSubscribed ) != ERROR) && (isSubscribed)) {
+            if (isSensorSubscribed(&sensorId ) != OSP_STATUS_OK) {
 				index = FindResultTableIndexByType(&sensorId);
 				if (index != ERROR) {
 					return OSP_STATUS_ERROR;
@@ -1572,7 +1563,6 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 {
 	int16_t index;
     struct SensorId_t sensorId;
-    osp_bool_t subscribe = TRUE;
     
 	if((pSensorDescriptor == NULL) || (pOutputHandle == NULL) ||
 		(pSensorDescriptor->pOutputReadyCallback == NULL)) // just in case
@@ -1612,7 +1602,6 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		switch (sensorId.sensorSubType) {
 		case SENSOR_ACCELEROMETER_UNCALIBRATED:
 		case SENSOR_ACCELEROMETER_CALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			//Note: Calibrated or uncalibrated result is specified in the descriptor flags
 			//For Uncalibrated result no callback needs to be registered with the algorithms
 			break;
@@ -1622,7 +1611,6 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		switch (sensorId.sensorSubType) {
 		case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
 		case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			//Note: Calibrated or uncalibrated result is specified in the descriptor flags
 			//For Uncalibrated result no callback needs to be registered with the algorithms
 			break;
@@ -1634,7 +1622,6 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 		switch (sensorId.sensorSubType) {
 		case SENSOR_GYROSCOPE_UNCALIBRATED:
 		case SENSOR_GYROSCOPE_CALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			//Note: Calibrated or uncalibrated result is specified in the descriptor flags
 			//For Uncalibrated result no callback needs to be registered with the algorithms
 			break;
@@ -1645,7 +1632,6 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 	case SENSOR_CONTEXT_DEVICE_MOTION:
 		switch (sensorId.sensorSubType) {
 		case SENSOR_CONTEXT_DEVICE_MOTION:
-            controlSensorSubscription(&sensorId, &subscribe );
 			OSPForegroundAlg_RegisterSignificantMotionCallback(OnSignificantMotionResult);
 			break;
 		default:
@@ -1655,11 +1641,9 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 	case SENSOR_STEP:
 		switch (sensorId.sensorSubType) {
 		case SENSOR_STEP_COUNTER:
-            controlSensorSubscription(&sensorId, &subscribe );
 			OSPForegroundAlg_RegisterStepCallback(OnStepResultsReady);
 			break;
 		case SENSOR_STEP_DETECTOR:
-            controlSensorSubscription(&sensorId, &subscribe );
 			OSPForegroundAlg_RegisterStepCallback(OnStepResultsReady);
 			break;
 		default:
@@ -1673,6 +1657,7 @@ osp_status_t OSP_SubscribeOutputSensor(SensorDescriptor_t *pSensorDescriptor,
 	// Everything is setup, update our result table and return a handle
 	_ResultTable[index].pResDesc = pSensorDescriptor;
 	_ResultTable[index].Flags = 0;
+	_ResultTable[index].delayMiliSeconds = 0;
 	*pOutputHandle = (OutputSensorHandle_t *)&_ResultTable[index];
 
 	return OSP_STATUS_OK;
@@ -1693,7 +1678,6 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 {
 	int16_t index;
     struct SensorId_t sensorId;
-    osp_bool_t subscribe = FALSE;
 
 	// Check the result table to be sure that this is a valid handle, if not return OSP_STATUS_INVALID_HANDLE error.
 	// Also check that the handle points to a currently subscribed result, if not return OSP_STATUS_NOT_SUBSCRIBED.
@@ -1717,10 +1701,8 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 	case SENSOR_ACCELEROMETER:
 		switch (sensorId.sensorSubType) {
 		case SENSOR_ACCELEROMETER_UNCALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		case SENSOR_ACCELEROMETER_CALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;
@@ -1729,10 +1711,8 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 	case SENSOR_MAGNETIC_FIELD:
 		switch (sensorId.sensorSubType) {
 		case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;
@@ -1741,10 +1721,8 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 	case SENSOR_GYROSCOPE:
 		switch (sensorId.sensorSubType) {
 		case SENSOR_GYROSCOPE_UNCALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		case SENSOR_GYROSCOPE_CALIBRATED:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;
@@ -1753,7 +1731,6 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 	case SENSOR_CONTEXT_DEVICE_MOTION:
 		switch (sensorId.sensorSubType) {
 		case CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;
@@ -1762,10 +1739,8 @@ osp_status_t OSP_UnsubscribeOutputSensor(OutputSensorHandle_t OutputHandle)
 	case SENSOR_STEP:
 		switch (sensorId.sensorSubType) {
 		case SENSOR_STEP_COUNTER:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		case SENSOR_STEP_DETECTOR:
-            controlSensorSubscription(&sensorId, &subscribe );
 			break;
 		default:
 			return OSP_STATUS_UNKNOWN_REQUEST;
@@ -1799,148 +1774,61 @@ osp_status_t OSP_GetVersion(const OSP_Library_Version_t **pVersionStruct)
 }
 
 
-
-/****************************************************************************************************
- * @fn	  calculateSensorNumber
- * @brief  This helper function returns an a unique serial number for specified sensor
- * @param  sensorId: Sensor identifier
- * @param uint16_t pointer- place to store sensor serial number result
- * @return ERROR if invalid sensor id, NO_ERROR id results generate
- *
- ***************************************************************************************************/
-static osp_status_t calculateSensorNumber(const struct SensorId_t *sensorId, uint16_t *sensorSerialNumber) {
-	uint16_t serialNumber = 0;
-    if ((sensorId == NULL) || (sensorSerialNumber == NULL)) return OSP_STATUS_ERROR;
-    
-    if (validateDeviceId(sensorId) != OSP_STATUS_OK) return OSP_STATUS_ERROR;
-    
-	switch (sensorId->sensorType) {
-	case SENSOR_HEART_RATE:
-		 serialNumber += SENSOR_GESTURE_ENUM_COUNT;				// falls into next case
-	case SENSOR_GESTURE_EVENT:	
-		 serialNumber += CONTEXT_TRANSPORT_ENUM_COUNT;	  // falls into next case
-	case SENSOR_CONTEXT_TRANSPORT:	
-		 serialNumber += CONTEXT_POSTURE_ENUM_COUNT;		// falls into next case
-	case SENSOR_CONTEXT_POSTURE:	
-		 serialNumber += CONTEXT_CARRY_ENUM_COUNT;		  // falls into next case
-	case SENSOR_CONTEXT_CARRY:	
-		 serialNumber += CONTEXT_DEVICE_MOTION_ENUM_COUNT;  // falls into next case
-	case SENSOR_CONTEXT_DEVICE_MOTION:	
-		 serialNumber += SENSOR_ROTATION_VECTOR_ENUM_COUNT;   // falls into next case
-	case SENSOR_ROTATION_VECTOR:	
-		 serialNumber += SENSOR_ORIENTATION_ENUM_COUNT;	 // falls into next case
-	case SENSOR_ORIENTATION:	
-		serialNumber += SENSOR_HUMIDITY_ENUM_COUNT;		// falls into next case
-	case SENSOR_HUMIDITY:	
-		serialNumber += SENSOR_STEP_ENUM_COUNT;			// falls into next case
-	case SENSOR_STEP:	
-		 serialNumber += SENSOR_LIGHT_ENUM_COUNT;		   // falls into next case
-	case SENSOR_LIGHT:	
-		serialNumber += SENSOR_PRESSURE_ENUM_COUNT;		// falls into next case
-	case SENSOR_PRESSURE:	
-		 serialNumber += SENSOR_GYROSCOPE_ENUM_COUNT;	   // falls into next case
-	case SENSOR_GYROSCOPE:
-		serialNumber += SENSOR_MAGNETIC_FIELD_ENUM_COUNT;   // falls into next case
-	case SENSOR_MAGNETIC_FIELD :
-		serialNumber += SENSOR_ACCELEROMETER_ENUM_COUNT;	// falls into next case
-	case SENSOR_ACCELEROMETER:
-		serialNumber += SENSOR_MESSAGE_ENUM_COUNT;		  // falls into next case
-	case SENSOR_MESSAGE:
-		serialNumber += sensorId->sensorSubType;
-		break;
-	default:
-		return OSP_STATUS_ERROR;
-	}
-
-    *sensorSerialNumber = serialNumber;
-    return OSP_STATUS_OK;
-}
-
 /****************************************************************************************************
  * @fn	  isSensorSubscribed
- * @brief  This helper function a boolean if specified sensor is already subscribed
+ * @brief  This helper function returns OSP_STATUS_OK if specified sensor is already subscribed
  * @param  sensorId: Sensor identifier
- * @param  isSubscribed - pointer to store result
- * @return ERROR if invalid sensor id, NO_ERROR if results generate
+ * @return OSP_STATUS_OK if sensor is subscribed, otherwise OSP_STATUS_ERROR if invalid sensor id or not subscribed, 
  *
  ***************************************************************************************************/
-osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId, osp_bool_t *isSubscribed ) {
-
-    uint16_t sensorSerialNumber;
+osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId) {
     
-    if (calculateSensorNumber(sensorId,&sensorSerialNumber) == OSP_STATUS_ERROR) return OSP_STATUS_ERROR;
-    
-    if (sensorSerialNumber < 64) {
-        if (_SubscribedResults[0] & (1LL << sensorSerialNumber)) {
-            *isSubscribed = TRUE;
-        } else {
-            *isSubscribed = FALSE;
-        }
-        return OSP_STATUS_OK;
-    }
-    if (sensorSerialNumber < 127) {
-        if (_SubscribedResults[1] & (1LL << (sensorSerialNumber - 64))) {
-            *isSubscribed = TRUE;
-        } else {
-            *isSubscribed = FALSE;
-        }
+    if (FindResultTableIndexByType(sensorId) != ERROR) {
         return OSP_STATUS_OK;
     }
     return OSP_STATUS_ERROR;
 }
+
 
 /****************************************************************************************************
- * @fn	  controlSensorSubscription
- * @brief  This helper function a boolean if specified sensor is already subscribed
+ * @fn	  getSensorDelayMilliSeconds
+ * @brief  This function returns the Delay value of Sensor if specified sensor is already subscribed
  * @param  sensorId: Sensor identifier
- * @param  subscribe - IO : IN: TRUE to subscribe, false to unsubscribe, OUT: TRUE if new state, FALSE if same state
- * @return ERROR if invalid sensor id, NO_ERROR if done
+ * @param  delayMilliSeconds - pointer to store result
+ * @return OSP_STATUS_OK if results generate,  OSP_STATUS_ERROR if invalid sensor id, or sensor not subscribed
  *
  ***************************************************************************************************/
-osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bool_t *subscribe ) {
+osp_status_t getSensorDelayMilliSeconds(const struct SensorId_t *sensorId, uint16_t *delayMilliSeconds ) {
+    
+    int16_t index = FindResultTableIndexByType(sensorId);
 
-    uint16_t sensorSerialNumber;
-    
-    if (calculateSensorNumber(sensorId, &sensorSerialNumber) == ERROR) return OSP_STATUS_ERROR;
-    
-    if (sensorSerialNumber < 64) {
-        if (_SubscribedResults[0] & (1LL << sensorSerialNumber)) {              // if currently subscribed
-            if (*subscribe) {                                                   //   if attempt to re-subscribe
-                *subscribe = FALSE;                                             //     indicate no new state
-            } else {
-                *subscribe = TRUE;                                              //    otherwise indicate new state
-                _SubscribedResults[0] &= ~(1LL << sensorSerialNumber);          //    unsubscribe
-            }
-        } else {                                                                // if currently unsubscribed
-            if (*subscribe) {                                                   //   if attempt to subscribe
-                _SubscribedResults[0] |= (1LL << sensorSerialNumber);           //     subscribe
-                *subscribe = TRUE;                                              //     indicate new state
-            } else {
-                *subscribe = FALSE;                                             //   otherwise indicate no new state
-            }
-        }
-        return OSP_STATUS_OK;
-    }
-    if (sensorSerialNumber < 127) {
-        if (_SubscribedResults[1] & (1LL << (sensorSerialNumber - 64))) {       // if currently subscribed
-            if (*subscribe) {                                                   //   if attempt to re-subscribe
-                *subscribe = FALSE;                                             //     indicate no new state
-            } else {
-                *subscribe = TRUE;                                              //    otherwise indicate new state
-                _SubscribedResults[1] &= ~(1LL << (sensorSerialNumber - 64));   //    unsubscribe
-            }
-        } else {                                                                // if currently unsubscribed
-            if (*subscribe) {                                                   //   if attempt to subscribe
-                _SubscribedResults[1] |= (1LL << (sensorSerialNumber - 64));    //     subscribe
-                *subscribe = TRUE;                                              //     indicate new state
-            } else {
-                *subscribe = FALSE;                                             //   otherwise indicate no new state
-            }
-        }
+    if (index != ERROR) {
+        *delayMilliSeconds = _ResultTable[index].delayMiliSeconds;
         return OSP_STATUS_OK;
     }
     return OSP_STATUS_ERROR;
 }
+
+
+/****************************************************************************************************
+ * @fn	  setSensorDelayMilliSeconds
+ * @brief  This function sets the Delay value of Sensor if specified sensor is already subscribed
+ * @param  sensorId: Sensor identifier
+ * @param  delayMilliSeconds - delay value to be set in milli-seconds
+ * @return OSP_STATUS_OK if done,  OSP_STATUS_ERROR if invalid sensor id, or sensor not subscribed
+ *
+ ***************************************************************************************************/
+osp_status_t setSensorDelayMilliSeconds(const struct SensorId_t *sensorId, uint16_t delayMilliSeconds ) {
+    
+    int16_t index = FindResultTableIndexByType(sensorId);
+
+    if (index != ERROR) {
+        _ResultTable[index].delayMiliSeconds = delayMilliSeconds;
+        return OSP_STATUS_OK;
+    }
+    return OSP_STATUS_ERROR;
+}
+
 
 
 /****************************************************************************************************

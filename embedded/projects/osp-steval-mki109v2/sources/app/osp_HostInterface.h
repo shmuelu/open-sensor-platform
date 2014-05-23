@@ -41,6 +41,8 @@
 #ifndef __KERNEL__
 #include <stdint.h>
 #endif
+#include "osp-types.h"
+#include "osp-sensors.h"
 
 struct osp_pack Timestamp40_t {
 	uint32_t timeStamp32;
@@ -134,16 +136,16 @@ struct osp_pack sh_sensor_broadcast_node {
 
 
 
-struct osp_pack ShCmdGetHeader_get_8bits_param_t {
+struct ShCmdGetHeader_get_8bits_param_t {
 	uint8_t param;
-} ;
+};
 
-struct osp_pack ShCmdGetHeader_get_16bits_param_t {
+struct ShCmdGetHeader_get_16bits_param_t {
 	uint16_t param;
-} ;
+};
 
 struct osp_pack ShCmdGetEnableHeader_t {
-	uint8_t enable;	 /* 0 - to disable, !=0 to enable */
+	osp_bool_t enable;	 /* FALSE - to disable, TRUE ( != FALSE) to enable */
 };
 
 
@@ -191,21 +193,20 @@ enum OSP_HOST_SENSOR_COMMANDS {
 
 struct osp_pack ShSensorCmdHeader_t {
 	uint8_t command;		/* enum OSP_HOST_SENSOR_COMMANDS */
-	uint8_t sensorId;		/* enum OSP_HOST_SENSOR_ID */
-} ;
+	struct SensorId_t sensorId;		/* enum SensorType_t + sensor sub-type */
+};
 
 
 struct osp_pack ShSensorSetDelayCmdHeader_t {
 	uint8_t command;		/* enum OSP_HOST_SENSOR_COMMANDS */
-	uint8_t sensorId;		/* enum OSP_HOST_SENSOR_ID */
+	struct SensorId_t sensorId;		/* enum SensorType_t + sensor sub-type */
 	uint16_t delay_milisec;
 };
 
 struct osp_pack ShSensorSetEnableCmdHeader_param_t {
 	uint8_t command;		/* enum OSP_HOST_SENSOR_COMMANDS */
-	uint8_t sensorId;	   /* enum OSP_HOST_SENSOR_ID */
-	uint8_t subResultId;	/* used if sensor ID has sub-results */
-	uint8_t enable;		 /* 0 - to disable, !=0 to enable */
+	struct SensorId_t sensorId;	   /* enum OSP_HOST_SENSOR_ID */
+	osp_bool_t enable;		 /* FALSE - to disable, TRUE (!= FALSE) to enable */
 };
 
 union osp_pack ShCmdHeaderUnion{

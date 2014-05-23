@@ -50,8 +50,6 @@ uint16_t broadcast_buf_used[SLAVE_NUM_TX_BUFFERS];
 uint16_t last_transmitted_offset[SLAVE_NUM_TX_BUFFERS];
 uint8_t broadcastPacketNextTransmittedIndex[SLAVE_NUM_TX_BUFFERS];
 
-uint16_t sensorDelay[SENSOR_ENUM_COUNT] = {0};
-
 uint16_t commited_length;
 uint16_t commited_index;
 uint8_t hostInterruptState;
@@ -114,55 +112,36 @@ static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, u
  *          change of state is needed.
  *
  ***************************************************************************************************/
-static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enable) {
+static void controlSensorEnable(const struct SensorId_t *sensorId, osp_bool_t enable) {
     uint8_t update = 0;
 
-
-
-    if (sensorId->sensorType < SENSOR_ENUM_COUNT) {
-        if (enable) {
-            if (!(sensorEnable & (1LL << sensorId))) {
-                    update = 1;
-            }
-        } else {
-            if (sensorEnable & (1LL << sensorId)) {
+    if (isSensorSubscribed(sensorId ) == OSP_STATUS_OK) {
+        if (!enable) {
                 update = 1;
-            }
         }
-        if (update) {
-            AlgSendSensorEnabledIndication( sensorId,  enable ? 1 : 0);
+    } else {
+        if (enable) {
+            update = 1;
         }
+    }
+    if (update) {
+        AlgSendSensorEnabledIndication( sensorId,  enable ? 1 : 0);
     }
 }
 
-
-/****************************************************************************************************
- * @fn      isSensorEnable
- * @brief  This helper function returns an indication if specified sensor is enabled. Called from ISR
- * @param  sensorId: Sensor identifier
- * @return boolean - 0 if sensor is disabled, !=0 if sensor is enabled
- *
- ***************************************************************************************************/
-uint8_t isSensorEnable(const struct SensorId_t *sensorId) {
-    uint64_t sensorEnable;
-    if (sensorId < SENSOR_ENUM_COUNT) {
-        return (sensorEnable & (1LL << sensorId)) ? 1 : 0;
-    }
-    return 0;
-}
 
 
 
 
 /****************************************************************************************************
- * @fn      SendSensorDelayIndication
- * @brief  This helper function sends Sensor Delay setting indication to Sensor Acq task. Called from ISR
+ * @fn      AlgSendSendSensorDelayIndication
+ * @brief  This helper function sends Sensor Delay setting indication to ALG task. Called from ISR
  * @param  sensorId: Sensor identifier whose data is ready to be read
  * @param  delayMiliSec: sample time in mili-seconds (aka delay)
  * @return None
  *
  ***************************************************************************************************/
-static void SensorAcqSendSensorDelayIndication( const struct SensorId_t *sensorId, uint16_t delayMiliSec)
+static void AlgSendSendSensorDelayIndication( const struct SensorId_t *sensorId, uint16_t delayMiliSec)
 {
     MessageBuffer *pSendMsg = NULLP;
 
@@ -170,35 +149,9 @@ static void SensorAcqSendSensorDelayIndication( const struct SensorId_t *sensorI
     pSendMsg->msg.msgSensorDelay.sensorId.sensorType = sensorId->sensorType;
     pSendMsg->msg.msgSensorDelay.sensorId.sensorSubType = sensorId->sensorSubType;
     pSendMsg->msg.msgSensorDelay.delayMiliSec = delayMiliSec;
-    ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg);
+    ASFSendMessage( ALGORITHM_TASK_ID, pSendMsg);
 }
 
-
-/****************************************************************************************************
- * @fn      controlSensorDelay
- *          Helper function for implementing sensor delay control
- *
- ***************************************************************************************************/
-static void controlSensorDelay(const struct SensorId_t *sensorId, uint16_t miliSecondsDelay) {
-    if (sensorId < SENSOR_ENUM_COUNT) {
-        if (miliSecondsDelay != sensorDelay[sensorId]) {
-            sensorDelay[sensorId] = miliSecondsDelay;
-            SensorAcqSendSensorDelayIndication( sensorId,  miliSecondsDelay);
-        }
-    }
-}
-
-/****************************************************************************************************
- * @fn      getSensorDelay
- *          Returns the current settings for sensor delay value
- *
- ***************************************************************************************************/
-uint16_t getSensorDelay(const struct SensorId_t *sensorId) {
-    if (sensorId < SENSOR_ENUM_COUNT) {
-        return sensorDelay[sensorId] ;
-    }
-    return 0;
-}
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C     F U N C T I O N S
@@ -506,7 +459,8 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         case OSP_HOST_SENSOR_GET_DELAY:
             {
                 struct ShSensorCmdHeader_t *command = (struct ShSensorCmdHeader_t *)rx_buf;
-                SlaveRegMap.delay.param = getSensorDelay(command->sensorId);
+                getSensorDelayMilliSeconds(&command->sensorId, &SlaveRegMap.delay.param );
+                
                 SH_Slave_setup_I2c_Tx((uint8_t *)&SlaveRegMap.delay, sizeof(SlaveRegMap.delay));
                 remaining = 1;
             }
@@ -515,9 +469,8 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
             {
                 struct ShSensorCmdHeader_t *command = (struct ShSensorCmdHeader_t *)rx_buf;
 
-                SlaveRegMap.enable.enable = isSensorEnable(command->sensorId);
-                                
-                SH_Slave_setup_I2c_Tx((uint8_t *) &SlaveRegMap.enable, sizeof(SlaveRegMap.enable));
+                SlaveRegMap.enable.enable = (isSensorSubscribed(&command->sensorId) == OSP_STATUS_ERROR) ? TRUE : FALSE;     
+                SH_Slave_setup_I2c_Tx((uint8_t *) &SlaveRegMap.enable.enable, sizeof(SlaveRegMap.enable.enable));
                 remaining = 1;
             }
             break;
@@ -529,7 +482,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         case OSP_HOST_SENSOR_SET_ENABLE:
             {
                 struct ShSensorSetEnableCmdHeader_param_t *command = (struct ShSensorSetEnableCmdHeader_param_t *)rx_buf;
-                controlSensorEnable(command->sensorId, command->enable ? 1 : 0);
+                controlSensorEnable(&command->sensorId, command->enable ? 1 : 0);
                 SH_Slave_setup_I2c_Tx(NULL, 0);
                 remaining = 1;
             }
@@ -540,9 +493,13 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         switch (currentOpCode)
         {
         case OSP_HOST_SENSOR_SET_DELAY:
-            controlSensorDelay(rx_buf[1], (uint16_t) rx_buf[2] | ((uint16_t) rx_buf[3] << 8));
-            SH_Slave_setup_I2c_Tx(NULL, 0);
-            remaining = 1;
+            {
+                struct ShSensorSetDelayCmdHeader_t *command = (struct ShSensorSetDelayCmdHeader_t *)rx_buf;
+
+                AlgSendSendSensorDelayIndication( &command->sensorId, command->delay_milisec);
+                SH_Slave_setup_I2c_Tx(NULL, 0);
+                remaining = 1;
+            }
             break;
         }
         break;
