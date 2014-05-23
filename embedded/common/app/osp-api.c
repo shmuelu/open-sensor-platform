@@ -492,6 +492,7 @@ static int16_t FindResultTableIndexByType(const struct SensorId_t *sensorId)
 }
 
 
+
 /****************************************************************************************************
  * @fn	  FindEmptyResultTableIndex
  *		  Find 1st available empty result table slot, return the index into the sensor table
@@ -647,48 +648,23 @@ void InvalidateQueuedDataByHandle(InputSensorHandle_t Handle)
 }
 
 
-
 /****************************************************************************************************
- * @fn	  TurnOnSensors
- *		  Turns on sensors indicated by sensorsMask (bit mask based on enum SensorType_t bit position
+ * @fn      SendInputSensorControlIndication
+ * @brief  This helper function sends input sensor control indication to Sensor Acq task
+ * @param  command  - SensorControlCommand_t (currently only SENSOR_CONTROL_SENSOR_ON & SENSOR_CONTROL_SENSOR_OFF supported
+ * @param  mask - mask per index to _SensorTable for each sensor to act on
+ * @return None
  *
  ***************************************************************************************************/
-static int16_t TurnOnSensors(uint32_t sensorsMask)
+void SendInputSensorControlIndication(uint16_t command,	uint16_t mask)        
 {
-	SensorControl_t SenCtl;
+    MessageBuffer *pSendMsg = NULLP;
 
-	//  Check for control callback
-	if(_pPlatformDesc->SensorsControl != NULL) {
-		// send a sensor off command
-		SenCtl.Handle = NULL;
-		SenCtl.Command = SENSOR_CONTROL_SENSOR_ON;
-		SenCtl.Data = sensorsMask;
-		_pPlatformDesc->SensorsControl(&SenCtl);
-	}
-	return NO_ERROR;
+    ASF_assert( ASFCreateMessage( MSG_INPUT_SENSOR_CONTROL_DATA, sizeof(MsgInputSensorsControl), &pSendMsg ) == ASF_OK );
+    pSendMsg->msg.msgInputSensorsControl.Command = command;
+    pSendMsg->msg.msgInputSensorsControl.mask = mask;
+    ASF_assert( ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg ) == ASF_OK );
 }
-
-
-/****************************************************************************************************
- * @fn	  TurnOffSensors
- *		  Turns off sensors indicated by sensorsMask (bit mask based on enum SensorType_t bit position
- *
- ***************************************************************************************************/
-static int16_t TurnOffSensors(uint32_t sensorsMask)
-{
-	SensorControl_t SenCtl;
-
-	//  does it have a control callback?
-	if(_pPlatformDesc->SensorsControl != NULL) {
-		// send a sensor off command
-		SenCtl.Handle = NULL;
-		SenCtl.Command = SENSOR_CONTROL_SENSOR_OFF;
-		SenCtl.Data = sensorsMask;
-		_pPlatformDesc->SensorsControl(&SenCtl);
-	}
-	return NO_ERROR;
-}
-
 
 /****************************************************************************************************
  * @fn	  ActivateResultSensors
@@ -724,8 +700,7 @@ static int16_t ActivateResultSensors(const struct SensorId_t *sensorId)
 			break;
 		}
 	}
-
-	if (sensorsMask) TurnOnSensors(sensorsMask);
+	if (sensorsMask) SendInputSensorControlIndication(SENSOR_CONTROL_SENSOR_ON, sensorsMask);
 
 	return NO_ERROR;
 }
@@ -782,7 +757,7 @@ static int16_t DeactivateResultSensors(const struct SensorId_t *sensorId)
 			sensorsMask |= (1 << index);
 		}
 	}
-	if (sensorsMask) TurnOffSensors(sensorsMask);
+	if (sensorsMask) SendInputSensorControlIndication(SENSOR_CONTROL_SENSOR_OFF, sensorsMask);
 	return NO_ERROR;
 }
 
@@ -1967,6 +1942,27 @@ osp_status_t validateDeviceId(const struct SensorId_t *sensorId)
 	return OSP_STATUS_OK;
 }
 
+
+/****************************************************************************************************
+ * @fn	  getSensorIdFromSensorTableIndex
+ * @brief	returns sensor ID for specified sensor index
+ * @param   index - index into _SensorTable
+ * @param   sensorId - pointer for returned value
+ * @return  OSP_STATUS_OK if sensor is subscribed
+ *          OSP_STATUS_NOT_REGISTERED if sensor is not subscribed,
+ *          OSP_STATUS_INVALID_HANDLE if index out of range
+ *
+ ***************************************************************************************************/
+osp_status_t getSensorIdFromSensorTableIndex(int16_t index, struct SensorId_t *sensorId)
+{
+	if (index >= MAX_SENSOR_DESCRIPTORS) return OSP_STATUS_INVALID_HANDLE;
+    
+	if(_SensorTable[index].pSenDesc == NULL) return OSP_STATUS_NOT_REGISTERED;
+
+	sensorId->sensorType = ((SensorDescriptor_t *)(_SensorTable[index].pSenDesc))->sensorId.sensorType;
+	sensorId->sensorSubType = ((SensorDescriptor_t *)(_SensorTable[index].pSenDesc))->sensorId.sensorSubType;
+	return OSP_STATUS_OK;
+}
 
 /*-------------------------------------------------------------------------------------------------*\
  |	E N D   O F   F I L E

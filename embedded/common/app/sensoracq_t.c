@@ -236,6 +236,55 @@ void SendDataReadyIndication( const struct SensorId_t *sensorId, uint32_t timeSt
 }
 
 
+static void multipleSensorControl(SensorControlCommand_t command, uint16_t sensorMask) {
+	uint8_t enabled = 0;
+	uint8_t index;
+	struct SensorId_t sensorId;
+    osp_status_t status = OSP_STATUS_OK;
+    
+	switch (command) {
+	case SENSOR_CONTROL_SENSOR_OFF:
+		enabled = 0;
+		break;
+	case SENSOR_CONTROL_SENSOR_ON:
+		enabled = 1;
+		break;
+	default:
+		return;
+	}
+	for (index = 0;
+        (sensorMask != 0) &&
+            (status != OSP_STATUS_INVALID_HANDLE) &&
+            (index < sizeof(sensorMask) * 8);
+        index++) {
+        if (sensorMask & 0x0001) {
+            status = getSensorIdFromSensorTableIndex(index, &sensorId);
+            
+            switch (status) {
+                case OSP_STATUS_INVALID_HANDLE:
+                    continue;
+                case OSP_STATUS_OK:
+                    switch (sensorId.sensorType) {
+                    case SENSOR_ACCELEROMETER:
+//                            PhysSensors_Enable(PHYS_ACCEL_ID, enabled);
+                        break;
+                    case SENSOR_GYROSCOPE:
+//                            PhysSensors_Enable(PHYS_GYRO_ID, enabled);
+                        break;
+                    case SENSOR_MAGNETIC_FIELD:
+//                           PhysSensors_Enable(PHYS_MAG_ID, enabled);
+                        break;
+                    }
+                    break;
+                case OSP_STATUS_NOT_REGISTERED:
+                    // already not enabled
+                    break;
+            }
+        }
+        sensorMask >>= 1;
+	}
+}
+
 /****************************************************************************************************
  * @fn      SensorAcqTask
  *          This task is responsible for acquiring data from and controlling the sensors in the
@@ -308,6 +357,11 @@ ASF_TASK void SensorAcqTask( ASF_TASK_ARG )
 #endif
                 break;
 
+            case MSG_INPUT_SENSOR_CONTROL_DATA:
+                multipleSensorControl(
+                    (SensorControlCommand_t) rcvMsg->msg.msgInputSensorsControl.Command,
+                    rcvMsg->msg.msgInputSensorsControl.mask);
+                break;
             default:
                 /* Unhandled messages */
                 D2_printf("Snsr:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);

@@ -98,9 +98,8 @@ typedef enum {
 
 //! how enable/disable/setDelay type commands and data are passed back to the sensor driver
 typedef struct  {
-	InputSensorHandle_t Handle;             //!< handle that was returned from OSP_RegisterInputSensor()
 	uint16_t Command;						//!< command to sensor (power on/off, change rate, etc...)
-	int32_t Data;							//!< as need and appropriate for each command: e.g. high pass frequency in Hz
+	uint16_t mask;							//!< as need and appropriate for each command: e.g. high pass frequency in Hz
 } SensorControl_t;
 
 // Gesture results
@@ -519,6 +518,17 @@ osp_status_t getSensorDelayMilliSeconds(const struct SensorId_t *sensorId, uint1
  ***************************************************************************************************/
 osp_status_t setSensorDelayMilliSeconds(const struct SensorId_t *sensorId, uint16_t delayMilliSeconds );
 
+/****************************************************************************************************
+ * @fn	  getSensorIdFromSensorTableIndex
+ * @brief	returns sensor ID for specified sensor index
+ * @param   index - index into _SensorTable
+ * @param   sensorId - pointer for returned value
+ * @return  OSP_STATUS_OK if sensor is subscribed
+ *          OSP_STATUS_NOT_REGISTERED if sensor is not subscribed,
+ *          OSP_STATUS_INVALID_HANDLE if index out of range
+ *
+ ***************************************************************************************************/
+osp_status_t getSensorIdFromSensorTableIndex(int16_t index, struct SensorId_t *sensorId);
 
 #ifdef __cplusplus
 }

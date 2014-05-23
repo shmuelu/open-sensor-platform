@@ -91,6 +91,12 @@ typedef struct MsgSensorDelayTag
     uint16_t    delayMiliSec;
 } MsgSensorDelay;
 
+typedef struct MsgInputSensorsControlTag
+{
+	uint16_t Command;						//!< command to sensor (power on/off, change rate, etc...)
+	uint16_t mask;							//!< mask per index to _SensorTable for each sensor to act on
+} MsgInputSensorsControl;
+
 
 
 /*-------------------------------------------------------------------------------------------------*\
