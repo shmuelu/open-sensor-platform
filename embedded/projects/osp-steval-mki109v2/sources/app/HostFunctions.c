@@ -95,7 +95,7 @@ static uint8_t currentOpCode;
  * @return None
  *
  ***************************************************************************************************/
-static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, uint8_t enabled, uint16_t  subResultMask)
+static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, uint8_t enabled)
 {
     MessageBuffer *pSendMsg = NULLP;
 
@@ -114,36 +114,23 @@ static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, u
  *          change of state is needed.
  *
  ***************************************************************************************************/
-static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enable, unsigned short  subResultMask) {
+static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enable) {
     uint8_t update = 0;
-    uint64_t sensorEnable = OSP_GetSubsctibedResults();
-    
+
+
+
     if (sensorId->sensorType < SENSOR_ENUM_COUNT) {
         if (enable) {
             if (!(sensorEnable & (1LL << sensorId))) {
                     update = 1;
-            } else {
-                if (sensorId == SENSOR_CONTEXT_DEVICE_MOTION) {
-                    uint16_t contextDeviceMotionMask = OSP_GetSubsctibedContextDeviceMotionSubResults();
-                    if ((subResultMask & contextDeviceMotionMask) != subResultMask) {
-                        update = 1;
-                    }
-                }
             }
         } else {
             if (sensorEnable & (1LL << sensorId)) {
-                if (sensorId == SENSOR_CONTEXT_DEVICE_MOTION) {
-                    uint16_t contextDeviceMotionMask = OSP_GetSubsctibedContextDeviceMotionSubResults();
-                    if (subResultMask & contextDeviceMotionMask) {
-                        update = 1;
-                    }
-                } else {
-                    update = 1;
-                }
+                update = 1;
             }
         }
         if (update) {
-            AlgSendSensorEnabledIndication( sensorId,  enable ? 1 : 0, subResultMask);
+            AlgSendSensorEnabledIndication( sensorId,  enable ? 1 : 0);
         }
     }
 }
@@ -157,8 +144,7 @@ static void controlSensorEnable(const struct SensorId_t *sensorId, uint8_t enabl
  *
  ***************************************************************************************************/
 uint8_t isSensorEnable(const struct SensorId_t *sensorId) {
-    uint64_t sensorEnable = OSP_GetSubsctibedResults();
-
+    uint64_t sensorEnable;
     if (sensorId < SENSOR_ENUM_COUNT) {
         return (sensorEnable & (1LL << sensorId)) ? 1 : 0;
     }
@@ -474,8 +460,15 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
              break;
 		case OSP_HOST_RESET:
 			{
-				for (sensorId.sensorType = 0; sensorId.sensorType < SENSOR_ENUM_COUNT; sensorId.sensorType++)
-					controlSensorEnable(&sensorId, false, 0);
+				for (sensorId.sensorType = 0; sensorId.sensorType < SENSOR_ENUM_COUNT; sensorId.sensorType++) {
+                    for (sensorId.sensorSubType = 0; ; sensorId.sensorSubType++) {
+                        if (validateDeviceId(&sensorId) == OSP_STATUS_OK) {
+                            controlSensorEnable(&sensorId, false);
+                        } else {
+                            break;
+                        }
+                    }
+                }
 
 				init_android_broadcast_buffers();
 			}
@@ -523,13 +516,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
                 struct ShSensorCmdHeader_t *command = (struct ShSensorCmdHeader_t *)rx_buf;
 
                 SlaveRegMap.enable.enable = isSensorEnable(command->sensorId);
-                
-                if (command->sensorId == SENSOR_CONTEXT_DEVICE_MOTION) {
-                    SlaveRegMap.enable.subResultMask = OSP_GetSubsctibedContextDeviceMotionSubResults();
-                } else {
-                    SlaveRegMap.enable.subResultMask = 0;
-                }
-                
+                                
                 SH_Slave_setup_I2c_Tx((uint8_t *) &SlaveRegMap.enable, sizeof(SlaveRegMap.enable));
                 remaining = 1;
             }
@@ -542,7 +529,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         case OSP_HOST_SENSOR_SET_ENABLE:
             {
                 struct ShSensorSetEnableCmdHeader_param_t *command = (struct ShSensorSetEnableCmdHeader_param_t *)rx_buf;
-                controlSensorEnable(command->sensorId, command->enable ? 1 : 0, command->subResultMask);
+                controlSensorEnable(command->sensorId, command->enable ? 1 : 0);
                 SH_Slave_setup_I2c_Tx(NULL, 0);
                 remaining = 1;
             }

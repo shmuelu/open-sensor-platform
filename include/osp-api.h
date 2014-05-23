@@ -501,6 +501,14 @@ osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId, osp_bool_t *i
  ***************************************************************************************************/
 osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bool_t *subscribe );
 
+/****************************************************************************************************
+ * @fn	  validateDeviceId
+ * @brief	  Given a device ID, validate it
+ * @param sensorId
+ * @return OSP_STATUS_ERROR if bad sensor ID, otherwise OSP_STATUS_OK
+ ***************************************************************************************************/
+osp_status_t validateDeviceId(const struct SensorId_t *sensorId);
+
 
 #ifdef __cplusplus
 }

@@ -561,33 +561,7 @@ static int16_t ValidateResultDescriptor(SensorDescriptor_t *pResultDescriptor)
 	//...
 
 	// Add currently supported output sensor results...
-	switch (pResultDescriptor->sensorId.sensorType) {
-
-	case SENSOR_MAGNETIC_FIELD:
-		if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_MAGNETIC_FIELD_ENUM_COUNT)
-			return ERROR;
-		break;
-	case SENSOR_GYROSCOPE:
-		if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_GYROSCOPE_ENUM_COUNT)
-			return ERROR;
-		break;
-	case SENSOR_ACCELEROMETER:
-		if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_ACCELEROMETER_ENUM_COUNT)
-			return ERROR;
-		break;
-	case SENSOR_STEP:
-		if (pResultDescriptor->sensorId.sensorSubType >= SENSOR_STEP_ENUM_COUNT)
-			return ERROR;
-		break;
-	case SENSOR_CONTEXT_DEVICE_MOTION:
-		if (pResultDescriptor->sensorId.sensorSubType >= CONTEXT_DEVICE_MOTION_ENUM_COUNT)
-			return ERROR;
-		break;
-	default:
-		return ERROR;
-
-	}
-	return NO_ERROR;
+    return (validateDeviceId(&pResultDescriptor->sensorId) == OSP_STATUS_OK) ? NO_ERROR : ERROR;    
 }
 
 
@@ -611,6 +585,7 @@ void InvalidateQueuedDataByHandle(InputSensorHandle_t Handle)
 	}
 	ExitCritical();
 }
+
 
 
 /****************************************************************************************************
@@ -683,7 +658,7 @@ static int16_t ActivateResultSensors(const struct SensorId_t *sensorId)
 				// if this sensor is not active, mark it as such and send a command to it to go active.
 				if((_SensorTable[index].Flags & SENSOR_FLAG_IN_USE) == 0) {
 					_SensorTable[index].Flags |= SENSOR_FLAG_IN_USE; // mark sensor as "in use"
-					sensorsMask |= (1 << _ResultResourceMap[i].Sensors[j].sensorType);
+					sensorsMask |= (1 << index);
 				}
 			}
 			break;
@@ -740,11 +715,11 @@ static int16_t DeactivateResultSensors(const struct SensorId_t *sensorId)
 		if(NeedSensor == FALSE) {
 			// if we get here, no other result uses this sensor type, mark it "not in use" and send
 			// a "turn off" command to it, and mark all data in the input queues as stale
-			j = FindSensorTableIndexByType(&_ResultResourceMap[index].Sensors[i]);
-			_SensorTable[j].Flags &= ~SENSOR_FLAG_IN_USE;   // Mark sensor "not in use"
+			index = FindSensorTableIndexByType(&_ResultResourceMap[index].Sensors[i]);
+			_SensorTable[index].Flags &= ~SENSOR_FLAG_IN_USE;   // Mark sensor "not in use"
 			// mark all previously queued data for this sensor type as invalid
-			InvalidateQueuedDataByHandle((InputSensorHandle_t)&_SensorTable[j]);
-			sensorsMask |= (1 << _ResultResourceMap[index].Sensors[i].sensorType);
+			InvalidateQueuedDataByHandle((InputSensorHandle_t)&_SensorTable[index]);
+			sensorsMask |= (1 << index);
 		}
 	}
 	if (sensorsMask) TurnOffSensors(sensorsMask);
@@ -1835,128 +1810,50 @@ osp_status_t OSP_GetVersion(const OSP_Library_Version_t **pVersionStruct)
  ***************************************************************************************************/
 static osp_status_t calculateSensorNumber(const struct SensorId_t *sensorId, uint16_t *sensorSerialNumber) {
 	uint16_t serialNumber = 0;
-	uint8_t checked = 0;
-    if ((sensorId == NULL) || (sensorSerialNumber == NULL)) return ERROR;
+    if ((sensorId == NULL) || (sensorSerialNumber == NULL)) return OSP_STATUS_ERROR;
+    
+    if (validateDeviceId(sensorId) != OSP_STATUS_OK) return OSP_STATUS_ERROR;
+    
 	switch (sensorId->sensorType) {
 	case SENSOR_HEART_RATE:
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_HEART_RATE_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
-		 serialNumber += GESTURE_ENUM_COUNT;				// falls into next case
+		 serialNumber += SENSOR_GESTURE_ENUM_COUNT;				// falls into next case
 	case SENSOR_GESTURE_EVENT:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= GESTURE_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += CONTEXT_TRANSPORT_ENUM_COUNT;	  // falls into next case
 	case SENSOR_CONTEXT_TRANSPORT:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= CONTEXT_TRANSPORT_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += CONTEXT_POSTURE_ENUM_COUNT;		// falls into next case
 	case SENSOR_CONTEXT_POSTURE:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= CONTEXT_POSTURE_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += CONTEXT_CARRY_ENUM_COUNT;		  // falls into next case
 	case SENSOR_CONTEXT_CARRY:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= CONTEXT_CARRY_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += CONTEXT_DEVICE_MOTION_ENUM_COUNT;  // falls into next case
 	case SENSOR_CONTEXT_DEVICE_MOTION:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= CONTEXT_DEVICE_MOTION_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
-		 serialNumber += SENSOR_ROTATION_ENUM_COUNT;   // falls into next case
+		 serialNumber += SENSOR_ROTATION_VECTOR_ENUM_COUNT;   // falls into next case
 	case SENSOR_ROTATION_VECTOR:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_ROTATION_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += SENSOR_ORIENTATION_ENUM_COUNT;	 // falls into next case
 	case SENSOR_ORIENTATION:	
-		  if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_ORIENTATION_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		serialNumber += SENSOR_HUMIDITY_ENUM_COUNT;		// falls into next case
 	case SENSOR_HUMIDITY:	
-		  if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_HUMIDITY_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		serialNumber += SENSOR_STEP_ENUM_COUNT;			// falls into next case
 	case SENSOR_STEP:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_STEP_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += SENSOR_LIGHT_ENUM_COUNT;		   // falls into next case
 	case SENSOR_LIGHT:	
-		  if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_LIGHT_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		serialNumber += SENSOR_PRESSURE_ENUM_COUNT;		// falls into next case
 	case SENSOR_PRESSURE:	
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_PRESSURE_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		 serialNumber += SENSOR_GYROSCOPE_ENUM_COUNT;	   // falls into next case
 	case SENSOR_GYROSCOPE:
-		 if (!checked) {
-			 if (sensorId->sensorSubType >= SENSOR_GYROSCOPE_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		 }
 		serialNumber += SENSOR_MAGNETIC_FIELD_ENUM_COUNT;   // falls into next case
 	case SENSOR_MAGNETIC_FIELD :
-		if (!checked) {
-			if (sensorId->sensorSubType >= SENSOR_MAGNETIC_FIELD_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		}
 		serialNumber += SENSOR_ACCELEROMETER_ENUM_COUNT;	// falls into next case
 	case SENSOR_ACCELEROMETER:
-		if (!checked) {
-			if (sensorId->sensorSubType >= SENSOR_ACCELEROMETER_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		}
 		serialNumber += SENSOR_MESSAGE_ENUM_COUNT;		  // falls into next case
 	case SENSOR_MESSAGE:
-		if (!checked) {
-			if (sensorId->sensorSubType >= SENSOR_MESSAGE_ENUM_COUNT)
-				return ERROR;
-			checked = 1;
-		}
 		serialNumber += sensorId->sensorSubType;
 		break;
 	default:
-		return ERROR;
+		return OSP_STATUS_ERROR;
 	}
 
     *sensorSerialNumber = serialNumber;
-    return NO_ERROR;
+    return OSP_STATUS_OK;
 }
 
 /****************************************************************************************************
@@ -1971,7 +1868,7 @@ osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId, osp_bool_t *i
 
     uint16_t sensorSerialNumber;
     
-    if (calculateSensorNumber(sensorId,&sensorSerialNumber) == ERROR) return ERROR;
+    if (calculateSensorNumber(sensorId,&sensorSerialNumber) == OSP_STATUS_ERROR) return OSP_STATUS_ERROR;
     
     if (sensorSerialNumber < 64) {
         if (_SubscribedResults[0] & (1LL << sensorSerialNumber)) {
@@ -1979,7 +1876,7 @@ osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId, osp_bool_t *i
         } else {
             *isSubscribed = FALSE;
         }
-        return NO_ERROR;
+        return OSP_STATUS_OK;
     }
     if (sensorSerialNumber < 127) {
         if (_SubscribedResults[1] & (1LL << (sensorSerialNumber - 64))) {
@@ -1987,9 +1884,9 @@ osp_status_t isSensorSubscribed(const struct SensorId_t *sensorId, osp_bool_t *i
         } else {
             *isSubscribed = FALSE;
         }
-        return NO_ERROR;
+        return OSP_STATUS_OK;
     }
-    return ERROR;
+    return OSP_STATUS_ERROR;
 }
 
 /****************************************************************************************************
@@ -2004,7 +1901,7 @@ osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bo
 
     uint16_t sensorSerialNumber;
     
-    if (calculateSensorNumber(sensorId, &sensorSerialNumber) == ERROR) return ERROR;
+    if (calculateSensorNumber(sensorId, &sensorSerialNumber) == ERROR) return OSP_STATUS_ERROR;
     
     if (sensorSerialNumber < 64) {
         if (_SubscribedResults[0] & (1LL << sensorSerialNumber)) {              // if currently subscribed
@@ -2022,7 +1919,7 @@ osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bo
                 *subscribe = FALSE;                                             //   otherwise indicate no new state
             }
         }
-        return NO_ERROR;
+        return OSP_STATUS_OK;
     }
     if (sensorSerialNumber < 127) {
         if (_SubscribedResults[1] & (1LL << (sensorSerialNumber - 64))) {       // if currently subscribed
@@ -2040,10 +1937,89 @@ osp_status_t controlSensorSubscription(const struct SensorId_t *sensorId, osp_bo
                 *subscribe = FALSE;                                             //   otherwise indicate no new state
             }
         }
-        return NO_ERROR;
+        return OSP_STATUS_OK;
     }
-    return ERROR;
+    return OSP_STATUS_ERROR;
 }
+
+
+/****************************************************************************************************
+ * @fn	  validateDeviceId
+ * @brief	  Given a device ID, validate it
+ * @param sensorId
+ * @return OSP_STATUS_ERROR if bad sensor ID, otherwise OSP_STATUS_OK
+ ***************************************************************************************************/
+osp_status_t validateDeviceId(const struct SensorId_t *sensorId)
+{
+	// Add currently supported output sensor results...
+	switch (sensorId->sensorType) {
+
+	case SENSOR_MAGNETIC_FIELD:
+		if (sensorId->sensorSubType >= SENSOR_MAGNETIC_FIELD_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+	case SENSOR_GYROSCOPE:
+		if (sensorId->sensorSubType >= SENSOR_GYROSCOPE_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+	case SENSOR_ACCELEROMETER:
+		if (sensorId->sensorSubType >= SENSOR_ACCELEROMETER_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+    case SENSOR_PRESSURE:
+		if (sensorId->sensorSubType >= SENSOR_PRESSURE_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+    case SENSOR_LIGHT:
+		if (sensorId->sensorSubType >= SENSOR_LIGHT_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;        
+	case SENSOR_STEP:
+		if (sensorId->sensorSubType >= SENSOR_STEP_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+    case SENSOR_HUMIDITY:
+		if (sensorId->sensorSubType >= SENSOR_HUMIDITY_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;        
+    case SENSOR_ORIENTATION:
+		if (sensorId->sensorSubType >= SENSOR_ORIENTATION_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;        
+    case SENSOR_ROTATION_VECTOR:
+		if (sensorId->sensorSubType >= SENSOR_ROTATION_VECTOR_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;        
+	case SENSOR_CONTEXT_DEVICE_MOTION:
+		if (sensorId->sensorSubType >= CONTEXT_DEVICE_MOTION_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+	case SENSOR_CONTEXT_CARRY:
+		if (sensorId->sensorSubType >= CONTEXT_CARRY_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+  	case SENSOR_CONTEXT_POSTURE:
+		if (sensorId->sensorSubType >= CONTEXT_POSTURE_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+  	case SENSOR_CONTEXT_TRANSPORT:
+		if (sensorId->sensorSubType >= CONTEXT_TRANSPORT_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+  	case SENSOR_GESTURE_EVENT:
+		if (sensorId->sensorSubType >= SENSOR_GESTURE_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+  	case SENSOR_HEART_RATE:
+		if (sensorId->sensorSubType >= SENSOR_HEART_RATE_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
+	default:
+		return OSP_STATUS_ERROR;
+	}
+	return OSP_STATUS_OK;
+}
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |	E N D   O F   F I L E
