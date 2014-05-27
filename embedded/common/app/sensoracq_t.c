@@ -23,6 +23,7 @@
 #include "mag_common.h"
 #include "gyro_common.h"
 #include "osp-api.h"
+#include "sensoracq_t.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -212,6 +213,8 @@ static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeS
     }
 }
 
+
+
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C     F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
@@ -235,6 +238,23 @@ void SendDataReadyIndication( const struct SensorId_t *sensorId, uint32_t timeSt
 
 }
 
+/****************************************************************************************************
+ * @fn      SendInputSensorControlIndication
+ * @brief  This helper function sends input sensor control indication to Sensor Acq task
+ * @param  command  - SensorControlCommand_t (currently only SENSOR_CONTROL_SENSOR_ON & SENSOR_CONTROL_SENSOR_OFF supported
+ * @param  mask - mask per index to _SensorTable for each sensor to act on
+ * @return None
+ *
+ ***************************************************************************************************/
+void SendInputSensorControlIndication(uint16_t command,	uint16_t mask)        
+{
+    MessageBuffer *pSendMsg = NULLP;
+
+    ASF_assert( ASFCreateMessage( MSG_INPUT_SENSOR_CONTROL_DATA, sizeof(MsgInputSensorsControl), &pSendMsg ) == ASF_OK );
+    pSendMsg->msg.msgInputSensorsControl.Command = command;
+    pSendMsg->msg.msgInputSensorsControl.mask = mask;
+    ASF_assert( ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg ) == ASF_OK );
+}
 
 static void multipleSensorControl(SensorControlCommand_t command, uint16_t sensorMask) {
 	uint8_t enabled = 0;
