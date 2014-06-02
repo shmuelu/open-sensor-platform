@@ -36,6 +36,20 @@
 
 extern uint64_t sensorEnable;      // bit map of (1 << sensorId) to show if sensor is enabled (1) or disabled (0)
 
+/* evaluation of an incomming Host command:
+    INVALID : unrecognized.
+    GET     : handled within the I2C interrupt routine. upon return, the next interrupt will continue the I2C flow.
+    SET     : will be handled outside of the I2C interrupt routine. 
+              if while processing the command, the Host starts a new command, the device driver will NOT read/write the next bytem causing clock stretch.
+              Upon completion of this command, the clock stretch condition will be handled by reading/writting the next byte, to allow free flow on Host I2C interface
+*/
+typedef enum {
+	COMMAND_PROCESS_INVALID = 0,
+	COMMAND_PROCESS_GET,
+	COMMAND_PROCESS_SET
+} ProcessCommandType;	
+
+
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/

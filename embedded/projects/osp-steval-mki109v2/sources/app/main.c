@@ -88,9 +88,6 @@ int main( void )
     */
     SystemCoreClockUpdate();
     
-    /* initialize the Host Slave I2C port */
-    SH_Host_Slave_init();
-
     /* Configure the GPIO ports (non module specific) */
     SystemGPIOConfig();
 
@@ -104,6 +101,9 @@ int main( void )
     /* Configure debug UART port - we do it here to enable assert messages early in the system */
     DebugUARTConfig( DBG_UART_BAUD, USART_WordLength_8b, USART_StopBits_1, USART_Parity_No );
     DebugPortInit();
+
+    /* initialize the Host Slave I2C port */
+    SH_Host_Slave_init();
 
     /* Print version number */
     printf("\r\n*** Open Sensor Platform Application Version: %s Date: %s - %s ***\r\n",

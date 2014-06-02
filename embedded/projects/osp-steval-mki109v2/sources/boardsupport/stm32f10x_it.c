@@ -22,6 +22,7 @@
 #include "common.h"
 #include "debugprint.h"
 #include "osp-sensors.h"
+#include "sensoracq_t.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -35,7 +36,6 @@ void I2C_Driver_ERR_ISR_Handler(void);
 void I2C_Slave_Handler(I2C_TypeDef *pI2C, uint8_t irqCh);
 
 
-void SendDataReadyIndication( uint8_t sensorId, uint32_t timeStamp );
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
@@ -166,10 +166,11 @@ void EXTI3_IRQHandler(void)
     // rollover is queued before the sensor that was captured before timer rollover
     if (EXTI_GetFlagStatus(EXTI_LINE_ACCEL_INT) != RESET)
     {
+        const struct SensorId_t sensorId = {SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_RAW};
         /* Clear the EXTI line pending bit */
         EXTI_ClearFlag(EXTI_LINE_ACCEL_INT);
         /* Send indication to Sensor task */
-        SendDataReadyIndication(SENSOR_ACCELEROMETER_UNCALIBRATED, RTC_GetCounter());
+        SendDataReadyIndication(&sensorId, RTC_GetCounter());
         /* NOTE: No I2C transactions (rd/wr) allowed from ISR */
     }
 }
@@ -318,18 +319,22 @@ void EXTI15_10_IRQHandler(void)
     // rollover is queued before the sensor that was captured before timer rollover
     if (EXTI_GetFlagStatus(MAG_RDY_INT_EXTI_LINE) != RESET)
     {
+        const struct SensorId_t sensorId = {SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_RAW};
+
         /* Clear the EXTI line pending bit */
         EXTI_ClearFlag(MAG_RDY_INT_EXTI_LINE);
-        SendDataReadyIndication(SENSOR_MAGNETIC_FIELD_UNCALIBRATED, RTC_GetCounter());
+        SendDataReadyIndication(&sensorId, RTC_GetCounter());
         /* NOTE: No I2C transactions (rd/wr) allowed from ISR */
     }
 
     if (EXTI_GetFlagStatus(GYRO_RDY_INT_EXTI_LINE) != RESET)
     {
+        const struct SensorId_t sensorId = {SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_RAW};
+
         /* Clear the EXTI line pending bit */
         EXTI_ClearFlag(GYRO_RDY_INT_EXTI_LINE);
         /* Send indication to Sensor task */
-        SendDataReadyIndication(SENSOR_GYROSCOPE_UNCALIBRATED, RTC_GetCounter());
+        SendDataReadyIndication(&sensorId, RTC_GetCounter());
         /* NOTE: No I2C transactions (rd/wr) allowed from ISR */
     }
 }

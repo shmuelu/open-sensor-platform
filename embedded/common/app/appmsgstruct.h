@@ -81,13 +81,11 @@ typedef struct MsgSensorEnableTag
 {
     struct SensorId_t sensorId;
     uint8_t         enabled;
-    uint16_t        subResult;
 } MsgSensorEnable;
 
 typedef struct MsgSensorDelayTag
 {
     struct SensorId_t sensorId;
-    uint16_t     subResult;
     uint16_t    delayMiliSec;
 } MsgSensorDelay;
 

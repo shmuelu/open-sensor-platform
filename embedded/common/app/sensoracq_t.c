@@ -24,6 +24,7 @@
 #include "gyro_common.h"
 #include "osp-api.h"
 #include "sensoracq_t.h"
+#include "i2c_slavecomm_t.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -250,6 +251,11 @@ void SendInputSensorControlIndication(uint16_t command,	uint16_t mask)
 {
     MessageBuffer *pSendMsg = NULLP;
 
+    if (mask == 0) {
+        SH_Host_Slave_terminate_cmd_processing();
+        return;
+    }
+
     ASF_assert( ASFCreateMessage( MSG_INPUT_SENSOR_CONTROL_DATA, sizeof(MsgInputSensorsControl), &pSendMsg ) == ASF_OK );
     pSendMsg->msg.msgInputSensorsControl.Command = command;
     pSendMsg->msg.msgInputSensorsControl.mask = mask;
@@ -381,6 +387,7 @@ ASF_TASK void SensorAcqTask( ASF_TASK_ARG )
                 multipleSensorControl(
                     (SensorControlCommand_t) rcvMsg->msg.msgInputSensorsControl.Command,
                     rcvMsg->msg.msgInputSensorsControl.mask);
+                    SH_Host_Slave_terminate_cmd_processing();
                 break;
             default:
                 /* Unhandled messages */

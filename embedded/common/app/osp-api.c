@@ -681,8 +681,7 @@ static int16_t ActivateResultSensors(const struct SensorId_t *sensorId)
 			break;
 		}
 	}
-	if (sensorsMask) SendInputSensorControlIndication(SENSOR_CONTROL_SENSOR_ON, sensorsMask);
-
+    SendInputSensorControlIndication(SENSOR_CONTROL_SENSOR_ON, sensorsMask);
 	return NO_ERROR;
 }
 
@@ -1171,8 +1170,8 @@ osp_status_t OSP_UnregisterInputSensor(InputSensorHandle_t sensorHandle)
  ***************************************************************************************************/
 osp_status_t OSP_SetData(InputSensorHandle_t sensorHandle, TriAxisSensorRawData_t *data)
 {
-	register osp_status_t FgStatus = 0;
-	register osp_status_t BgStatus = 0;
+	osp_status_t FgStatus = 0;
+	osp_status_t BgStatus = 0;
 
 
 	if (data == NULL)										   // just in case
@@ -1209,12 +1208,11 @@ osp_status_t OSP_SetData(InputSensorHandle_t sensorHandle, TriAxisSensorRawData_
 		_SensorBgDataQueue[_SensorBgDataNqPtr].Handle = sensorHandle;
 		memcpy(&_SensorBgDataQueue[_SensorBgDataNqPtr].Data, data, sizeof(TriAxisSensorRawData_t)); // put data in queue (room or not)
 		ExitCritical();
-	}
 
-	if((FgStatus == OSP_STATUS_QUEUE_FULL) || (BgStatus == OSP_STATUS_QUEUE_FULL))
-		return OSP_STATUS_QUEUE_FULL;
-	else
-		return OSP_STATUS_OK;
+        if((FgStatus == OSP_STATUS_QUEUE_FULL) || (BgStatus == OSP_STATUS_QUEUE_FULL))
+            return OSP_STATUS_QUEUE_FULL;
+	}
+	return OSP_STATUS_OK;
 }
 
 
@@ -1857,6 +1855,11 @@ osp_status_t validateDeviceId(const struct SensorId_t *sensorId)
 	// Add currently supported output sensor results...
 	switch (sensorId->sensorType) {
 
+	case SENSOR_MESSAGE:
+        
+		if (sensorId->sensorSubType >= SENSOR_MESSAGE_ENUM_COUNT)
+			return OSP_STATUS_ERROR;
+		break;
 	case SENSOR_MAGNETIC_FIELD:
 		if (sensorId->sensorSubType >= SENSOR_MAGNETIC_FIELD_ENUM_COUNT)
 			return OSP_STATUS_ERROR;

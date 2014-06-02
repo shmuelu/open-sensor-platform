@@ -110,9 +110,9 @@ static void AlgSendSensorEnabledIndication( const struct SensorId_t *sensorId, u
  * @fn      controlSensorEnable
  *          Helper function check for current enable status on a sensor and generates request if
  *          change of state is needed.
- *
+ * @return  returns 1 if message sent to task, 0 otherwise
  ***************************************************************************************************/
-static void controlSensorEnable(const struct SensorId_t *sensorId, osp_bool_t enable) {
+static uint8_t controlSensorEnable(const struct SensorId_t *sensorId, osp_bool_t enable) {
     uint8_t update = 0;
 
     if (isSensorSubscribed(sensorId ) == OSP_STATUS_OK) {
@@ -126,7 +126,9 @@ static void controlSensorEnable(const struct SensorId_t *sensorId, osp_bool_t en
     }
     if (update) {
         AlgSendSensorEnabledIndication( sensorId,  enable ? 1 : 0);
+        return (1);
     }
+    return (0);
 }
 
 
@@ -387,9 +389,10 @@ void hostCommitDataTx(void)
  ***************************************************************************************************/
 uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
 {
-    uint8_t remaining = 0;
+    uint8_t cmdSize = 1;
     struct SensorId_t sensorId;
-
+    struct ShSensorSetEnableCmdHeader_param_t *enableCommand;
+    struct ShSensorSetDelayCmdHeader_t *delayCommand;
 //	WorkerMessage message;
 
 	if  (length)
@@ -413,17 +416,24 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
              break;
 		case OSP_HOST_RESET:
 			{
+                uint8_t requestSentToTask = 0;
+                SH_Host_Slave_cmd_processing_active();
 				for (sensorId.sensorType = 0; sensorId.sensorType < SENSOR_ENUM_COUNT; sensorId.sensorType++) {
                     for (sensorId.sensorSubType = 0; ; sensorId.sensorSubType++) {
                         if (validateDeviceId(&sensorId) == OSP_STATUS_OK) {
-                            controlSensorEnable(&sensorId, false);
+                            if (controlSensorEnable(&sensorId, false)) {
+                                requestSentToTask = 1;
+                            }
                         } else {
                             break;
                         }
                     }
                 }
-
 				init_android_broadcast_buffers();
+                /* if no message sent to task - terminate here */
+                if (requestSentToTask == 0) {
+                    SH_Host_Slave_terminate_cmd_processing();
+                }
 			}
 			break;
          case OSP_HOST_GET_VERSION:
@@ -431,16 +441,16 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
             break;
         case OSP_HOST_SENSOR_SET_ENABLE:
             SH_Slave_setup_I2c_Tx(NULL, 0);
-            remaining = 2;              // sensorId, enable boolean byte
+            cmdSize = sizeof(struct ShSensorSetEnableCmdHeader_param_t);              // sensorType, sensorSubType, enable boolean byte
             break;
         case OSP_HOST_SENSOR_GET_DELAY:
         case OSP_HOST_SENSOR_GET_ENABLE:
             SH_Slave_setup_I2c_Tx(NULL, 0);
-            remaining = 1;              // sensor id
+            cmdSize = sizeof(struct ShSensorCmdHeader_t);                             // sensorType, sensorSubType,
             break;
         case OSP_HOST_SENSOR_SET_DELAY:
             SH_Slave_setup_I2c_Tx(NULL, 0);
-            remaining = 3;              // sensor id, 16 bit delay
+            cmdSize = sizeof(struct ShSensorSetDelayCmdHeader_t); // sensortype, sensorSubType, 16 bit delay
             break;
 
 # if defined TRANSMIT_CAL_TO_SH
@@ -453,7 +463,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
             break;
         }
         break;
-    case 2:
+    case sizeof(struct ShSensorCmdHeader_t):
         switch (currentOpCode)
         {
         case OSP_HOST_SENSOR_GET_DELAY:
@@ -462,7 +472,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
                 getSensorDelayMilliSeconds(&command->sensorId, &SlaveRegMap.delay.param );
                 
                 SH_Slave_setup_I2c_Tx((uint8_t *)&SlaveRegMap.delay, sizeof(SlaveRegMap.delay));
-                remaining = 1;
+                cmdSize = COMMAND_PROCESS_GET;
             }
             break;
         case OSP_HOST_SENSOR_GET_ENABLE:
@@ -471,43 +481,58 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
 
                 SlaveRegMap.enable.enable = (isSensorSubscribed(&command->sensorId) == OSP_STATUS_ERROR) ? TRUE : FALSE;     
                 SH_Slave_setup_I2c_Tx((uint8_t *) &SlaveRegMap.enable.enable, sizeof(SlaveRegMap.enable.enable));
-                remaining = 1;
+                cmdSize = COMMAND_PROCESS_GET;
             }
+            break;
+        default:
+            cmdSize = COMMAND_PROCESS_INVALID;
             break;
         }
         break;
-    case 3:
+    case sizeof(struct ShSensorSetEnableCmdHeader_param_t):
         switch (currentOpCode)
         {
         case OSP_HOST_SENSOR_SET_ENABLE:
             {
-                struct ShSensorSetEnableCmdHeader_param_t *command = (struct ShSensorSetEnableCmdHeader_param_t *)rx_buf;
-                controlSensorEnable(&command->sensorId, command->enable ? 1 : 0);
+                SH_Host_Slave_cmd_processing_active();  /* mark potential clock stretch */
+
+                enableCommand = (struct ShSensorSetEnableCmdHeader_param_t *)rx_buf;
+                if (controlSensorEnable(&enableCommand->sensorId, enableCommand->enable ? 1 : 0) == 0) {
+                    SH_Host_Slave_terminate_cmd_processing(); /* if nothing was sent, terminate clock stretch posibility */
+                }
                 SH_Slave_setup_I2c_Tx(NULL, 0);
-                remaining = 1;
+                cmdSize = COMMAND_PROCESS_SET;
             }
+            break;
+        default:
+            cmdSize = COMMAND_PROCESS_INVALID;
             break;
         }
         break;
-    case 4:
+    case sizeof(struct ShSensorSetDelayCmdHeader_t):
         switch (currentOpCode)
         {
         case OSP_HOST_SENSOR_SET_DELAY:
             {
-                struct ShSensorSetDelayCmdHeader_t *command = (struct ShSensorSetDelayCmdHeader_t *)rx_buf;
+                SH_Host_Slave_cmd_processing_active();  /* mark potential clock stretch */
 
-                AlgSendSendSensorDelayIndication( &command->sensorId, command->delay_milisec);
+                delayCommand = (struct ShSensorSetDelayCmdHeader_t *)rx_buf;
+
+                AlgSendSendSensorDelayIndication( &delayCommand->sensorId, delayCommand->delay_milisec);
                 SH_Slave_setup_I2c_Tx(NULL, 0);
-                remaining = 1;
+                cmdSize = COMMAND_PROCESS_SET;
             }
+            break;
+        default:
+            cmdSize = COMMAND_PROCESS_INVALID;
             break;
         }
         break;
     default:
-        remaining = 1;
+        cmdSize = COMMAND_PROCESS_INVALID;
         break;
     }
-    return remaining;
+    return cmdSize;
 }
 
 #ifdef TIMER_TRIGGER_BROADCAST        

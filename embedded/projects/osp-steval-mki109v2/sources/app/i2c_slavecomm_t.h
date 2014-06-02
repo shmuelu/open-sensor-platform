@@ -20,7 +20,29 @@
 
 #include <stdint.h>
 
+typedef enum {
+    HOST_PROCESSING_NONE = 0,
+    HOST_PROCESSING_IN_PROGRESS,
+    HOST_PROCESSING_STRETCHED_TX,
+    HOST_PROCESSING_STRETCHED_RX
+} HostProcessingState;
+
 void SH_Host_Slave_init(void);
 void SH_Slave_setup_I2c_Tx(uint8_t *address, uint16_t size);
+
+/****************************************************************************************************
+ * @fn      SH_Host_Slave_cmd_processing_active
+ * @brief   Signal that command processing is active. this will enable i2C clock stretching if need be
+ *
+ ***************************************************************************************************/
+void SH_Host_Slave_cmd_processing_active(void);
+
+/****************************************************************************************************
+ * @fn      SH_Host_Slave_terminate_cmd_processing
+ * @brief   Signal termination of command processing. terminates i2C clock stretching if in progress.
+ *
+ ***************************************************************************************************/
+void SH_Host_Slave_terminate_cmd_processing(void);
+
 
 #endif // I2C_SLAVECOMM_T_H
