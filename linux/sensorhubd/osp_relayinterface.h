@@ -31,14 +31,6 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum {
-    ACCEL_INDEX                     = 0,
-    MAG_INDEX                       = 1,
-    GYRO_INDEX                      = 2,
-    STEP_COUNTER_INDEX              = 3,
-    SIG_MOTION_INDEX                = 4,
-    MAX_NUM_SENSORS_TO_HANDLE
-} deviceIndex;
 
 typedef struct {
     std::string uinputName;

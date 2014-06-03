@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <time.h>
 
+#include "osp-sensors.h"
 #include "osp_debuglogging.h"
 #include "virtualsensordevicemanager.h"
 #include "osp_remoteprocedurecalls.h"
@@ -51,19 +52,12 @@
 #define MAG_UINPUT_NAME                 "osp-magnetometer"
 
 #define TWENTY_MS_IN_US                 (20000)
-#define ENABLE_PIPE_NAME_TEMPLATE       "/data/misc/osp-%s-enable"
+#define CONTROL_PIPE_NAME               "/data/misc/osp-control"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum {
-    SENSORHUBD_ACCELEROMETER_INDEX,
-    SENSORHUBD_MAGNETOMETER_INDEX,
-    SENSORHUBD_GYROSCOPE_INDEX,
-    //SENSORHUBD_SIG_MOTION_INDEX,
-    //SENSORHUBD_STEP_COUNTER_INDEX,
-    SENSORHUBD_RESULT_INDEX_COUNT
-} SensorIndices_t;
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    S T A T I C   V A R I A B L E S   D E F I N I T I O N S
@@ -77,16 +71,19 @@ static void _parseAndHandleEnable(int sensorIndex, char* buffer, ssize_t numByte
 static VirtualSensorDeviceManager* _pVsDevMgr;
 static int _evdevFds[SENSORHUBD_RESULT_INDEX_COUNT] ={-1};
 
-static int _enablePipeFds[SENSORHUBD_RESULT_INDEX_COUNT] ={-1};
-static const char* _sensorNames[SENSORHUBD_RESULT_INDEX_COUNT] = {
-    "accel", "mag", "gyro", /*"sig-motion", "step-count"*/};
+static int _controlPipeFd = -1;
 
-static SensorType_t _ospResultCodes[SENSORHUBD_RESULT_INDEX_COUNT]= {
-    SENSOR_ACCELEROMETER_UNCALIBRATED,
-    SENSOR_MAGNETIC_FIELD_UNCALIBRATED,
-    SENSOR_GYROSCOPE_UNCALIBRATED,
-    //SENSOR_CONTEXT_DEVICE_MOTION,
-    //SENSOR_STEP_COUNTER
+
+static struct SensorId_t _ospResultCodes[]= {
+    { SENSOR_STEP, SENSOR_STEP_COUNTER },
+    { SENSOR_STEP, SENSOR_STEP_DETECTOR },
+    { SENSOR_CONTEXT_DEVICE_MOTION,	CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION },
+    { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_UNCALIBRATED },
+    { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_CALIBRATED },
+    { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED },
+    { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_CALIBRATED },
+    { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED },
+    { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_CALIBRATED } 
 };
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -171,31 +168,20 @@ static void _parseAndHandleEnable(int sensorIndex, char* buffer, ssize_t numByte
 
 
 /****************************************************************************************************
- * @fn      _initializeNamedPipes
- *          Initializes named pipes that receive requests for sensor control
+ * @fn      _initializeNamedPipe
+ *          Initializes named pipe that receive requests for sensors' control
  *
  ***************************************************************************************************/
-static void _initializeNamedPipes()
+static void _initializeNamedPipe()
 {
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
 
-    // create an enable pipe for each sensor type
-    for (int i=0; i < SENSORHUBD_RESULT_INDEX_COUNT; ++i) {
-        char pipename[255];
-        int fd;
+    unlink(CONTROL_PIPE_NAME);
 
-        snprintf(pipename, 255, ENABLE_PIPE_NAME_TEMPLATE, _sensorNames[i]);
+    _fatalErrorIf(mkfifo(CONTROL_PIPE_NAME, 0666) != 0, -1, "could not create named pipe");
 
-        //Try and remove the pipe if it's already there, but don't complain if it's not
-        unlink(pipename);
-
-        _fatalErrorIf(mkfifo(pipename, 0666) != 0, -1, "could not create named pipe");
-
-        fd = open(pipename, O_RDONLY|O_NONBLOCK);
-        _fatalErrorIf(fd < 0, -1, "could not open named pipe for reading");
-        _enablePipeFds[i]= fd;
-    }
-
+    _controlPipeFd = open(CONTROL_PIPE_NAME, O_RDONLY|O_NONBLOCK);
+    _fatalErrorIf(_controlPipeFd < 0, -1, "could not open named pipe for reading");
 }
 
 
@@ -425,46 +411,39 @@ int main(int argc, char** argv)
         FD_ZERO(&readFdSet);
         FD_ZERO(&errFdSet);
 
-        for (int i=0; i < SENSORHUBD_RESULT_INDEX_COUNT; ++i) {
-            FD_SET( _enablePipeFds[i], &readFdSet);
-            FD_SET( _enablePipeFds[i], &errFdSet);
-            maxNumFds = MAX_NUM_FDS( maxNumFds, _enablePipeFds[i]);
-        }
+        FD_SET( _controlPipeFd, &readFdSet);
+        FD_SET( _controlPipeFd, &errFdSet);
+        maxNumFds = MAX_NUM_FDS( maxNumFds, _controlPipeFd);
+
         //Wait for data on one of the pipes
         selectResult = select(maxNumFds+1, &readFdSet, NULL, &errFdSet, NULL);
         _logErrorIf(selectResult<0, "error on select() of named pipes");
 
         if ( selectResult > 0 ) {
+            
+            _logErrorIf(FD_ISSET(_controlPipeFd, &errFdSet), "error on FD!\n");
+            
+            if (FD_ISSET(_controlPipeFd, &readFdSet) ) {
+                char readBuf[255];
+                ssize_t bytesRead = read(_controlPipeFd, readBuf, 255);
+                _logErrorIf(bytesRead < 0, "failed on read of enable pipe for");
 
-            for (int sensorIndex=0; sensorIndex < SENSORHUBD_RESULT_INDEX_COUNT; ++sensorIndex) {
-                _logErrorIf(FD_ISSET(_enablePipeFds[sensorIndex], &errFdSet), "error on FD!\n");
-                if (FD_ISSET(_enablePipeFds[sensorIndex], &readFdSet) ) {
-                    char readBuf[255];
-                    ssize_t bytesRead = read(_enablePipeFds[sensorIndex], readBuf, 255);
-                    _logErrorIf(bytesRead < 0, "failed on read of enable pipe for");
+                FD_CLR(_controlPipeFd, &readFdSet );
+                if (0 == bytesRead) {
+                    char pipename[255];
 
-                    FD_CLR(_enablePipeFds[sensorIndex], &readFdSet );
-                    if (0 == bytesRead) {
-                        char pipename[255];
+                    //close and reopen the pipe or we'll spike CPU usage b/c select will always
+                    //return available and we'll always get 0 bytes from read
+                    close(_controlPipeFd);
+                    int _controlPipeFd = open(CONTROL_PIPE_NAME, O_RDONLY|O_NONBLOCK);
+                    _fatalErrorIf(_controlPipeFd < 0, -1, "could not open named pipe for reading");
 
-                        //close and reopen the pipe or we'll spike CPU usage b/c select will always
-                        //return available and we'll always get 0 bytes from read
-                        close(_enablePipeFds[sensorIndex]);
-                        snprintf(pipename, 255, ENABLE_PIPE_NAME_TEMPLATE, _sensorNames[sensorIndex]);
-                        int fd = open(pipename, O_RDONLY|O_NONBLOCK);
-                        _fatalErrorIf(fd < 0, -1, "could not open named pipe for reading");
-                        _enablePipeFds[sensorIndex]= fd;
-
-                        continue;
-                    }
-                    _parseAndHandleEnable(sensorIndex, readBuf, bytesRead);
+                    continue;
                 }
+                _parseAndHandleEnable(readBuf, bytesRead);
             }
-
         }
-
     }
-
     return result;
 }
 
