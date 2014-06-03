@@ -45,8 +45,10 @@
 
 #ifdef __KERNEL__
 #include "linux/osp-sensors.h"
+#include "linux/osp-sensor-control-interface.h"
 #else
 #include "osp-sensors.h"
+#include "osp-sensor-control-interface.h"
 #endif
 
 struct osp_pack Timestamp40_t {
@@ -138,89 +140,6 @@ struct osp_pack sh_sensor_broadcast_node {
 		struct sh_orientation_broadcast_node				orientationData;
 	} data;
 };
-
-
-
-struct ShCmdGetHeader_get_8bits_param_t {
-	uint8_t param;
-};
-
-struct ShCmdGetHeader_get_16bits_param_t {
-	uint16_t param;
-};
-
-struct osp_pack ShCmdGetEnableHeader_t {
-	osp_bool_t enable;	 /* FALSE - to disable, TRUE ( != FALSE) to enable */
-};
-
-
-enum OSP_HOST_HUB_COMMANDS {
-	 /* gets 8 bits Device ID */
-	OSP_HOST_GET_WHO_AM_I = 0x00,
-	/* gets 16 bits version number on following read */
-	OSP_HOST_GET_VERSION,
-	OSP_HOST_RESET,
-
-	/* there three commands most be gnerated */
-	/* atomically, in this sequence */
-
-	/* gets 16 bit of broadcast length */
-	OSP_HOST_GET_BROADCAST_LENGTH,
-	/* gets as many bytes as broadcast length read */
-	OSP_HOST_GET_BROADCAST_DATA,
-} ;
-
-
-struct osp_pack ShHubCmdHeader_t {
-	uint8_t command;	/* enum OSP_HOST_HUB_COMMANDS */
-};
-
-struct osp_pack ShHubCmdHeader_8bits_param_t {
-	uint8_t command;	/* enum OSP_HOST_HUB_COMMANDS */
-	uint8_t param;
-} ;
-
-
-enum OSP_HOST_SENSOR_COMMANDS {
-	OSP_HOST_SENSOR_SET_ENABLE = 0x20,
-	OSP_HOST_SENSOR_GET_ENABLE,
-
-	OSP_HOST_SENSOR_SET_DELAY,
-	OSP_HOST_SENSOR_GET_DELAY,
-
-#if defined TRANSMIT_CAL_TO_SH
-
-	OSP_HOST_SENSOR_SET_CALIBRATE,
-	OSP_HOST_SENSOR_GET_CALIBRATE,
-
-#endif
-} ;
-
-struct osp_pack ShSensorCmdHeader_t {
-	uint8_t command;		/* enum OSP_HOST_SENSOR_COMMANDS */
-	struct SensorId_t sensorId;		/* enum SensorType_t + sensor sub-type */
-};
-
-
-struct osp_pack ShSensorSetDelayCmdHeader_t {
-	uint8_t command;		/* enum OSP_HOST_SENSOR_COMMANDS */
-	struct SensorId_t sensorId;		/* enum SensorType_t + sensor sub-type */
-	uint16_t delay_milisec;
-};
-
-struct osp_pack ShSensorSetEnableCmdHeader_param_t {
-	uint8_t command;		/* enum OSP_HOST_SENSOR_COMMANDS */
-	struct SensorId_t sensorId;	   /* enum OSP_HOST_SENSOR_ID */
-	osp_bool_t enable;		 /* FALSE - to disable, TRUE (!= FALSE) to enable */
-};
-
-union osp_pack ShCmdHeaderUnion{
-	struct ShSensorCmdHeader_t command;
-	struct ShSensorSetEnableCmdHeader_param_t enable;
-	struct ShSensorSetDelayCmdHeader_t delay;
-	struct ShHubCmdHeader_t hubCmdHeader;
-	struct ShHubCmdHeader_8bits_param_t hub_cmd_8bits_param;
-} ;
 
 
 #endif /* _OSP_HOSTINTERFACE_H_ */

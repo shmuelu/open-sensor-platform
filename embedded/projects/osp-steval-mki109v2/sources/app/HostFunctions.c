@@ -76,7 +76,7 @@ typedef struct SH_RegArea_tag
     uint8_t whoami;
     uint16_t version;
     struct  ShCmdGetEnableHeader_t enable;
-    struct ShCmdGetHeader_get_16bits_param_t delay;
+    struct  ShCmdGetHeaderGetDelayHeader_t delay;
 } SH_RegArea_t;
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -469,7 +469,7 @@ uint8_t  process_command(uint8_t *rx_buf, uint16_t length)
         case OSP_HOST_SENSOR_GET_DELAY:
             {
                 struct ShSensorCmdHeader_t *command = (struct ShSensorCmdHeader_t *)rx_buf;
-                getSensorDelayMilliSeconds(&command->sensorId, &SlaveRegMap.delay.param );
+                getSensorDelayMilliSeconds(&command->sensorId, &SlaveRegMap.delay.delay );
                 
                 SH_Slave_setup_I2c_Tx((uint8_t *)&SlaveRegMap.delay, sizeof(SlaveRegMap.delay));
                 cmdSize = COMMAND_PROCESS_GET;
