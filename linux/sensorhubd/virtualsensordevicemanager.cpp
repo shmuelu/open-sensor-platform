@@ -117,8 +117,7 @@ VirtualSensorDeviceManager::~VirtualSensorDeviceManager()
  *          Creates uinput node corresponding to the name
  *
  ***************************************************************************************************/
-int VirtualSensorDeviceManager::createSensor(const char* name, const char* physname,
-                                             int absMin, int absMax) {
+int VirtualSensorDeviceManager::createSensor(const char* name, int absMin, int absMax) {
     int result =-1;
     int status =-1;
     struct uinput_user_dev virtualSensorDev;
@@ -173,7 +172,7 @@ int VirtualSensorDeviceManager::createSensor(const char* name, const char* physn
     }
 
     //Set physical path name
-    status = ioctl(result, UI_SET_PHYS, physname);
+    status = ioctl(result, UI_SET_PHYS, name);
     fatalErrorIf(status < 0, -1, "error set phys\n");
 
     status= ioctl(result, UI_DEV_CREATE);

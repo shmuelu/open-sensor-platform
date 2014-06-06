@@ -37,7 +37,8 @@
 #include "osp-sensors.h"
 #include "osp_debuglogging.h"
 #include "virtualsensordevicemanager.h"
-#include "osp_remoteprocedurecalls.h"
+#include "osp-sensor-control-interface.h"
+#include "ospd.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -47,16 +48,18 @@
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
 #define MAX_NUM_FDS(x,y)                ((x) > (y) ? (x) : (y))
-#define ACCEL_UINPUT_NAME               "osp-accelerometer"
-#define GYRO_UINPUT_NAME                "osp-gyroscope"
-#define MAG_UINPUT_NAME                 "osp-magnetometer"
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
-#define TWENTY_MS_IN_US                 (20000)
 #define CONTROL_PIPE_NAME               "/data/misc/osp-control"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
+
+/*-------------------------------------------------------------------------------------------------*\
+ |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
+\*-------------------------------------------------------------------------------------------------*/
+
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -65,31 +68,10 @@
 static void _logErrorIf(bool condition, const char* msg);
 static void _fatalErrorIf(bool condition, int code, const char* msg);
 static void _handleQuitSignals(int signum);
-static void _initialize();
+static void _initialize(VirtualSensorDeviceManager *vsDevMgr);
 static void _deinitialize();
-static void _parseAndHandleEnable(int sensorIndex, char* buffer, ssize_t numBytesInBuffer);
-static VirtualSensorDeviceManager* _pVsDevMgr;
-static int _evdevFds[SENSORHUBD_RESULT_INDEX_COUNT] ={-1};
-
 static int _controlPipeFd = -1;
 
-
-static struct SensorId_t _ospResultCodes[]= {
-    { SENSOR_STEP, SENSOR_STEP_COUNTER },
-    { SENSOR_STEP, SENSOR_STEP_DETECTOR },
-    { SENSOR_CONTEXT_DEVICE_MOTION,	CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION },
-    { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_UNCALIBRATED },
-    { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_CALIBRATED },
-    { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED },
-    { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_CALIBRATED },
-    { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED },
-    { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_CALIBRATED } 
-};
-
-/*-------------------------------------------------------------------------------------------------*\
- |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
-\*-------------------------------------------------------------------------------------------------*/
-static void _onTriAxisSensorResultDataUpdate(SensorType_t sensorType, void* pData);
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C   V A R I A B L E S   D E F I N I T I O N S
@@ -98,6 +80,8 @@ static void _onTriAxisSensorResultDataUpdate(SensorType_t sensorType, void* pDat
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E     F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
+
+
 
 /****************************************************************************************************
  * @fn      _logErrorIf
@@ -127,55 +111,20 @@ static void _fatalErrorIf(bool condition, int code, const char* msg)
 }
 
 
-/****************************************************************************************************
- * @fn      _parseAndHandleEnable
- *          Helper routine for enabling/disabling sensors in the system
- *
- ***************************************************************************************************/
-static void _parseAndHandleEnable(int sensorIndex, char* buffer, ssize_t numBytesInBuffer)
-{
-
-    if (NULL == buffer) {
-        LOG_Err("buffer should never be NULL!!!\n");
-        return;
-    }
-
-    if (numBytesInBuffer < 0) {
-        LOG_Err("not going to try parsing empty buffer\n");
-        return;
-    }
-    if (numBytesInBuffer == 0) {
-        return;
-    }
-    LOGT("%s: sensorIndex %d\r\n", __FUNCTION__, sensorIndex);
-
-    if ('0' == buffer[0]) {
-        LOG_Info("Unsubscribe from sensor index %d\n", (int)sensorIndex);
-        osp_status_t status= OSPD_UnsubscribeResult(_ospResultCodes[sensorIndex]);
-        _logErrorIf(status != OSP_STATUS_OK, "error unsubscribing from result\n");
-
-    } else if ('1' == buffer[0]) {
-        LOG_Info("Subscribe to sensor index %d\n", (int)sensorIndex);
-        osp_status_t status= OSPD_SubscribeResult(_ospResultCodes[sensorIndex], _onTriAxisSensorResultDataUpdate);
-        _logErrorIf(status != OSP_STATUS_OK, "error subscribing to result\n");
-
-    } else {
-        //LOG_Err("unexpected data in enable buffer: %s", buffer);
-    }
 
 
-}
 
 
 /****************************************************************************************************
- * @fn      _initializeNamedPipe
- *          Initializes named pipe that receive requests for sensors' control
- *
- ***************************************************************************************************/
+* @fn _initializeNamedPipe
+* Initializes named pipes that receive requests for sensor control
+*
+***************************************************************************************************/
 static void _initializeNamedPipe()
 {
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
 
+    //Try and remove the pipe if it's already there, but don't complain if it's not
     unlink(CONTROL_PIPE_NAME);
 
     _fatalErrorIf(mkfifo(CONTROL_PIPE_NAME, 0666) != 0, -1, "could not create named pipe");
@@ -186,121 +135,19 @@ static void _initializeNamedPipe()
 
 
 /****************************************************************************************************
- * @fn      _onTriAxisSensorResultDataUpdate
- *          Common callback for sensor data or results received from the hub
- *
- ***************************************************************************************************/
-static void _onTriAxisSensorResultDataUpdate(SensorType_t sensorType, void* pData)
-{
-    OSPD_ThreeAxisData_t* pSensorData= (OSPD_ThreeAxisData_t*)pData;
-    int32_t uinputCompatibleDataFormat[3];
-
-
-    switch(sensorType)  {
-
-    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-        uinputCompatibleDataFormat[0] = pSensorData->data[0].i;
-        uinputCompatibleDataFormat[1] = pSensorData->data[1].i;
-        uinputCompatibleDataFormat[2] = pSensorData->data[2].i;
-#if 0
-        LOGS("RA %.3f (0x%8x), %.3f (0x%8x), %.3f (0x%8x), %lld\n",
-             pSensorData->data[0].f, uinputCompatibleDataFormat[0],
-             pSensorData->data[1].f, uinputCompatibleDataFormat[1],
-             pSensorData->data[2].f, uinputCompatibleDataFormat[2],
-             pSensorData->timestamp.ll);
-#endif
-        _pVsDevMgr->publish(
-                    _evdevFds[SENSORHUBD_ACCELEROMETER_INDEX],
-                    uinputCompatibleDataFormat,
-                    pSensorData->timestamp.ll);
-        break;
-
-
-    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-        uinputCompatibleDataFormat[0] = pSensorData->data[0].i;
-        uinputCompatibleDataFormat[1] = pSensorData->data[1].i;
-        uinputCompatibleDataFormat[2] = pSensorData->data[2].i;
-
-        _pVsDevMgr->publish(
-                    _evdevFds[SENSORHUBD_MAGNETOMETER_INDEX],
-                    uinputCompatibleDataFormat,
-                    pSensorData->timestamp.ll);
-        break;
-
-    case SENSOR_GYROSCOPE_UNCALIBRATED:
-        uinputCompatibleDataFormat[0] = pSensorData->data[0].i;
-        uinputCompatibleDataFormat[1] = pSensorData->data[1].i;
-        uinputCompatibleDataFormat[2] = pSensorData->data[2].i;
-
-        _pVsDevMgr->publish(
-                    _evdevFds[SENSORHUBD_GYROSCOPE_INDEX],
-                    uinputCompatibleDataFormat,
-                    pSensorData->timestamp.ll);
-        break;
-#if 0
-    case SENSOR_CONTEXT_DEVICE_MOTION: 
-        //LOGS("SIGM %.3f (0x%8x), %.3f (0x%8x), %.3f (0x%8x)\n", pSensorData->data[0]);
-
-        uinputCompatibleDataFormat[0]= (int)(pSensorData->data[0]);
-        timeInNano= (int64_t)(NSEC_PER_SEC * pSensorData->timestamp);
-
-        _pVsDevMgr->publish(_evdevFds[SENSORHUBD_SIG_MOTION_INDEX], uinputCompatibleDataFormat, timeInNano, 1);
-        break;
-#endif
-    default:
-        LOG_Err("%s unexpected result type %d\n", __FUNCTION__, sensorType);
-        break;
-    }
-
-}
-
-
-/****************************************************************************************************
- * @fn      _subscribeToAllResults
- *          Subscribes to all available results from sensor hub
- *
- ***************************************************************************************************/
-static void _subscribeToAllResults()
-{
-    osp_status_t status;
-    LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
-
-    status = OSPD_SubscribeResult(SENSOR_ACCELEROMETER_UNCALIBRATED, _onTriAxisSensorResultDataUpdate);
-    _logErrorIf(status != OSP_STATUS_OK, "error subscribing to SENSOR_ACCELEROMETER");
-
-    status = OSPD_SubscribeResult(SENSOR_MAGNETIC_FIELD_UNCALIBRATED, _onTriAxisSensorResultDataUpdate);
-    _logErrorIf(status != OSP_STATUS_OK, "error subscribing to SENSOR_MAGNETIC_FIELD");
-
-    status = OSPD_SubscribeResult(SENSOR_GYROSCOPE_UNCALIBRATED, _onTriAxisSensorResultDataUpdate);
-    _logErrorIf(status != OSP_STATUS_OK, "error subscribing to SENSOR_GYROSCOPE");
-
-    //    status = OSPD_SubscribeResult(SENSOR_CONTEXT_DEVICE_MOTION, _onTriAxisSensorResultDataUpdate);
-    //    _logErrorIf(status != OSP_STATUS_OK, "error subscribing to SENSOR_CONTEXT_DEVICE_MOTION");
-
-    //    status = OSPD_SubscribeResult(SENSOR_STEP_COUNTER, _onTriAxisSensorResultDataUpdate);
-    //    _logErrorIf(status != OSP_STATUS_OK, "error subscribing to SENSOR_STEP_COUNTER");
-
-}
-
-
-/****************************************************************************************************
  * @fn      _initialize
  *          Application initializer
  *
  ***************************************************************************************************/
-static void _initialize()
+static void _initialize(VirtualSensorDeviceManager *vsDevMgr)
 {
     osp_status_t status;
 
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
 
-    //create our raw input virtual sensors
-    _evdevFds[SENSORHUBD_ACCELEROMETER_INDEX] = _pVsDevMgr->createSensor(ACCEL_UINPUT_NAME, "acc0",  INT_MIN, INT_MAX);
-    _evdevFds[SENSORHUBD_MAGNETOMETER_INDEX] = _pVsDevMgr->createSensor(MAG_UINPUT_NAME, "mag0",  INT_MIN, INT_MAX);
-    _evdevFds[SENSORHUBD_GYROSCOPE_INDEX] = _pVsDevMgr->createSensor(GYRO_UINPUT_NAME, "gyr0",  INT_MIN, INT_MAX);
-    //_evdevFds[SENSORHUBD_SIG_MOTION_INDEX]= _pVsDevMgr->createSensor("osp-significant-motion", "sigm0",  INT_MIN, INT_MAX);
-    //_evdevFds[SENSORHUBD_STEP_COUNTER_INDEX]= _pVsDevMgr->createSensor("osp-step-counter", "stc0",  INT_MIN, INT_MAX);
-
+    OSPD_initializeSensors(vsDevMgr);
+    
+    
     //Initialize OSP Daemon
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
     status= OSPD_Initialize();
@@ -313,38 +160,10 @@ static void _initialize()
     //OSPD_GetVersion(versionString, 255);
     //LOG_Info("OSP Daemon version %s\n", versionString);
 
-    _initializeNamedPipes();
-
-    //!!! Debug only
-    _subscribeToAllResults();
+    _initializeNamedPipe();
 
 }
 
-
-/****************************************************************************************************
- * @fn      _stopAllResults
- *          Unsubscribe/stop data flow for sensor data or results
- *
- ***************************************************************************************************/
-static void _stopAllResults()
-{
-    LOGT("%s\r\n", __FUNCTION__);
-
-    osp_status_t status= OSPD_UnsubscribeResult(SENSOR_ACCELEROMETER_UNCALIBRATED);
-    _logErrorIf(status != OSP_STATUS_OK, "error unsubscribing to SENSOR_ACCELEROMETER_UNCALIBRATED");
-
-    status= OSPD_UnsubscribeResult(SENSOR_MAGNETIC_FIELD_UNCALIBRATED);
-    _logErrorIf(status != OSP_STATUS_OK, "error unsubscribing to SENSOR_MAGNETIC_FIELD_UNCALIBRATED");
-
-    status= OSPD_UnsubscribeResult(SENSOR_GYROSCOPE_UNCALIBRATED);
-    _logErrorIf(status != OSP_STATUS_OK, "error unsubscribing to SENSOR_GYROSCOPE_UNCALIBRATED");
-
-    //    status= OSPD_UnsubscribeResult(SENSOR_CONTEXT_DEVICE_MOTION);
-    //    _logErrorIf(status != OSP_STATUS_OK, "error unsubscribing to SENSOR_CONTEXT_DEVICE_MOTION");
-
-    status= OSPD_UnsubscribeResult(SENSOR_STEP_COUNTER);
-    _logErrorIf(status != OSP_STATUS_OK, "error unsubscribing to SENSOR_STEP_COUNTER");
-}
 
 /****************************************************************************************************
  * @fn      _deinitialize
@@ -355,7 +174,7 @@ static void _deinitialize()
 {
     LOGT("%s\r\n", __FUNCTION__);
 
-    _stopAllResults();
+    OSPD_stopAllSensors();
 
     OSPD_Deinitialize();
 }
@@ -398,10 +217,9 @@ int main(int argc, char** argv)
 
     //create this on the stack so we know it always gets cleaned up properly
     VirtualSensorDeviceManager vsDevMgr;
-    _pVsDevMgr= &vsDevMgr;
 
     //After initialize, all the magic happens in the callbacks such as _onAccelerometerResultDataUpdate
-    _initialize();
+    _initialize(&vsDevMgr);
 
     /* This loop handles sensor enable/disable requests */
     // FROM WHERE??
@@ -430,8 +248,6 @@ int main(int argc, char** argv)
 
                 FD_CLR(_controlPipeFd, &readFdSet );
                 if (0 == bytesRead) {
-                    char pipename[255];
-
                     //close and reopen the pipe or we'll spike CPU usage b/c select will always
                     //return available and we'll always get 0 bytes from read
                     close(_controlPipeFd);
@@ -440,7 +256,7 @@ int main(int argc, char** argv)
 
                     continue;
                 }
-                _parseAndHandleEnable(readBuf, bytesRead);
+                OSPD_parseAndHandleSensorControls(readBuf, bytesRead);
             }
         }
     }

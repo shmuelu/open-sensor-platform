@@ -20,15 +20,16 @@
 \*-------------------------------------------------------------------------------------------------*/
 #include <string.h>
 #include <assert.h>
-#include "osp-types.h"
-#include "osp_names.h"
-#include "osp_debuglogging.h"
-#include "osp_configuration.h"
-#include "osp_remoteprocedurecalls.h" //For Status codes -- FIXME!
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <algorithm>
+
+#include "osp-types.h"
+#include "osp_names.h"
+#include "osp_debuglogging.h"
+#include "osp_configuration.h"
+#include "ospd.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
@@ -96,73 +97,6 @@ public:
  |    P U B L I C     F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 
-/****************************************************************************************************
- * @fn      getSizeFromName
- *          Helper routine for getting configuration parameter
- *
- ***************************************************************************************************/
-const unsigned short OSP::OspConfiguration::getSizeFromName( const char* const shortName){
-    static bool initialized = false;
-    static std::map<std::string, unsigned short> _typeToSize;
-    if (!initialized){
-
-        _typeToSize[ Names::RAW_ACCELEROMETER ] = sizeof(double) + sizeof(osp_float_t)*3;
-        _typeToSize[ Names::RAW_MAGNETOMETER ] = sizeof(double) + sizeof(osp_float_t)*3;
-        _typeToSize[ Names::RAW_GYROSCOPE ] = sizeof(double) + sizeof(osp_float_t)*3;
-        initialized = true;
-    }
-    const std::string type = getNamedConfigItem(shortName, SENSOR_TYPE);
-    if ( _typeToSize.find(type) != _typeToSize.end()){
-        return _typeToSize[type];
-    }
-    return -1;
-
-}
-
-
-/****************************************************************************************************
- * @fn      getDimensionFromName
- *          Helper routine for getting configuration parameter
- *
- ***************************************************************************************************/
-const int OSP::OspConfiguration::getDimensionFromName( const char* const shortName){
-    static bool initialized = false;
-    static std::map<std::string, int> _typeToDimension;
-    if (!initialized){
-        _typeToDimension[ Names::RAW_ACCELEROMETER ] = 3;
-        _typeToDimension[ Names::RAW_MAGNETOMETER ] = 3;
-        _typeToDimension[ Names::RAW_GYROSCOPE ] = 3;
-        initialized = true;
-    }
-    const std::string type = getNamedConfigItem(shortName, SENSOR_TYPE);
-    if ( _typeToDimension.find( type ) != _typeToDimension.end()){
-        return _typeToDimension[ type ];
-    }
-    return SIZE_DYNAMIC;
-}
-
-
-/****************************************************************************************************
- * @fn      getTypeFromName
- *          Helper routine for getting configuration parameter
- *
- ***************************************************************************************************/
-const ESensorType OSP::OspConfiguration::getTypeFromName( const char* const shortName ){
-    static bool initialized = false;
-    static std::map<std::string, ESensorType> _nameToSensorType;
-    if (!initialized){
-        _nameToSensorType[ Names::RAW_ACCELEROMETER ] = ESensorType::SENSOR_RAW_ACCELEROMETER;
-        _nameToSensorType[ Names::RAW_MAGNETOMETER ]  = ESensorType::SENSOR_RAW_MAGNETOMETER;
-        _nameToSensorType[ Names::RAW_GYROSCOPE ] = ESensorType::SENSOR_RAW_GYROSCOPE;
-        initialized = true;
-    }
-    const std::string type = getNamedConfigItem(shortName, SENSOR_TYPE);
-    if ( _nameToSensorType.find(type) != _nameToSensorType.end()){
-        return _nameToSensorType[type];
-    }
-    return ESensorType::SENSOR_UNDEFINED;
-
-}
 
 
 /****************************************************************************************************
@@ -441,144 +375,6 @@ OSP::OspConfiguration::setConfigItemInt(
 }
 
 
-/****************************************************************************************************
- * @fn      establishCartesianSensor
- *          Helper routine for creating a default sensor configuration
- *
- ***************************************************************************************************/
-void
-OSP::OspConfiguration::establishCartesianSensor(
-        const char* name,
-        const char* protocol,
-        const char* type,
-        const float period,
-        const float noise[3],
-        const float * const bias,
-        const float * const nonlinear,
-        const float * const shake){
-    float conversion[3] = {1.0f, 1.0f, 1.0f};
-    int swap[3] = {0,1,2};
-    assert(OSPConfig::setConfigItem( "sensor", name, true)==0);
-    OSPConfig::setConfigItem( OSPConfig::keyFrom( name,SENSOR_PROTOCOL).c_str(), protocol);
-    OSPConfig::setConfigItemFloat( OSPConfig::keyFrom( name, SENSOR_NOISE).c_str(), noise ,3);
-    OSPConfig::setConfigItemFloat( OSPConfig::keyFrom( name,SENSOR_RATE).c_str(), &period, 1);
-    if ( bias ){
-        OSPConfig::setConfigItemFloat( OSPConfig::keyFrom( name,SENSOR_BIAS_STABILITY).c_str(),bias,3);
-    }
-    OSPConfig::setConfigItemFloat( OSPConfig::keyFrom( name, SENSOR_CONVERSION).c_str(),conversion,3);
-    if( nonlinear){
-        OSPConfig::setConfigItemFloat( OSPConfig::keyFrom( name, SENSOR_NON_LINEAR).c_str(),nonlinear,12);
-    }
-    if (shake){
-        OSPConfig::setConfigItemFloat( OSPConfig::keyFrom( name, SENSOR_SHAKE).c_str(),shake,3);
-    }
-
-    OSPConfig::setConfigItemInt( OSPConfig::keyFrom( name, SENSOR_SWAP).c_str(),swap,3);
-    OSPConfig::setConfigItem(
-                OSPConfig::keyFrom( name, OSPConfig::SENSOR_TYPE).c_str(),
-                type);
-}
-
-
-/****************************************************************************************************
- * @fn      establishDefaultConfig
- *          Helper routine for creating a default configuration as a starting point
- *
- ***************************************************************************************************/
-void
-OSP::OspConfiguration::establishDefaultConfig(const char* const protocol){
-    int tick_us = 24;
-
-    setConfigItem(OSPConfig::PROTOCOL_RELAY_DRIVER, "sensor_relay_kernel");
-    setConfigItemInt(OSPConfig::PROTOCOL_RELAY_TICK_USEC, &tick_us, 1);
-    /* MAG */
-    {
-        const float noise[3] = {
-            DEFAULT_MAGNETOMETER_NOISE,
-            DEFAULT_MAGNETOMETER_NOISE,
-            DEFAULT_MAGNETOMETER_NOISE
-        };
-        const float bias[3] = {0.0f, 0.0f, 0.0f};
-        float period = 0.02f;//50Hz
-        float conversion[3] = {0.0625f,0.0625f,0.0625f};
-        int swap[3] = {0,1,2};
-        establishCartesianSensor(
-                    "mag1",
-                    protocol,
-                    Names::RAW_MAGNETOMETER,
-                    period,
-                    noise,
-                    bias);
-        OSPConfig::setConfigItem(
-                    OSPConfig::keyFrom("mag1", SENSOR_INPUT_NAME).c_str(),
-                    Names::RAW_MAGNETOMETER );
-        OSPConfig::setConfigItemFloat(
-                    OSPConfig::keyFrom("mag1", SENSOR_CONVERSION).c_str(),
-                    conversion,
-                    3,
-                    true);
-        OSPConfig::setConfigItemInt( "mag1.swap",swap,3);
-    }
-
-
-    /* ACCEL */
-    {
-        const float noise[3] = {
-            DEFAULT_ACCELEROMETER_NOISE,
-            DEFAULT_ACCELEROMETER_NOISE,
-            DEFAULT_ACCELEROMETER_NOISE
-        };
-        const float bias[3] = {0.0f, 0.0f, 0.0f};
-        float period = 0.02f;//50Hz
-        float conversion[3] = {0.01915893f,0.01915893f,0.01915893f};
-        int swap[3] = {0,1,2};
-        establishCartesianSensor(
-                    "acc1",
-                    protocol,
-                    Names::RAW_ACCELEROMETER,
-                    period,
-                    noise,
-                    bias);
-        OSPConfig::setConfigItem(
-                    OSPConfig::keyFrom("acc1", SENSOR_INPUT_NAME).c_str(),
-                    Names::RAW_ACCELEROMETER );
-        OSPConfig::setConfigItemFloat(
-                    OSPConfig::keyFrom("acc1", SENSOR_CONVERSION).c_str(),
-                    conversion,
-                    3,
-                    true);
-        OSPConfig::setConfigItemInt( "acc1.swap",swap,3);
-    }
-
-    /* GYRO */
-    {
-        const float noise[3] = {
-            DEFAULT_GYROSCOPE_NOISE,
-            DEFAULT_GYROSCOPE_NOISE,
-            DEFAULT_GYROSCOPE_NOISE
-        };
-        const float bias[3] = {0.0f, 0.0f, 0.0f};
-        float period = 0.01f;//100Hz
-        float conversion[3] = {0.001064127f,0.001064127f,0.001064127f};
-        int swap[3] = {0,1,2};
-        establishCartesianSensor(
-                    "gyr1",
-                    protocol,
-                    Names::RAW_GYROSCOPE,
-                    period,
-                    noise,
-                    bias);
-        OSPConfig::setConfigItem(
-                    OSPConfig::keyFrom("gyr1", SENSOR_INPUT_NAME).c_str(),
-                    Names::RAW_GYROSCOPE );
-        OSPConfig::setConfigItemFloat(
-                    OSPConfig::keyFrom("gyr1", SENSOR_CONVERSION).c_str(),
-                    conversion,
-                    3,
-                    true);
-        OSPConfig::setConfigItemInt( "gyr1.swap",swap,3);
-    }
-}
 
 
 /****************************************************************************************************

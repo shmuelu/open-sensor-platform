@@ -32,26 +32,6 @@
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 
-typedef struct {
-    std::string uinputName;
-    std::string sysDelayPath;  //Sysfs path for setting polling interval
-    std::string sysEnablePath; //Sysfs path for enable
-    int32_t     enableValue;   //Value that enables the device (typically 1)*
-    int32_t     disableValue;  //Value that disables the device (typically 0)
-    int32_t     fd;
-    int32_t     repubFd;
-    osp_float_t  conversion[3];
-    int         swap[3];
-} DeviceConfig_t;
-
-/* per-cpu buffer info */
-typedef struct
-{
-    size_t produced;
-    size_t consumed;
-    size_t max_backlog; /* max # sub-buffers ready at one time */
-} RelayBufStatus_t;
-
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
@@ -63,7 +43,19 @@ typedef struct
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
+/****************************************************************************************************
+ * @fn      InitializeRelayInput
+ *          Initializes the relay-fs interface and associated data structures.
+ *
+ ***************************************************************************************************/
+int32_t InitializeRelayInput( std::string deviceRelayInputName, int32_t relayTickUsec  );
 
+/****************************************************************************************************
+ * @fn      terminateRelayThread
+ *          terminate the relay thread.
+ *
+ ***************************************************************************************************/
+void terminateRelayThread(void);
 
 #endif /* _RELAY_INTERFACE_H_ */
 /*-------------------------------------------------------------------------------------------------*\

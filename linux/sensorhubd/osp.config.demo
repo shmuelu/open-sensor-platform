@@ -1,0 +1,120 @@
+#?format_version=2.0
+
+######################################################################################################
+## Open Sensor Platform Project
+## https://github.com/sensorplatforms/open-sensor-platform
+##
+## Copyright (C) 2013 Sensor Platforms Inc.
+##
+## Licensed under the Apache License, Version 2.0 (the "License");
+## you may not use this file except in compliance with the License.
+## You may obtain a copy of the License at
+##
+##      http://www.apache.org/licenses/LICENSE-2.0
+##
+## Unless required by applicable law or agreed to in writing, software
+## distributed under the License is distributed on an "AS IS" BASIS,
+## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+## See the License for the specific language governing permissions and
+## limitations under the License.
+##
+######################################################################################################
+
+
+# use this file to interface ospd to your physical/logical sensor drivers
+#
+#  * sensor name is the name of the input-event device
+#  * swap table is to account for sensors not physically aligned with android conventions
+#    ** 0,1,2 is no swap at all
+#    ** 1,0,2 swaps x and y
+#    ** 2,0,1 swaps device z into android x, device x into android y, and device y into android z
+#  * noise as computed from PSD during platform characterization
+#  * convert is the factor to multiply by to go from sensor LSB to android units, x,y,z
+#  * swaps are applied before conversions
+
+
+## LSM303DLHC Accelerometer in +-4G mode
+#
+# 4/2048  LSB/g = 0.001953125  
+#
+# Noise= 9.81/1024 * 6.0 m/s^2
+#
+# 
+sensor=osp-uncal-accelerometer
+osp-uncal-accelerometer.driver = "osp-uncal-accelerometer"
+osp-uncal-accelerometer.conversion = 0.019150391,0.019150391,0.019150391
+osp-uncal-accelerometer.defaultrate = 0.020000
+osp-uncal-accelerometer.delay-path = "delay"
+osp-uncal-accelerometer.dimension = 3
+osp-uncal-accelerometer.enable-path = "enable"
+osp-uncal-accelerometer.disable-value = 0
+osp-uncal-accelerometer.enable-value = 1
+osp-uncal-accelerometer.factorycal = 1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000
+osp-uncal-accelerometer.noise = 0.057500,0.057500,0.057500
+osp-uncal-accelerometer.protocol = "relay"
+osp-uncal-accelerometer.saturation = 80.000000
+osp-uncal-accelerometer.swap = 0,1,2
+osp-uncal-accelerometer.type = "SENSOR_ACCELEROMETER"
+osp-uncal-accelerometer.subType = "SENSOR_ACCELEROMETER_UNCALIBRATED"
+
+
+## L3GD20 Gyro  2000 dps mode
+# 
+# 70mdps/digit in 2000 dps mode
+# conversion to rads/sec: 0.070 * 3.14 / 180
+#
+sensor=osp-uncal-gyroscope
+osp-uncal-gyroscope.driver = "osp-uncal-gyroscope"
+osp-uncal-gyroscope.bias-stability = 0.000020,0.000020,0.000020
+osp-uncal-gyroscope.conversion = 0.001225,0.001225,0.001225
+osp-uncal-gyroscope.defaultrate = 0.010000
+osp-uncal-gyroscope.enable-path = "enable"
+osp-uncal-gyroscope.enable-value = 1
+osp-uncal-gyroscope.disable-value = 0
+osp-uncal-gyroscope.delay-path = "delay"
+osp-uncal-gyroscope.dimension = 3
+osp-uncal-gyroscope.driver = "L3GD20"
+osp-uncal-gyroscope.factorycal = 1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000
+osp-uncal-gyroscope.noise = 0.001500,0.001500,0.001500
+osp-uncal-gyroscope.non-linear = 0.020000,0.000000,0.000000,0.000000,0.020000,0.000000,0.000000,0.000000,0.020000,0.000000,0.000000,0.000000
+osp-uncal-gyroscope.protocol = "relay"
+osp-uncal-gyroscope.saturation = 34.799999
+osp-uncal-gyroscope.shake = 0.000000,0.000000,0.000000
+osp-uncal-gyroscope.swap = 0,1,2
+osp-uncal-gyroscope.type = "SENSOR_GYROSCOPE"
+osp-uncal-gyroscope.type = "SENSOR_GYROSCOPE_UNCALIBRATED"
+
+
+## LSM303DLHC magnetometer
+#
+# conversion in milli-Gause/LSB
+# Noise in uT
+#
+sensor=osp-uncal-magnetometer
+osp-uncal-accelerometer.driver = "osp-uncal-magnetometer"
+osp-uncal-magnetometer.conversion = 1.4925, 1.4925, 1.6666
+osp-uncal-magnetometer.defaultrate = 0.020000
+osp-uncal-magnetometer.delay-path = ""
+osp-uncal-magnetometer.dimension = 3
+osp-uncal-magnetometer.enable-path = "enable"
+osp-uncal-magnetometer.disable-value = 0
+osp-uncal-magnetometer.enable-value = 1
+osp-uncal-magnetometer.delay-path = "delay"
+osp-uncal-magnetometer.expectednorm = 40.000000
+osp-uncal-magnetometer.factorycal = 1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000
+osp-uncal-magnetometer.noise = 1.300000,1.300000,1.300000
+osp-uncal-magnetometer.protocol = "relay"
+osp-uncal-magnetometer.saturation = 2000.000000
+osp-uncal-magnetometer.swap = 1,0,2
+osp-uncal-magnetometer.type = "SENSOR_MAGNETIC_FIELD"
+osp-uncal-magnetometer.subType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED"
+
+##
+## Protocol
+##
+policy.background-gyrocal = 0
+policy.use-debug-logging = 0
+policy.verbose = 0
+
+
+

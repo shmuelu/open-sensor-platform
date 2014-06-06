@@ -24,6 +24,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "osp-types.h"
 
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
@@ -213,30 +214,9 @@ public:
     static void clear( const bool final = false);
 
 
-    static void establishCartesianSensor( const char* const name,
-                                          const char* const protocol,
-                                          const char* const type,
-                                          const float period,
-                                          const float noise[3],
-                                          const float * const bias = NULL,
-                                          const float * const nonlinear = NULL,
-                                          const float * const shake = NULL );
-
+ 
     static int dump( const char* const filename );
 
-    static void establishDefaultConfig( const char* const protocol = "domain_socket");
-    static const unsigned short getSizeFromName( const char* const shortName);
-    static const ESensorType getTypeFromName( const char* const shortName );
-
-    static const int getDimensionFromName( const char* const shortName);
-
-private:
-
-    class Init{
-    public:
-        Init();
-    };
-    static Init initializer;
     /*
          * set the string value of a config item;
          * returns -1 if name is already in use and override is not allowed
@@ -268,6 +248,14 @@ private:
                       const int* const value,
                       const unsigned int size,
                       const bool override = false);
+
+private:
+
+    class Init{
+    public:
+        Init();
+    };
+    static Init initializer;
 
     static
     std::map< std::string, std::vector<const char*> > configItemsString;
