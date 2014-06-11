@@ -96,7 +96,9 @@ static uint8_t ReadAccReg( uint8_t regAddr )
 
     return retVal;
 }
-#endif
+
+
+#endif /* ifdef DEBUG_XL */
 
 
 /****************************************************************************************************
@@ -107,6 +109,7 @@ static uint8_t ReadAccReg( uint8_t regAddr )
 static void ReadAccMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
 {
     uint8_t result;
+
     regAddr = regAddr | 0x80;     /* For multi-byte read MSB of sub-addr field should be 1 */
 
     /* Get the transfer going. Rest is handled in the ISR */
@@ -160,7 +163,7 @@ static void Accel_DumpRegisters( void )
     D0_printf("\t TIME_WINDOW         (0x3D) %02X\r\n", ReadAccReg( LSM_A_TIME_WINDOW        ));
     D0_printf("----------------------------------------------\r\n");
     delay_ms(50);
-#endif
+#endif /* ifdef DEBUG_XL */
 }
 
 
@@ -201,7 +204,7 @@ void Accel_Initialize( AccelInitOption option )
     Accel_ConfigDataInt( false ); //Important: Causes stuck int to get cleared from prev inits
 
     /* FS = +/- 4g, Block Data Update disable, Enable High Resolution Mode (needed for normal mode) */
-    ctrl4 = (uint8_t) ( LSM_Acc_FS_4g | LSM_Acc_HighRes_Out_Mode );
+    ctrl4 = (uint8_t)( LSM_Acc_FS_4g | LSM_Acc_HighRes_Out_Mode );
     WriteAccReg( LSM_A_CTRL_REG4, ctrl4 );
 
     /* Latch interrupt request on INT1, FIFO disabled */
@@ -225,12 +228,11 @@ void Accel_Initialize( AccelInitOption option )
  ***************************************************************************************************/
 void Accel_HardwareSetup( osp_bool_t enable )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
-    EXTI_InitTypeDef  EXTI_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
 
-    if (enable == true)
-    {
+    if (enable == true) {
         /* Initialize the I2C Driver interface */
         ASF_assert( true == I2C_HardwareSetup( ACCEL_BUS ) ); //TBD - can be made bus agnostic!
 
@@ -241,7 +243,7 @@ void Accel_HardwareSetup( osp_bool_t enable )
         GPIO_InitStructure.GPIO_Pin = ACCEL_INT;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-        GPIO_Init (ACCEL_INT_GPIO_GRP, &GPIO_InitStructure);
+        GPIO_Init(ACCEL_INT_GPIO_GRP, &GPIO_InitStructure);
 
         GPIO_EXTILineConfig(GPIO_PORT_SRC_ACCEL_INT, GPIO_PIN_SRC_ACCEL_INT);
 
@@ -261,14 +263,10 @@ void Accel_HardwareSetup( osp_bool_t enable )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
         /* Int enabled via Accel_ConfigDataInt() */
+    } else { //TODO: disable interrupts and free GPIOs
+             //TODO!!
     }
-    else //TODO: disable interrupts and free GPIOs
-    {
-        //TODO!!
-    }
-
 }
-
 
 
 /****************************************************************************************************
@@ -319,12 +317,9 @@ void Accel_ConfigDataInt( osp_bool_t enInt )
     uint8_t ctrl3;
 
     /* Enable DRDY1 on INT1 for enabling interrupt based accel data reads */
-    if (enInt)
-    {
+    if (enInt) {
         ctrl3 = LSM_Acc_DRDY1_onINT1;
-    }
-    else
-    {
+    } else {
         ctrl3 = 0;
         Accel_ClearDataInt();
     }
@@ -357,6 +352,7 @@ osp_bool_t Accel_SelfTest( void )
 {
     return true; //Not supported
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

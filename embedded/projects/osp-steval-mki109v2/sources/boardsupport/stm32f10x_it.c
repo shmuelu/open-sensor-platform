@@ -85,14 +85,13 @@ void HardFault_Handler(void)
 {
     /* Go to infinite loop when Hard Fault exception occurs */
     printf("\r\n!! HARD FAULT !!");
-    while (1)
-    {
+    while (1) {
         __IO uint32_t i;
-        //Fast blink the indicator LED
+        /* Fast blink the indicator LED */
         LED_On( HARD_FAULT_LED );
-        for (i = 0; i < 500000; i++);
+        for (i = 0; i < 500000; i++) ;
         LED_Off( HARD_FAULT_LED );
-        for (i = 0; i < 500000; i++);
+        for (i = 0; i < 500000; i++) ;
     }
 }
 
@@ -105,8 +104,7 @@ void HardFault_Handler(void)
 void MemManage_Handler(void)
 {
     /* Go to infinite loop when Memory Manage exception occurs */
-    while (1)
-    {
+    while (1) {
     }
 }
 
@@ -119,8 +117,7 @@ void MemManage_Handler(void)
 void BusFault_Handler(void)
 {
     /* Go to infinite loop when Bus Fault exception occurs */
-    while (1)
-    {
+    while (1) {
     }
 }
 
@@ -133,8 +130,7 @@ void BusFault_Handler(void)
 void UsageFault_Handler(void)
 {
     /* Go to infinite loop when Usage Fault exception occurs */
-    while (1)
-    {
+    while (1) {
     }
 }
 
@@ -160,12 +156,11 @@ void DebugMon_Handler(void)
  ***************************************************************************************************/
 void EXTI3_IRQHandler(void)
 {
-    // !!WARNING!!: The time stamp extension scheme implemented in osp-api.c will need to be changed
-    // if timer capture is used for sensor time-stamping. Current scheme will cause time jumps if two
-    // sensors are timer-captured before & after rollover but the sensor that was captured after
-    // rollover is queued before the sensor that was captured before timer rollover
-    if (EXTI_GetFlagStatus(EXTI_LINE_ACCEL_INT) != RESET)
-    {
+    /* !!WARNING!!: The time stamp extension scheme implemented in osp-api.c will need to be changed
+     * if timer capture is used for sensor time-stamping. Current scheme will cause time jumps if two
+     * sensors are timer-captured before & after rollover but the sensor that was captured after
+     * rollover is queued before the sensor that was captured before timer rollover */
+    if (EXTI_GetFlagStatus(EXTI_LINE_ACCEL_INT) != RESET) {
         const struct SensorId_t sensorId = {SENSOR_ACCELEROMETER, SENSOR_ACCELEROMETER_RAW};
         /* Clear the EXTI line pending bit */
         EXTI_ClearFlag(EXTI_LINE_ACCEL_INT);
@@ -188,8 +183,7 @@ void DMA1_Channel4_IRQHandler(void)
     void *pNewBuf;
     uint8_t *pPrintBuf;
 
-    if(DMA_GetFlagStatus(DMA1_FLAG_TC4))
-    {
+    if (DMA_GetFlagStatus(DMA1_FLAG_TC4)) {
         DMA_ClearFlag(DMA1_FLAG_TC4);
 
         /* Disable DMA Channel */
@@ -197,8 +191,7 @@ void DMA1_Channel4_IRQHandler(void)
 
         /*Get the next print buffer */
         pNewBuf = GetNextBuffer(&gDbgUartPort);
-        if (pNewBuf != NULL)
-        {
+        if (pNewBuf != NULL) {
             pPrintBuf = M_GetBuffStart(pNewBuf);
             UartDMAConfiguration(&gDbgUartPort, pPrintBuf, M_GetBuffLen(pNewBuf));
             /* Enable DMA Channel Transfer complete interrupt */
@@ -208,8 +201,8 @@ void DMA1_Channel4_IRQHandler(void)
             gDbgUartPort.EnableDMAChannel();
         }
     }
-# endif //UART_DMA_ENABLE
-#endif
+# endif /* UART_DMA_ENABLE */
+#endif /* if defined STEVAL_MKI109V2 */
 }
 
 
@@ -275,8 +268,7 @@ void USART1_IRQHandler(void)
 #if defined STEVAL_MKI109V2
     uint8_t nextByte;
 
-    if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET)
-    {
+    if (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET) {
         /* Read one byte from the receive data register */
         nextByte = DbgUartReadByte();
         RxBytesToBuff( &gDbgUartPort, nextByte );
@@ -288,21 +280,17 @@ void USART1_IRQHandler(void)
     * is called to transmit new data.
     */
 # ifndef UART_DMA_ENABLE
-    if (USART_GetFlagStatus(USART1, USART_FLAG_TXE) != RESET)
-    {
-        if (GetNextByteToTx( &nextByte ))
-        {
+    if (USART_GetFlagStatus(USART1, USART_FLAG_TXE) != RESET) {
+        if (GetNextByteToTx( &nextByte )) {
             /* Write one byte to the transmit data register */
             USART_SendData(USART1, nextByte);
-        }
-        else
-        {
+        } else {
             /* Disable the USART1 Transmit interrupt */
             USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
         }
     }
 # endif
-#endif //STEVAL_MKI109V2
+#endif /* STEVAL_MKI109V2 */
 }
 
 
@@ -313,12 +301,11 @@ void USART1_IRQHandler(void)
  ***************************************************************************************************/
 void EXTI15_10_IRQHandler(void)
 {
-    // !!WARNING!!: The time stamp extension scheme implemented in osp-api.c will need to be changed
-    // if timer capture is used for sensor time-stamping. Current scheme will cause time jumps if two
-    // sensors are timer-captured before & after rollover but the sensor that was captured after
-    // rollover is queued before the sensor that was captured before timer rollover
-    if (EXTI_GetFlagStatus(MAG_RDY_INT_EXTI_LINE) != RESET)
-    {
+    /* !!WARNING!!: The time stamp extension scheme implemented in osp-api.c will need to be changed
+     * if timer capture is used for sensor time-stamping. Current scheme will cause time jumps if two
+     * sensors are timer-captured before & after rollover but the sensor that was captured after
+     * rollover is queued before the sensor that was captured before timer rollover */
+    if (EXTI_GetFlagStatus(MAG_RDY_INT_EXTI_LINE) != RESET) {
         const struct SensorId_t sensorId = {SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_RAW};
 
         /* Clear the EXTI line pending bit */
@@ -327,8 +314,7 @@ void EXTI15_10_IRQHandler(void)
         /* NOTE: No I2C transactions (rd/wr) allowed from ISR */
     }
 
-    if (EXTI_GetFlagStatus(GYRO_RDY_INT_EXTI_LINE) != RESET)
-    {
+    if (EXTI_GetFlagStatus(GYRO_RDY_INT_EXTI_LINE) != RESET) {
         const struct SensorId_t sensorId = {SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_RAW};
 
         /* Clear the EXTI line pending bit */

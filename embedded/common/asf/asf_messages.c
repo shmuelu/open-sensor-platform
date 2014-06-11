@@ -79,17 +79,15 @@ static void _ASFDeleteMessage ( MessageBuffer **pMbuf, char *_file, int _line )
     MessageBlock *pBlock;
 
     /** This is where we release the memory allocated when the message was created */
-    if (*pMbuf != NULLP)
-    {
+    if (*pMbuf != NULLP) {
         /* Get the block pointer */
-        M_GetMsgBlockFromBuffer (pBlock, *pMbuf);
+        M_GetMsgBlockFromBuffer(pBlock, *pMbuf);
 
         ASF_assert( _free_box( mpool, pBlock ) == 0 );
     }
 
     *pMbuf = NULLP;
 }
-
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -133,10 +131,10 @@ AsfResult_t _ASFCreateMessage( MessageId msgId, uint16_t msgSize, MessageBuffer 
     if (pBlock == NULLP) return ASF_ERR_MSG_BUFF;
 
     pBlock->header.length = msgSize;
-    pBlock->rec.msgId     = msgId;
+    pBlock->rec.msgId = msgId;
 
     /* Set the user message buffer now */
-    *pMbuf = (MessageBuffer *)&pBlock->rec;
+    *pMbuf = (MessageBuffer*)&pBlock->rec;
     return ASF_OK;
 }
 
@@ -163,22 +161,18 @@ AsfResult_t _ASFSendMessage ( TaskId destTask, MessageBuffer *pMbuf, char *_file
     ASF_assert_var( pMbuf != NULLP, pMbuf->msgId, 0, 0 );
 
     /* Get the block pointer */
-    M_GetMsgBlockFromBuffer (pBlock, pMbuf);
+    M_GetMsgBlockFromBuffer(pBlock, pMbuf);
 
     pBlock->header.destTask = destTask;
 
     /* Send the message without pending */
-    if ( GetContext() != CTX_ISR )
-    {
+    if (GetContext() != CTX_ISR) {
         err = os_mbx_send( C_gAsfTaskInitTable[destTask].queue, pMbuf, 0 );
-        if (err != OS_R_OK) //Mailbox is not valid or full
-        {
+        if (err != OS_R_OK) { //Mailbox is not valid or full
             ASF_assert( _free_box( mpool, pBlock ) == 0 );
             return ASF_ERR_Q_FULL;
         }
-    }
-    else
-    {
+    } else {
         err = isr_mbx_check( C_gAsfTaskInitTable[destTask].queue );
         ASF_assert_var(err != 0, err, pMbuf->msgId, destTask);
         isr_mbx_send( C_gAsfTaskInitTable[destTask].queue, pMbuf );
@@ -204,13 +198,13 @@ AsfResult_t _ASFSendMessage ( TaskId destTask, MessageBuffer *pMbuf, char *_file
  ***************************************************************************************************/
 void _ASFReceiveMessage ( TaskId rcvTask, MessageBuffer **pMbuf, char *_file, int _line )
 {
-    OS_RESULT   err;
+    OS_RESULT err;
 
     /* Delete old/previous message to release its buffer */
     _ASFDeleteMessage( pMbuf, _file, _line );
 
     /* Wait for receive */
-    err = os_mbx_wait( C_gAsfTaskInitTable[rcvTask].queue, (void **)pMbuf, OS_WAIT_FOREVER );
+    err = os_mbx_wait( C_gAsfTaskInitTable[rcvTask].queue, (void**)pMbuf, OS_WAIT_FOREVER );
     ASF_assert_var(((err == OS_R_OK) || (err == OS_R_MBX)), err, 0, 0);
 }
 
@@ -232,15 +226,14 @@ void _ASFReceiveMessage ( TaskId rcvTask, MessageBuffer **pMbuf, char *_file, in
  ***************************************************************************************************/
 osp_bool_t _ASFReceiveMessagePoll ( TaskId rcvTask, MessageBuffer **pMbuf, char *_file, int _line )
 {
-    OS_RESULT   err;
+    OS_RESULT err;
 
     /* Delete old message to release its buffer */
     _ASFDeleteMessage( pMbuf, _file, _line );
 
     /* Wait for receive */
-    err = os_mbx_wait( C_gAsfTaskInitTable[rcvTask].queue, (void **)pMbuf, OS_WAIT_NEVER );
-    if (err == OS_R_TMO)
-    {
+    err = os_mbx_wait( C_gAsfTaskInitTable[rcvTask].queue, (void**)pMbuf, OS_WAIT_NEVER );
+    if (err == OS_R_TMO) {
         return false;
     }
     ASF_assert_var(((err == OS_R_OK) || (err == OS_R_MBX)), err, 0, 0);

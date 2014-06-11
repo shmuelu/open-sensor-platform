@@ -70,7 +70,7 @@ extern "C" {
 #define TOFIX_EXTENDED(x) ((NTEXTENDED)(((osp_float_t)x) * (osp_float_t)(1UL << QFIXEDPOINTEXTENDED) ))
 
 /* fixed point number of arbitrary q to a floating point number  */
-#define TOFLT_CUSTOM(x,q) ((osp_float_t)(x) / (osp_float_t)(1UL << (q)))
+#define TOFLT_CUSTOM(x, q) ((osp_float_t)(x) / (osp_float_t)(1UL << (q)))
 
 /* to floating point from fixed point */
 #define TOFLT(x) ((osp_float_t)(x) / (osp_float_t)(1 << QFIXEDPOINT))
@@ -84,7 +84,7 @@ extern "C" {
 /*to floating point from fixed point extended */
 #define TOFLT_EXTENDED(x) ((osp_float_t)(x) / (osp_float_t)(1UL << QFIXEDPOINTEXTENDED))
 
-#define ABS(x) ( ( x ) < 0 ? ( ((x)== -(x))? -(x+1) : - ( x ) ) : ( x ) )
+#define ABS(x) ( ( x ) < 0 ? ( ((x)== -(x)) ? -(x + 1) : -( x ) ) : ( x ) )
 
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
@@ -115,4 +115,4 @@ typedef int64_t NTTIME; /* 64 bit, Q24 fixed point */
 }
 #endif
 
-#endif
+#endif // ifndef _FIXEDPOINTTYPES_H_

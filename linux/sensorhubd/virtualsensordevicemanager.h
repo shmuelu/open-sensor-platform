@@ -34,8 +34,7 @@
  |    T Y P E / C L A S S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 //! manages the lifecycle of virtual sensor device file descriptors
-class VirtualSensorDeviceManager
-{
+class VirtualSensorDeviceManager {
 public:
     VirtualSensorDeviceManager( const int sleepus = 10000);
     ~VirtualSensorDeviceManager();

@@ -109,6 +109,7 @@ static uint8_t ReadMagReg( uint8_t regAddr )
 static void ReadMagMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
 {
     uint8_t result;
+
     regAddr = regAddr | 0x80;     /* For multi-byte read MSB of sub-addr field should be 1 */
 
     /* Get the transfer going. Rest is handled in the ISR */
@@ -118,7 +119,9 @@ static void ReadMagMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
     /* Wait for status */
     I2C_Wait_Completion();
 }
-#endif
+
+
+#endif /* if 0 */
 
 /****************************************************************************************************
  * @fn      Mag_DumpRegisters
@@ -156,8 +159,8 @@ void Mag_Initialize( void )
     uint8_t value;
 
     /* Init the Bosch Driver for mag */
-    bmc150mag.bus_write  = dev_i2c_write;
-    bmc150mag.bus_read   = dev_i2c_read;
+    bmc150mag.bus_write = dev_i2c_write;
+    bmc150mag.bus_read = dev_i2c_read;
     bmc150mag.delay_msec = dev_i2c_delay;
     bmm050_init(&bmc150mag);
 
@@ -199,12 +202,11 @@ void Mag_Initialize( void )
  ***************************************************************************************************/
 void Mag_HardwareSetup( osp_bool_t enable )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
-    EXTI_InitTypeDef  EXTI_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
 
-    if (enable == true)
-    {
+    if (enable == true) {
         /* Initialize the I2C Driver interface */
         ASF_assert( true == I2C_HardwareSetup( I2C_SENSOR_BUS ) );
 
@@ -212,12 +214,12 @@ void Mag_HardwareSetup( osp_bool_t enable )
         RCC_APB2PeriphClockCmd( RCC_Periph_MAG_INT_GPIO, ENABLE );
 
         /* Configure INT interrupt Pin */
-        GPIO_InitStructure.GPIO_Pin   = MAG_INT;
-        GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-        GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+        GPIO_InitStructure.GPIO_Pin = MAG_INT;
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+        GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_400KHz; //Don't care for input mode
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;     //Don't care for input mode
-        GPIO_Init (MAG_INT_GPIO_GRP, &GPIO_InitStructure);
+        GPIO_Init(MAG_INT_GPIO_GRP, &GPIO_InitStructure);
 
         /* Enable SYSCFG clock */
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
@@ -240,14 +242,10 @@ void Mag_HardwareSetup( osp_bool_t enable )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
         /* Int enabled via Mag_ConfigDataInt() */
+    } else { //TODO: disable interrupts and free GPIOs
+             //TODO!!
     }
-    else //TODO: disable interrupts and free GPIOs
-    {
-        //TODO!!
-    }
-
 }
-
 
 
 /****************************************************************************************************
@@ -269,8 +267,7 @@ void Mag_ReadData( MagData_t *pxyzData )
 
     //add timestamp here!
     pxyzData->timeStamp = RTC_GetCounter();
-    if (pxyzData->timeStamp < lastRtc)
-    {
+    if (pxyzData->timeStamp < lastRtc) {
         MagTimeExtend++; //Rollover counter
     }
     lastRtc = pxyzData->timeStamp;
@@ -285,10 +282,11 @@ void Mag_ReadData( MagData_t *pxyzData )
 void Mag_ClearDataInt( void )
 {
     volatile uint8_t value;
+
     /* Interrupts for DRDY is cleared on data reads */
-    bmm050_read_register(BMM050_DATAX_LSB, (uint8_t*)&value, 1);
-    bmm050_read_register(BMM050_DATAX_MSB, (uint8_t*)&value, 1);
-    bmm050_read_register(BMM050_R_LSB, (uint8_t*)&value, 1);
+    bmm050_read_register(BMM050_DATAX_LSB, (uint8_t *)&value, 1);
+    bmm050_read_register(BMM050_DATAX_MSB, (uint8_t *)&value, 1);
+    bmm050_read_register(BMM050_R_LSB, (uint8_t *)&value, 1);
     value = value;
 }
 
@@ -300,12 +298,9 @@ void Mag_ClearDataInt( void )
  ***************************************************************************************************/
 void Mag_ConfigDataInt( osp_bool_t enInt )
 {
-    if (enInt)
-    {
+    if (enInt) {
         bmm050_config_drdy_int(1);
-    }
-    else
-    {
+    } else {
         bmm050_config_drdy_int(0);
     }
 }
@@ -333,6 +328,7 @@ osp_bool_t Mag_SelfTest( void )
 {
     return true; //Not supported
 }
+
 
 /****************************************************************************************************
  * @fn      Mag_SetLowPowerMode

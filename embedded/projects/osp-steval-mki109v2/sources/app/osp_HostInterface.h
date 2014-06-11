@@ -26,119 +26,118 @@
 |	C O N S T A N T S   &   M A C R O S
 \*----------------------------------------------------------------------------*/
 #ifdef __KERNEL__
-#   define OSP_SH_SUSPEND_DELAY 100		/* msec suspend delay*/
+# define OSP_SH_SUSPEND_DELAY 100     /* msec suspend delay*/
 #endif
 
 
-#define SH_WHO_AM_I				 0x54
-#define SH_VERSION0				 0x01
-#define SH_VERSION1				 0x22
+#define SH_WHO_AM_I              0x54
+#define SH_VERSION0              0x01
+#define SH_VERSION1              0x22
 
 #define osp_pack __attribute__ ((__packed__))
 
 #define OSP_HOST_MAX_BROADCAST_BUFFER_SIZE 256
 
 #ifndef __KERNEL__
-#include <stdint.h>
+# include <stdint.h>
 #endif
 #include "osp-types.h"
 
 #ifdef __KERNEL__
-#include "linux/osp-sensors.h"
-#include "linux/osp-sensor-control-interface.h"
+# include "linux/osp-sensors.h"
+# include "linux/osp-sensor-control-interface.h"
 #else
-#include "osp-sensors.h"
-#include "osp-sensor-control-interface.h"
+# include "osp-sensors.h"
+# include "osp-sensor-control-interface.h"
 #endif
 
 struct osp_pack Timestamp40_t {
-	uint32_t timeStamp32;
-	uint8_t  timeStamp40;
+    uint32_t timeStamp32;
+    uint8_t timeStamp40;
 };
 
 struct osp_pack sh_motion_sensor_broadcast_node {
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
-	int16_t Data[3];	/* Raw sensor data */
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
+    int16_t Data[3];    /* Raw sensor data */
 };
 
 struct osp_pack sh_motion_uncalibrated_sensor_broadcast_node {
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
-	int16_t Data[3];	/* Raw sensor data */
-	int16_t Offset[3];	/* Raw sensor offset */
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
+    int16_t Data[3];    /* Raw sensor data */
+    int16_t Offset[3];  /* Raw sensor offset */
 };
 
 struct osp_pack sh_segment_broadcast_node {
-	int64_t endTime;	/* in NTTIME  */
-	int32_t duration;	/* in NTDELTATIME  */
-	uint8_t type;
+    int64_t endTime;    /* in NTTIME  */
+    int32_t duration;   /* in NTDELTATIME  */
+    uint8_t type;
 };
 
 
 struct osp_pack sh_step_counter_sensor_node {
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
-	uint32_t numSteps;
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
+    uint32_t numSteps;
 };
 
 struct osp_pack sh_step_detector_sensor_node {
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
 };
 
 struct osp_pack sh_significant_motion_sensor_node {
-	uint8_t sensorId;	/* Holds Sensor type enumeration - MUST be 1st*/
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
-	unsigned char  significantMotionDetected;	/* bool */
-
+    uint8_t sensorId;   /* Holds Sensor type enumeration - MUST be 1st*/
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
+    unsigned char significantMotionDetected;   /* bool */
 };
 
 struct osp_pack sh_quaternion_data {
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
-	int32_t W;					 /* w/x/y/z/e Raw sensor data  in NTPRECISE*/
-	int32_t X;
-	int32_t Y;
-	int32_t Z;
-	int32_t E_EST;
-} ;
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
+    int32_t W;                   /* w/x/y/z/e Raw sensor data  in NTPRECISE*/
+    int32_t X;
+    int32_t Y;
+    int32_t Z;
+    int32_t E_EST;
+};
 
 struct osp_pack sh_orientation_broadcast_node {
-	/*
-	* raw time stamp in sensor time capture ticks
-	*/
-	struct Timestamp40_t timeStamp;
-	int32_t Data[3];	/* Raw sensor data in NTEXTENDED*/
+    /*
+    * raw time stamp in sensor time capture ticks
+    */
+    struct Timestamp40_t timeStamp;
+    int32_t Data[3];    /* Raw sensor data in NTEXTENDED*/
 };
 
 
 struct osp_pack sh_sensor_broadcast_node {
-	struct SensorId_t sensorId;	/* enum SensorType_t + sensor sub-type*/
-	uint8_t compression;
-	union osp_pack {
-		struct sh_motion_sensor_broadcast_node			  sensorData;
-		struct sh_motion_uncalibrated_sensor_broadcast_node uncalibratedSensordata;
-		struct sh_segment_broadcast_node					segmentData;
-		struct sh_quaternion_data						   quaternionData;
-		struct sh_step_counter_sensor_node				  stepCounterData;
-		struct sh_step_detector_sensor_node				 stepDetectorData;
-		struct sh_significant_motion_sensor_node			significantMotionData;
-		struct sh_orientation_broadcast_node				orientationData;
-	} data;
+    struct SensorId_t sensorId; /* enum SensorType_t + sensor sub-type*/
+    uint8_t compression;
+    union osp_pack {
+        struct sh_motion_sensor_broadcast_node sensorData;
+        struct sh_motion_uncalibrated_sensor_broadcast_node uncalibratedSensordata;
+        struct sh_segment_broadcast_node segmentData;
+        struct sh_quaternion_data quaternionData;
+        struct sh_step_counter_sensor_node stepCounterData;
+        struct sh_step_detector_sensor_node stepDetectorData;
+        struct sh_significant_motion_sensor_node significantMotionData;
+        struct sh_orientation_broadcast_node orientationData;
+    } data;
 };
 
 
@@ -146,4 +145,3 @@ struct osp_pack sh_sensor_broadcast_node {
 /*-------------------------------------------------------------------------------------------------*\
 |	E N D   O F   F I L E
 \*-------------------------------------------------------------------------------------------------*/
-

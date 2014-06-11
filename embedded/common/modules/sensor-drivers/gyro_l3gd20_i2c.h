@@ -25,7 +25,7 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#define BIT(x) ( 1<<(x) )
+#define BIT(x) ( 1 << (x) )
 
 /* Gyroscope I2C Slave Address */
 #define L3GD20_I2C_ADDRESS              0xD7
@@ -48,7 +48,7 @@
 #define L3GD20_OUT_Y_L                  0x2A  /* Output Register Y */
 #define L3GD20_OUT_Y_H                  0x2B  /* Output Register Y */
 #define L3GD20_OUT_Z_L                  0x2C  /* Output Register Z */
-#define L3GD20_OUT_Z_H                  0x2D  /* Output Register Z */ 
+#define L3GD20_OUT_Z_H                  0x2D  /* Output Register Z */
 #define L3GD20_FIFO_CTRL_REG            0x2E  /* Fifo control Register */
 #define L3GD20_FIFO_SRC_REG             0x2F  /* Fifo src Register */
 
@@ -116,7 +116,7 @@
 /* CTRL Reg 4 ( Full Scale, BDU, Endian-ness ) */
 #define L3GD20_FULLSCALE_250                ((uint8_t)0x00)
 #define L3GD20_FULLSCALE_500                ((uint8_t)0x10)
-#define L3GD20_FULLSCALE_2000               ((uint8_t)0x20) 
+#define L3GD20_FULLSCALE_2000               ((uint8_t)0x20)
 #define L3GD20_BlockDataUpdate_Continous    ((uint8_t)0x00)
 #define L3GD20_BlockDataUpdate_Single       BIT(7)
 #define L3GD20_BLE_Big_En                   BIT(6)

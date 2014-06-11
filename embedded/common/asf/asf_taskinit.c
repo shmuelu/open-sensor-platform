@@ -65,8 +65,7 @@ extern uint8_t GetTaskList( uint8_t **pTaskList );
  */
 #define ASF_TASK_DEF_TYPE ASF_TASK_SETUP
 #include "asf_taskdeftype.h"
-const AsfTaskInitDef C_gAsfTaskInitTable[NUMBER_OF_TASKS] =
-{
+const AsfTaskInitDef C_gAsfTaskInitTable[NUMBER_OF_TASKS] = {
 #include "asf_tasks.h"
 };
 
@@ -84,13 +83,13 @@ AsfTaskHandle asfTaskHandleTable[NUMBER_OF_TASKS];
 #define ASF_TASK_DEF_TYPE ASF_TOTAL_STACK_NEEDED
 #include "asf_taskdeftype.h"
 const uint32_t TotalStkNeeded =
-(
+    (
     128 /* System overhead */
 #include "asf_tasks.h"
-);
+    );
 
 /* Heap Area defined here */
-U64 NewHeap[TotalStkNeeded/8] = {0};
+U64 NewHeap[TotalStkNeeded / 8] = {0};
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -124,26 +123,24 @@ U64 NewHeap[TotalStkNeeded/8] = {0};
  ***************************************************************************************************/
 void InitializeTasks( void )
 {
-    uint8_t  taskCounter, numTasks;
+    uint8_t taskCounter, numTasks;
     TaskId tid;
     uint8_t *pTaskTable;
     uint32_t *pU64Aligned;
 
     /* Create tasks  based on the mode we are in */
     numTasks = GetTaskList( &pTaskTable );
-    for (taskCounter = 0; taskCounter < numTasks; taskCounter++)
-    {
+    for (taskCounter = 0; taskCounter < numTasks; taskCounter++) {
         tid = (TaskId)pTaskTable[taskCounter];
 
-        if (tid != INSTR_MANAGER_TASK_ID)
-        {
+        if (tid != INSTR_MANAGER_TASK_ID) {
             /* Allocate task stack from heap */
             /* NOTE: All mallocs are 8-byte aligned as per ARM stack alignment requirements */
             pU64Aligned = malloc( C_gAsfTaskInitTable[tid].stackSize );
             ASF_assert( pU64Aligned != NULL );
             ASF_assert( ((uint32_t)pU64Aligned & 0x7) == 0 ); //Ensure 64-bit aligned
 
-            asfTaskHandleTable[tid].handle  = os_tsk_create_user( C_gAsfTaskInitTable[tid].entryPoint,
+            asfTaskHandleTable[tid].handle = os_tsk_create_user( C_gAsfTaskInitTable[tid].entryPoint,
                 C_gAsfTaskInitTable[tid].priority, pU64Aligned, C_gAsfTaskInitTable[tid].stackSize);
             ASF_assert( asfTaskHandleTable[tid].handle != 0 );
             asfTaskHandleTable[tid].stkSize = C_gAsfTaskInitTable[tid].stackSize;
@@ -151,8 +148,7 @@ void InitializeTasks( void )
         }
 
         /* Initialize the associated queue */
-        if (asfTaskHandleTable[tid].handle != 0)
-        {
+        if (asfTaskHandleTable[tid].handle != 0) {
             os_mbx_init( C_gAsfTaskInitTable[tid].queue, C_gAsfTaskInitTable[tid].queueSize );
         }
     }
@@ -184,7 +180,7 @@ void AsfInitialiseTasks ( void )
     pU64Aligned = malloc( C_gAsfTaskInitTable[INSTR_MANAGER_TASK_ID].stackSize );
     ASF_assert( ((uint32_t)pU64Aligned & 0x7) == 0 ); //Ensure 64-bit aligned
 
-    asfTaskHandleTable[INSTR_MANAGER_TASK_ID].handle  = 1; //Initial task always gets this OS_ID
+    asfTaskHandleTable[INSTR_MANAGER_TASK_ID].handle = 1; //Initial task always gets this OS_ID
     asfTaskHandleTable[INSTR_MANAGER_TASK_ID].stkSize = C_gAsfTaskInitTable[INSTR_MANAGER_TASK_ID].stackSize;
     asfTaskHandleTable[INSTR_MANAGER_TASK_ID].pStack = pU64Aligned;
 

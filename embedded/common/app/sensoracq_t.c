@@ -47,7 +47,7 @@ void WaitForHostSync( void );
  |    S T A T I C   V A R I A B L E S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 #ifndef INTERRUPT_BASED_SAMPLING
- static AsfTimer sSensorTimer = NULL_TIMER;
+static AsfTimer sSensorTimer = NULL_TIMER;
 #else
 #endif
 
@@ -70,35 +70,36 @@ static void HandleTimers( MsgTimerExpiry *pTimerExp )
 {
     uint32_t timeStamp;
     struct SensorId_t sensorId;
-    
-    switch (pTimerExp->userValue)
-    {
-        case TIMER_REF_SENSOR_READ:
-            /* Schedule the next sampling */
-            ASFTimerStart( SENSOR_ACQ_TASK_ID, TIMER_REF_SENSOR_READ, SENSOR_SAMPLE_PERIOD, &sSensorTimer );
 
-            /* Call data handler for each sensors */
-            timeStamp = RTC_GetCounter();
-            
-            sensorId.sensorType = SENSOR_TYPE_ACCELEROMETER;
-            sensorId.sensorSubType = SENSOR_TYPE_ACCELEROMETER_RAW;
-            SensorDataHandler( &sensorId, timeStamp );
-            
-            sensorId.sensorType = SENSOR_TYPE_MAGNETIC_FIELD;
-            sensorId.sensorSubType = SENSOR_TYPE_MAGNETIC_FIELD_RAW;
-            SensorDataHandler( &sensorId, timeStamp );
+    switch (pTimerExp->userValue) {
+    case TIMER_REF_SENSOR_READ:
+        /* Schedule the next sampling */
+        ASFTimerStart( SENSOR_ACQ_TASK_ID, TIMER_REF_SENSOR_READ, SENSOR_SAMPLE_PERIOD, &sSensorTimer );
 
-            sensorId.sensorType = SENSOR_TYPE_GYROSCOPE;
-            sensorId.sensorSubType = SENSOR_TYPE_GYROSCOPE_RAW;
-            SensorDataHandler( &sensorId, timeStamp );
-            break;
+        /* Call data handler for each sensors */
+        timeStamp = RTC_GetCounter();
 
-        default:
-            D1_printf("Unknown Timer! Reference %d\r\n", pTimerExp->userValue);
-            break;
-    }
+        sensorId.sensorType = SENSOR_TYPE_ACCELEROMETER;
+        sensorId.sensorSubType = SENSOR_TYPE_ACCELEROMETER_RAW;
+        SensorDataHandler( &sensorId, timeStamp );
+
+        sensorId.sensorType = SENSOR_TYPE_MAGNETIC_FIELD;
+        sensorId.sensorSubType = SENSOR_TYPE_MAGNETIC_FIELD_RAW;
+        SensorDataHandler( &sensorId, timeStamp );
+
+        sensorId.sensorType = SENSOR_TYPE_GYROSCOPE;
+        sensorId.sensorSubType = SENSOR_TYPE_GYROSCOPE_RAW;
+        SensorDataHandler( &sensorId, timeStamp );
+        break;
+
+    default:
+        D1_printf("Unknown Timer! Reference %d\r\n", pTimerExp->userValue);
+        break;
+    } /* switch */
 }
-#endif
+
+
+#endif /* ifndef INTERRUPT_BASED_SAMPLING */
 
 
 #ifdef ENABLE_FLASH_STORE
@@ -111,6 +112,8 @@ static void HandleTimers( MsgTimerExpiry *pTimerExp )
 static void StoreCalibrationData( CalEvent_t event )
 {
 }
+
+
 #endif
 
 /****************************************************************************************************
@@ -133,13 +136,11 @@ static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeS
     MessageBuffer *pGyroSample = NULLP;
 #endif
 
-    switch (sensorId->sensorType)
-    {
+    switch (sensorId->sensorType) {
     case SENSOR_MAGNETIC_FIELD:
-        switch (sensorId->sensorSubType) {            
+        switch (sensorId->sensorSubType) {
         case SENSOR_MAGNETIC_FIELD_RAW:
-            if ((sMagDecimateCount++ % MAG_DECIMATE_FACTOR) == 0 )
-            {
+            if ((sMagDecimateCount++ % MAG_DECIMATE_FACTOR) == 0) {
                 /* Read mag Data - reading would clear interrupt also */
                 Mag_ReadData( &magData );
                 /* Replace time stamp with that captured by interrupt handler */
@@ -149,19 +150,18 @@ static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeS
                 pMagSample->msg.msgMagData = magData;
                 ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pMagSample ) == ASF_OK );
     #endif
-            }
-            else
-            {
+            } else {
                 Mag_ClearDataInt();
             }
             break;
-        }
+        } /* switch */
+
         break;
+
     case SENSOR_GYROSCOPE:
-        switch (sensorId->sensorSubType) {                    
+        switch (sensorId->sensorSubType) {
         case SENSOR_GYROSCOPE_RAW:
-            if ((gyroSampleCount++ % GYRO_SAMPLE_DECIMATE) == 0)
-            {
+            if ((gyroSampleCount++ % GYRO_SAMPLE_DECIMATE) == 0) {
                 /* Read Gyro Data - reading typically clears interrupt as well */
                 Gyro_ReadData( &gyroData ); //Reads also clears DRDY interrupt
                 /* Replace time stamp with that captured by interrupt handler */
@@ -171,27 +171,23 @@ static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeS
                 pGyroSample->msg.msgGyroData = gyroData;
                 ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pGyroSample ) == ASF_OK );
     #endif
-
-            }
-            else
-            {
+            } else {
                 Gyro_ClearDataInt();
             }
             break;
-        }
+        } /* switch */
+
         break;
 
     case SENSOR_ACCELEROMETER:
-        switch (sensorId->sensorSubType) {                    
+        switch (sensorId->sensorSubType) {
         case SENSOR_ACCELEROMETER_RAW:
     #if defined TRIGGERED_MAG_SAMPLING
-            if (accSampleCount % MAG_TRIGGER_RATE_DECIMATE == 0)
-            {
+            if (accSampleCount % MAG_TRIGGER_RATE_DECIMATE == 0) {
                 Mag_TriggerDataAcq(); //Mag is triggered relative to Accel to avoid running separate timer
             }
     #endif
-            if (accSampleCount++ % ACCEL_SAMPLE_DECIMATE == 0)
-            {
+            if (accSampleCount++ % ACCEL_SAMPLE_DECIMATE == 0) {
                 /* Read Accel Data - reading typically clears interrupt as well */
                 Accel_ReadData( &accelData );
                 /* Replace time stamp with that captured by interrupt handler */
@@ -201,19 +197,18 @@ static void SensorDataHandler( const struct SensorId_t *sensorId, uint32_t timeS
                 pAccSample->msg.msgAccelData = accelData;
                 ASF_assert( ASFSendMessage( ALGORITHM_TASK_ID, pAccSample ) == ASF_OK );
     #endif
-            }
-            else
-            {
+            } else {
                 Accel_ClearDataInt();
             }
             break;
-        }
+        } /* switch */
+
         break;
+
     default:
         break;
-    }
+    } /* switch */
 }
-
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -236,8 +231,8 @@ void SendDataReadyIndication( const struct SensorId_t *sensorId, uint32_t timeSt
     pSendMsg->msg.msgSensorDataRdy.sensorId.sensorSubType = sensorId->sensorSubType;
     pSendMsg->msg.msgSensorDataRdy.timeStamp = timeStamp;
     ASF_assert( ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg ) == ASF_OK );
-
 }
+
 
 /****************************************************************************************************
  * @fn      SendInputSensorControlIndication
@@ -247,7 +242,7 @@ void SendDataReadyIndication( const struct SensorId_t *sensorId, uint32_t timeSt
  * @return None
  *
  ***************************************************************************************************/
-void SendInputSensorControlIndication(uint16_t command,	uint16_t mask)        
+void SendInputSensorControlIndication(uint16_t command, uint16_t mask)
 {
     MessageBuffer *pSendMsg = NULLP;
 
@@ -262,54 +257,65 @@ void SendInputSensorControlIndication(uint16_t command,	uint16_t mask)
     ASF_assert( ASFSendMessage( SENSOR_ACQ_TASK_ID, pSendMsg ) == ASF_OK );
 }
 
-static void multipleSensorControl(SensorControlCommand_t command, uint16_t sensorMask) {
-	uint8_t enabled = 0;
-	uint8_t index;
-	struct SensorId_t sensorId;
+
+static void multipleSensorControl(SensorControlCommand_t command, uint16_t sensorMask)
+{
+    uint8_t enabled = 0;
+    uint8_t index;
+    struct SensorId_t sensorId;
     osp_status_t status = OSP_STATUS_OK;
-    
-	switch (command) {
-	case SENSOR_CONTROL_SENSOR_OFF:
-		enabled = 0;
-		break;
-	case SENSOR_CONTROL_SENSOR_ON:
-		enabled = 1;
-		break;
-	default:
-		return;
-	}
-	for (index = 0;
+
+    switch (command) {
+    case SENSOR_CONTROL_SENSOR_OFF:
+        enabled = 0;
+        break;
+
+    case SENSOR_CONTROL_SENSOR_ON:
+        enabled = 1;
+        break;
+
+    default:
+        return;
+    }
+
+    for (index = 0;
         (sensorMask != 0) &&
-            (status != OSP_STATUS_INVALID_HANDLE) &&
-            (index < sizeof(sensorMask) * 8);
+        (status != OSP_STATUS_INVALID_HANDLE) &&
+        (index < sizeof(sensorMask) * 8);
         index++) {
         if (sensorMask & 0x0001) {
             status = getSensorIdFromSensorTableIndex(index, &sensorId);
-            
+
             switch (status) {
-                case OSP_STATUS_INVALID_HANDLE:
-                    continue;
-                case OSP_STATUS_OK:
-                    switch (sensorId.sensorType) {
-                    case SENSOR_ACCELEROMETER:
-//                            PhysSensors_Enable(PHYS_ACCEL_ID, enabled);
-                        break;
-                    case SENSOR_GYROSCOPE:
-//                            PhysSensors_Enable(PHYS_GYRO_ID, enabled);
-                        break;
-                    case SENSOR_MAGNETIC_FIELD:
-//                           PhysSensors_Enable(PHYS_MAG_ID, enabled);
-                        break;
-                    }
+            case OSP_STATUS_INVALID_HANDLE:
+                continue;
+
+            case OSP_STATUS_OK:
+                switch (sensorId.sensorType) {
+                case SENSOR_ACCELEROMETER:
+                    //                            PhysSensors_Enable(PHYS_ACCEL_ID, enabled);
                     break;
-                case OSP_STATUS_NOT_REGISTERED:
-                    // already not enabled
+
+                case SENSOR_GYROSCOPE:
+                    //                            PhysSensors_Enable(PHYS_GYRO_ID, enabled);
                     break;
-            }
+
+                case SENSOR_MAGNETIC_FIELD:
+                    //                           PhysSensors_Enable(PHYS_MAG_ID, enabled);
+                    break;
+                }
+
+                break;
+
+            case OSP_STATUS_NOT_REGISTERED:
+                // already not enabled
+                break;
+            } /* switch */
         }
         sensorMask >>= 1;
-	}
+    }
 }
+
 
 /****************************************************************************************************
  * @fn      SensorAcqTask
@@ -324,7 +330,7 @@ static void multipleSensorControl(SensorControlCommand_t command, uint16_t senso
 ASF_TASK void SensorAcqTask( ASF_TASK_ARG )
 {
     MessageBuffer *rcvMsg = NULLP;
-    volatile uint8_t  i;
+    volatile uint8_t i;
 
 #ifndef WAIT_FOR_HOST_SYNC
     os_dly_wait(MSEC_TO_TICS(50)); /* Allow startup time for sensors */
@@ -354,46 +360,44 @@ ASF_TASK void SensorAcqTask( ASF_TASK_ARG )
 # ifdef TRIGGERED_MAG_SAMPLING
     Mag_SetLowPowerMode(); //Low power mode until triggered
 # endif
-#endif
+#endif /* ifndef INTERRUPT_BASED_SAMPLING */
 
-    while (1)
-    {
+    while (1) {
         ASFReceiveMessage( SENSOR_ACQ_TASK_ID, &rcvMsg );
-        switch (rcvMsg->msgId)
-        {
-
-            case MSG_TIMER_EXPIRY:
+        switch (rcvMsg->msgId) {
+        case MSG_TIMER_EXPIRY:
 #ifndef INTERRUPT_BASED_SAMPLING
-                HandleTimers( &rcvMsg->msg.msgTimerExpiry );
+            HandleTimers( &rcvMsg->msg.msgTimerExpiry );
 #endif
-                break;
+            break;
 
-            case MSG_CAL_EVT_NOTIFY:
+        case MSG_CAL_EVT_NOTIFY:
 #ifdef ENABLE_FLASH_STORE
-                StoreCalibrationData( (CalEvent_t)rcvMsg->msg.msgCalEvtNotify.byte );
+            StoreCalibrationData( (CalEvent_t)rcvMsg->msg.msgCalEvtNotify.byte );
 #else
-                D0_printf("#### WARNING - NV Storage Not Implemented! #####\r\n");
+            D0_printf("#### WARNING - NV Storage Not Implemented! #####\r\n");
 #endif
-                break;
+            break;
 
-            case MSG_SENSOR_DATA_RDY:
+        case MSG_SENSOR_DATA_RDY:
 #ifdef INTERRUPT_BASED_SAMPLING
-                SensorDataHandler(&rcvMsg->msg.msgSensorDataRdy.sensorId,
-                    rcvMsg->msg.msgSensorDataRdy.timeStamp);
+            SensorDataHandler(&rcvMsg->msg.msgSensorDataRdy.sensorId,
+                rcvMsg->msg.msgSensorDataRdy.timeStamp);
 #endif
-                break;
+            break;
 
-            case MSG_INPUT_SENSOR_CONTROL_DATA:
-                multipleSensorControl(
-                    (SensorControlCommand_t) rcvMsg->msg.msgInputSensorsControl.Command,
-                    rcvMsg->msg.msgInputSensorsControl.mask);
-                    SH_Host_Slave_terminate_cmd_processing();
-                break;
-            default:
-                /* Unhandled messages */
-                D2_printf("Snsr:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);
-                break;
-        }
+        case MSG_INPUT_SENSOR_CONTROL_DATA:
+            multipleSensorControl(
+                (SensorControlCommand_t)rcvMsg->msg.msgInputSensorsControl.Command,
+                rcvMsg->msg.msgInputSensorsControl.mask);
+            SH_Host_Slave_terminate_cmd_processing();
+            break;
+
+        default:
+            /* Unhandled messages */
+            D2_printf("Snsr:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);
+            break;
+        } /* switch */
     }
 }
 

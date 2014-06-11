@@ -22,54 +22,54 @@
  * Author: Aristeu Sergio Rozanski Filho <aris@cathedrallabs.org>
  *
  * Changes/Revisions:
- *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
- *		- update ff support for the changes in kernel interface
- *		- add UINPUT_VERSION
- *	0.2	16/10/2004 (Micah Dowty <micah@navi.cx>)
- *		- added force feedback support
+ *  0.3 24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+ *      - update ff support for the changes in kernel interface
+ *      - add UINPUT_VERSION
+ *  0.2 16/10/2004 (Micah Dowty <micah@navi.cx>)
+ *      - added force feedback support
  *             - added UI_SET_PHYS
- *	0.1	20/06/2002
- *		- first public version
+ *  0.1 20/06/2002
+ *      - first public version
  */
 
 #include <linux/input.h>
 
-#define UINPUT_VERSION		3
+#define UINPUT_VERSION      3
 
 
 struct uinput_ff_upload {
-	int			request_id;
-	int			retval;
-	struct ff_effect	effect;
-	struct ff_effect	old;
+    int request_id;
+    int retval;
+    struct ff_effect effect;
+    struct ff_effect old;
 };
 
 struct uinput_ff_erase {
-	int			request_id;
-	int			retval;
-	int			effect_id;
+    int request_id;
+    int retval;
+    int effect_id;
 };
 
 /* ioctl */
-#define UINPUT_IOCTL_BASE	'U'
-#define UI_DEV_CREATE		_IO(UINPUT_IOCTL_BASE, 1)
-#define UI_DEV_DESTROY		_IO(UINPUT_IOCTL_BASE, 2)
+#define UINPUT_IOCTL_BASE   'U'
+#define UI_DEV_CREATE       _IO(UINPUT_IOCTL_BASE, 1)
+#define UI_DEV_DESTROY      _IO(UINPUT_IOCTL_BASE, 2)
 
-#define UI_SET_EVBIT		_IOW(UINPUT_IOCTL_BASE, 100, int)
-#define UI_SET_KEYBIT		_IOW(UINPUT_IOCTL_BASE, 101, int)
-#define UI_SET_RELBIT		_IOW(UINPUT_IOCTL_BASE, 102, int)
-#define UI_SET_ABSBIT		_IOW(UINPUT_IOCTL_BASE, 103, int)
-#define UI_SET_MSCBIT		_IOW(UINPUT_IOCTL_BASE, 104, int)
-#define UI_SET_LEDBIT		_IOW(UINPUT_IOCTL_BASE, 105, int)
-#define UI_SET_SNDBIT		_IOW(UINPUT_IOCTL_BASE, 106, int)
-#define UI_SET_FFBIT		_IOW(UINPUT_IOCTL_BASE, 107, int)
-#define UI_SET_PHYS		_IOW(UINPUT_IOCTL_BASE, 108, char*)
-#define UI_SET_SWBIT		_IOW(UINPUT_IOCTL_BASE, 109, int)
+#define UI_SET_EVBIT        _IOW(UINPUT_IOCTL_BASE, 100, int)
+#define UI_SET_KEYBIT       _IOW(UINPUT_IOCTL_BASE, 101, int)
+#define UI_SET_RELBIT       _IOW(UINPUT_IOCTL_BASE, 102, int)
+#define UI_SET_ABSBIT       _IOW(UINPUT_IOCTL_BASE, 103, int)
+#define UI_SET_MSCBIT       _IOW(UINPUT_IOCTL_BASE, 104, int)
+#define UI_SET_LEDBIT       _IOW(UINPUT_IOCTL_BASE, 105, int)
+#define UI_SET_SNDBIT       _IOW(UINPUT_IOCTL_BASE, 106, int)
+#define UI_SET_FFBIT        _IOW(UINPUT_IOCTL_BASE, 107, int)
+#define UI_SET_PHYS         _IOW(UINPUT_IOCTL_BASE, 108, char *)
+#define UI_SET_SWBIT        _IOW(UINPUT_IOCTL_BASE, 109, int)
 
-#define UI_BEGIN_FF_UPLOAD	_IOWR(UINPUT_IOCTL_BASE, 200, struct uinput_ff_upload)
-#define UI_END_FF_UPLOAD	_IOW(UINPUT_IOCTL_BASE, 201, struct uinput_ff_upload)
-#define UI_BEGIN_FF_ERASE	_IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
-#define UI_END_FF_ERASE		_IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
+#define UI_BEGIN_FF_UPLOAD  _IOWR(UINPUT_IOCTL_BASE, 200, struct uinput_ff_upload)
+#define UI_END_FF_UPLOAD    _IOW(UINPUT_IOCTL_BASE, 201, struct uinput_ff_upload)
+#define UI_BEGIN_FF_ERASE   _IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
+#define UI_END_FF_ERASE     _IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
 
 /*
  * To write a force-feedback-capable driver, the upload_effect
@@ -118,19 +118,18 @@ struct uinput_ff_erase {
  * arbitrarily, above EV_MAX (since the input system
  * never sees it) but in the range of a 16-bit int.
  */
-#define EV_UINPUT		0x0101
-#define UI_FF_UPLOAD		1
-#define UI_FF_ERASE		2
+#define EV_UINPUT       0x0101
+#define UI_FF_UPLOAD        1
+#define UI_FF_ERASE     2
 
-#define UINPUT_MAX_NAME_SIZE	80
+#define UINPUT_MAX_NAME_SIZE    80
 struct uinput_user_dev {
-	char name[UINPUT_MAX_NAME_SIZE];
-	struct input_id id;
-	int ff_effects_max;
-	int absmax[ABS_MAX + 1];
-	int absmin[ABS_MAX + 1];
-	int absfuzz[ABS_MAX + 1];
-	int absflat[ABS_MAX + 1];
+    char name[UINPUT_MAX_NAME_SIZE];
+    struct input_id id;
+    int ff_effects_max;
+    int absmax[ABS_MAX + 1];
+    int absmin[ABS_MAX + 1];
+    int absfuzz[ABS_MAX + 1];
+    int absflat[ABS_MAX + 1];
 };
-#endif	/* __UINPUT_H_ */
-
+#endif  /* __UINPUT_H_ */

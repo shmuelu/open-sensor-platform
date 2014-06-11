@@ -35,12 +35,12 @@
 \*-------------------------------------------------------------------------------------------------*/
 
 typedef union {
-    float   f;
+    float f;
     int32_t i;
 } OspValue_t;
 
 typedef union {
-    double   d;
+    double d;
     int64_t ll;
 } OspTimeValue_t;
 
@@ -60,7 +60,7 @@ typedef struct {
 
 typedef struct {
     OspTimeValue_t timestamp;
-    OspValue_t  numSteps;
+    OspValue_t numSteps;
 } OSPD_StepCounterData_t;
 
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct {
 
 
 
-typedef void (*OSPD_ResultDataCallback_t)(const struct SensorId_t *sensorId, void* data);
+typedef void (*OSPD_ResultDataCallback_t)(const struct SensorId_t *sensorId, void *data);
 
 /****************************************************************************************************
  * @fn      getSensordeviceDriverName
@@ -83,7 +83,7 @@ typedef void (*OSPD_ResultDataCallback_t)(const struct SensorId_t *sensorId, voi
  * @return  returns a pointer to to driver name if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-const char *OSPD_getSensordeviceDriverName(const struct SensorId_t *sensorId) ;
+const char *OSPD_getSensordeviceDriverName(const struct SensorId_t *sensorId);
 
 /****************************************************************************************************
  * @fn      OSPD_getResultIndex
@@ -110,7 +110,7 @@ OSPD_ResultDataCallback_t OSPD_getResultDataReadyCallbackFunction(const struct S
  * @return  returns a pointer to SWAP table if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-int * OSPD_getSensorSwapTable(const struct SensorId_t *sensorId);
+int *OSPD_getSensorSwapTable(const struct SensorId_t *sensorId);
 
 /****************************************************************************************************
  * @fn      getSensorConversionTable
@@ -119,7 +119,7 @@ int * OSPD_getSensorSwapTable(const struct SensorId_t *sensorId);
  * @return  returns a pointer to SWAP table if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-osp_float_t * OSPD_getSensorConversionTable(const struct SensorId_t *sensorId);
+osp_float_t *OSPD_getSensorConversionTable(const struct SensorId_t *sensorId);
 
 /****************************************************************************************************
  * @fn      OSPD_Initialize
@@ -154,14 +154,14 @@ void OSPD_stopAllSensors(void);
  *          Helper routine for enabling/disabling sensors in the system
  *
  ***************************************************************************************************/
-void OSPD_parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer);
+void OSPD_parseAndHandleSensorControls(char *buffer, ssize_t numBytesInBuffer);
 
 /****************************************************************************************************
  * @fn      OSPD_SubscribeResult
  *          Enables subscription for results
  *
  ***************************************************************************************************/
-osp_status_t OSPD_SubscribeResult(const struct SensorId_t *sensorId) ;
+osp_status_t OSPD_SubscribeResult(const struct SensorId_t *sensorId);
 
 /****************************************************************************************************
  * @fn      OSPD_UnsubscribeResult
@@ -172,4 +172,3 @@ osp_status_t OSPD_UnsubscribeResult(const struct SensorId_t *sensorId);
 
 
 #endif /* _OSPD_H_ */
-

@@ -66,7 +66,8 @@ static OSP_CalibratedSensorCallback_t _fpCalibratedSensorDataCallback = NULL;
  *          Call to initialize the algorithms implementation.
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_InitializeAlgorithms(void){
+void OSPForegroundAlg_InitializeAlgorithms(void)
+{
     //Initialize signal generator
     SignalGenerator_Init();
 
@@ -81,7 +82,8 @@ void OSPForegroundAlg_InitializeAlgorithms(void){
  *          Call this to reset the algorithms to initial startup state
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_ResetAlgorithms(void){
+void OSPForegroundAlg_ResetAlgorithms(void)
+{
     SignalGenerator_Init();
     StepDetector_Reset();
     SignificantMotDetector_Reset();
@@ -93,26 +95,33 @@ void OSPForegroundAlg_ResetAlgorithms(void){
  *          Call this function before exit to shutdown the algorithms properly
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_DestroyAlgorithms(void){
+void OSPForegroundAlg_DestroyAlgorithms(void)
+{
     StepDetector_CleanUp();
     SignificantMotDetector_CleanUp();
 }
+
 
 /****************************************************************************************************
  * @fn      OSPForegroundAlg_SetBackgroundResult
  *          API to feed background algorithm result into the foreground algorithms
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_SetBackgroundResult(OSP_BackgroundAlgResultType_t resultType, const NTTIME time, OSP_BackgroundAlgResult_t * pCal){
-
+void OSPForegroundAlg_SetBackgroundResult(OSP_BackgroundAlgResultType_t resultType,
+    const NTTIME time,
+    OSP_BackgroundAlgResult_t *pCal)
+{
 }
+
 
 /****************************************************************************************************
  * @fn      OSPForegroundAlg_SetAccelerometerMeasurement
  *          API to feed accelerometer data into the foreground algorithms
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES]){
+void OSPForegroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds,
+    const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES])
+{
     //convert sensor data to floating point
     osp_float_t measurementFloat[NUM_ACCEL_AXES];
     osp_float_t measurementFiltered[NUM_ACCEL_AXES];
@@ -124,13 +133,12 @@ void OSPForegroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, co
     measurementFloat[2] = TOFLT_PRECISE(measurementInMetersPerSecondSquare[2]);
 
     //update signal generator with raw accelerometer data
-    if(SignalGenerator_SetAccelerometerData(measurementFloat, measurementFiltered)){
-
+    if (SignalGenerator_SetAccelerometerData(measurementFloat, measurementFiltered)) {
         filterTime -= SIGNAL_GENERATOR_DELAY;
 
         //update significant motion alg
         SignificantMotDetector_SetFilteredAccelerometerMeasurement(filterTime,
-                                                                   measurementFiltered);
+            measurementFiltered);
         //update step detector alg
         StepDetector_SetFilteredAccelerometerMeasurement(filterTime, measurementFiltered);
     }
@@ -139,12 +147,11 @@ void OSPForegroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, co
     //ApplyCalibration(calibratedAccelerometerMeasurement,
     //                 &_foregroundCalibrations[OSPCalTypeAccelerometer],
     //                 measurementInMetersPerSecondSquare);
-   
+
     if (_fpCalibratedSensorDataCallback) {
         _fpCalibratedSensorDataCallback(SENSOR_ACCELEROMETER, timeInSeconds,
-                                        measurementInMetersPerSecondSquare);
+            measurementInMetersPerSecondSquare);
     }
-    
 }
 
 
@@ -153,16 +160,19 @@ void OSPForegroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, co
  *          Register for all calibrated sensor data callbacks with the algorithms
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_RegisterCalibratedSensorDataCallback(OSP_CalibratedSensorCallback_t fpCallback) {
+void OSPForegroundAlg_RegisterCalibratedSensorDataCallback(OSP_CalibratedSensorCallback_t fpCallback)
+{
     _fpCalibratedSensorDataCallback = fpCallback;
 }
+
 
 /****************************************************************************************************
  * @fn      OSPForegroundAlg_RegisterStepSegmentCallback
  *          Register step segment call back with the algorithms
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_RegisterStepSegmentCallback(OSP_StepSegmentResultCallback_t fpCallback){
+void OSPForegroundAlg_RegisterStepSegmentCallback(OSP_StepSegmentResultCallback_t fpCallback)
+{
     _fpStepSegmentResultCallback = fpCallback;
     StepDetector_Init(_fpStepResultCallback, _fpStepSegmentResultCallback);
 }
@@ -173,20 +183,24 @@ void OSPForegroundAlg_RegisterStepSegmentCallback(OSP_StepSegmentResultCallback_
  *          Register step result call back with the algorithms
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_RegisterStepCallback(OSP_StepResultCallback_t fpCallback){
+void OSPForegroundAlg_RegisterStepCallback(OSP_StepResultCallback_t fpCallback)
+{
     _fpStepResultCallback = fpCallback;
     StepDetector_Init(_fpStepResultCallback, _fpStepSegmentResultCallback);
 }
+
 
 /****************************************************************************************************
  * @fn      OSPForegroundAlg_RegisterSignificantMotionCallback
  *          Register significant motion call back with the algorithms
  *
  ***************************************************************************************************/
-void OSPForegroundAlg_RegisterSignificantMotionCallback(OSP_EventResultCallback_t fpCallback){
+void OSPForegroundAlg_RegisterSignificantMotionCallback(OSP_EventResultCallback_t fpCallback)
+{
     _fpSigMotCallback = fpCallback;
     SignificantMotDetector_Init(_fpSigMotCallback);
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

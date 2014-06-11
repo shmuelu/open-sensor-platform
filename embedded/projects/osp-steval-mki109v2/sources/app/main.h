@@ -36,20 +36,20 @@
 
 #ifdef DEBUG_BUILD
 # ifndef DEBUG_OUTPUT
-# define DEBUG_OUTPUT
+#  define DEBUG_OUTPUT
 # endif
 #endif
 
-//#define RESET_ON_ASSERT
+/* #define RESET_ON_ASSERT */
 
 #ifdef RESET_ON_ASSERT
 # define SysRESET()         NVIC_SystemReset()
 #else
-# define SysRESET()         while(1)
+# define SysRESET()         while (1)
 #endif
 
 
-#define MAX_SYSTEM_MESSAGES                     30     ///< Max number of queued messages in the system
+#define MAX_SYSTEM_MESSAGES                     30     /* /< Max number of queued messages in the system */
 
 /* All timer references (arbitrary unique identifiers for each timer)*/
 #define TIMER_REF_RTC_UPDATE                    0x55A5
@@ -66,23 +66,23 @@
 
 #if (DEBUG_LVL > 0)
 # ifdef UART_DMA_ENABLE
-#  define MAX_DPRINTF_MESSAGES                  30  ///< Max printf messages allowed at a given time
+#  define MAX_DPRINTF_MESSAGES                  30  /* /< Max printf messages allowed at a given time */
 # else
 #  define TX_BUFFER_SIZE                        512
 # endif
 # define RX_BUFFER_SIZE                         32
 # define DPRINTF_BUFF_SIZE                      200
 
-#else //DEBUG_LVL = 0
+#else /* DEBUG_LVL = 0 */
 
 # ifndef UART_DMA_ENABLE
 #  define TX_BUFFER_SIZE                        512
 # endif
 # define RX_BUFFER_SIZE                         200
-# define MAX_DPRINTF_MESSAGES                   10   ///< Max printf messages allowed at a given time
+# define MAX_DPRINTF_MESSAGES                   10   /* /< Max printf messages allowed at a given time */
 # define DPRINTF_BUFF_SIZE                      100
 
-#endif
+#endif /* if (DEBUG_LVL > 0) */
 
 /* Defines for command handler */
 #define COMMAND_LINE_SIZE           32
@@ -90,7 +90,7 @@
 /* Sensor acquisition related definitions */
 
 #if !defined INTERRUPT_BASED_SAMPLING
-# define SENSOR_SAMPLE_PERIOD           MSEC_TO_TICS(20)   //tick
+# define SENSOR_SAMPLE_PERIOD           MSEC_TO_TICS(20)   /* tick */
 # define MAG_DECIMATE_FACTOR            1
 # define ACCEL_SAMPLE_DECIMATE          1
 # define GYRO_SAMPLE_DECIMATE           1
@@ -101,7 +101,7 @@
 #endif
 
 #ifdef TRIGGERED_MAG_SAMPLING
-# define MAG_TRIGGER_RATE_DECIMATE      2 //1/2 of Accel ODR
+# define MAG_TRIGGER_RATE_DECIMATE      2 /* 1/2 of Accel ODR */
 #endif
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -119,11 +119,10 @@ enum ParserTokensTag {
 };
 
 /* RTC clock */
-typedef struct RtcClockTag
-{
+typedef struct RtcClockTag {
     uint16_t hours;
-    uint8_t  minutes;
-    uint8_t  seconds;
+    uint8_t minutes;
+    uint8_t seconds;
     uint16_t msec;
 } RtcClock_t;
 
@@ -144,7 +143,7 @@ extern uint32_t g_logging;
 \*-------------------------------------------------------------------------------------------------*/
 /* Updates RTC counter based on system tick counter */
 void UpdateRTC( void );
-int Print_LIPS( const char *fmt, ... ); //Serial protocol for data results out
+int Print_LIPS( const char *fmt, ... ); /* Serial protocol for data results out */
 
 
 #endif /* MAIN_H */

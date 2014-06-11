@@ -62,47 +62,42 @@ osp_bool_t ValidInputData( uint8_t inByte )
 {
     static uint8_t curState = TOKEN_NULL;
 
-    switch (curState)
-    {
-        case TOKEN_NULL:
-            if (inByte == TOKEN_1)
-            {
-                curState = TOKEN_1;
-                return true;
-            }
-            break;
-
-        case TOKEN_1:
-            if (inByte == TOKEN_2)
-            {
-                curState = TOKEN_2;
-                return true;
-            }
-            break;
-
-        case TOKEN_2:
-            if (inByte == TOKEN_3)
-            {
-                curState = TOKEN_3;
-                return true;
-            }
-            break;
-
-        case TOKEN_3:
-            if (inByte == TOKEN_4)
-            {
-                curState = TOKEN_PARAM;
-                return true;
-            }
-            break;
-
-        case TOKEN_PARAM: //Remain in this state till you get CR/LF
-            if ((inByte == '\r') || (inByte == '\n'))
-            {
-                curState = TOKEN_NULL;
-            }
+    switch (curState) {
+    case TOKEN_NULL:
+        if (inByte == TOKEN_1) {
+            curState = TOKEN_1;
             return true;
-    }
+        }
+        break;
+
+    case TOKEN_1:
+        if (inByte == TOKEN_2) {
+            curState = TOKEN_2;
+            return true;
+        }
+        break;
+
+    case TOKEN_2:
+        if (inByte == TOKEN_3) {
+            curState = TOKEN_3;
+            return true;
+        }
+        break;
+
+    case TOKEN_3:
+        if (inByte == TOKEN_4) {
+            curState = TOKEN_PARAM;
+            return true;
+        }
+        break;
+
+    case TOKEN_PARAM: /* Remain in this state till you get CR/LF */
+        if ((inByte == '\r') || (inByte == '\n')) {
+            curState = TOKEN_NULL;
+        }
+        return true;
+    } /* switch */
+
     return false;
 }
 

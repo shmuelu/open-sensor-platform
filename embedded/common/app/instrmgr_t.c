@@ -87,17 +87,14 @@ ASF_TASK void InstrManagerTask( ASF_TASK_ARG )
     /* Call user init related to instrumentation (for stuff needing to be done before the while loop) */
     InstrManagerUserInit();
 
-    while(1)
-    {
+    while (1) {
         /* User instrumentation such as LED indications, RTC updates, etc. */
         ASFReceiveMessage( INSTR_MANAGER_TASK_ID, &rcvMsg );
 
         msgHandled = InstrManagerUserHandler( rcvMsg );
 
-        if (!msgHandled)
-        {
-            switch (rcvMsg->msgId)
-            {
+        if (!msgHandled) {
+            switch (rcvMsg->msgId) {
             case MSG_TIMER_EXPIRY:
                 break;
 
@@ -105,15 +102,10 @@ ASF_TASK void InstrManagerTask( ASF_TASK_ARG )
                 /* Unhandled messages */
                 D1_printf("INSTR:!!!UNHANDLED MESSAGE:%d!!!\r\n", rcvMsg->msgId);
                 break;
-
             }
         }
     }
 }
-
-
-
-
 
 
 /*-------------------------------------------------------------------------------------------------*\

@@ -30,8 +30,7 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum AccelInitOptionTag
-{
+typedef enum AccelInitOptionTag {
     INIT_NORMAL,
     INIT_MOTION_SENSE,
     INIT_SLEEP,

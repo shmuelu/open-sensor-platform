@@ -50,15 +50,14 @@ extern "C" {
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
 #define PROCESS_INPUT_EVT_THRES         1
-#define MAX_NUM_FDS(x,y) ((x) > (y) ? (x) : (y))
+#define MAX_NUM_FDS(x, y) ((x) > (y) ? (x) : (y))
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 
 /* per-cpu buffer info */
-typedef struct
-{
+typedef struct {
     size_t produced;
     size_t consumed;
     size_t max_backlog; /* max # sub-buffers ready at one time */
@@ -99,8 +98,8 @@ static volatile bool _relayThreadActive = false;
 static void _sensorDataPublish(const struct SensorId_t *sensorId, void *pSensData)
 {
     OSPD_ResultDataCallback_t callbackFunction = OSPD_getResultDataReadyCallbackFunction(sensorId);
-    
-     if (callbackFunction) {
+
+    if (callbackFunction) {
         callbackFunction(sensorId, pSensData);
     }
 }
@@ -126,19 +125,20 @@ static void _doAxisSwapAndConvertInt16(
     const osp_float_t *conversionTable)
 {
     assert(conversionTable != NULL);
-    
+
     for (int eventCode = firstEventCode; eventCode <= lastEventCode; eventCode++) {
-        
         int32_t axisIndex = eventCode - firstEventCode;
-        
+
         if (swapTable) {
-           assert( axisIndex >= 0 );
-           assert( axisIndex < 3 );
-           axisIndex = swapTable[axisIndex];
+            assert( axisIndex >= 0 );
+            assert( axisIndex < 3 );
+            axisIndex = swapTable[axisIndex];
         }
         floatVal->f = intVal[axisIndex] * conversionTable[axisIndex];
-    }  
+    }
 }
+
+
 /****************************************************************************************************
  * @fn      _doAxisSwapAndConvertUncalibratedInt16
  *          Helper function that does the axis swap and unit conversion as specified in configuration
@@ -165,8 +165,8 @@ static void _doAxisSwapAndConvertUncalibratedInt16(
         ABS_Z,
         swapTable,
         conversionTable);
-    
-     _doAxisSwapAndConvertInt16(
+
+    _doAxisSwapAndConvertInt16(
         &intVal[3],
         &floatVal[3],
         ABS_X + 3,
@@ -174,6 +174,7 @@ static void _doAxisSwapAndConvertUncalibratedInt16(
         swapTable,
         conversionTable);
 }
+
 
 /****************************************************************************************************
  * @fn      ProcessInputEventsRelay
@@ -187,20 +188,20 @@ static void ProcessInputEventsRelay(void)
     for (unsigned int cpu = 0; cpu < _produced_file.size(); cpu++) {
         lseek(_produced_file[cpu], 0, SEEK_SET);
         if (read(_produced_file[cpu], &size,
-                 sizeof(size)) < 0) {
+                sizeof(size)) < 0) {
             LOG_Info("Couldn't read from consumed file for cpu %d, exiting: errcode = %d: %s\n",
-                     cpu,
-                     errno,
-                     strerror(errno));
+                cpu,
+                errno,
+                strerror(errno));
             break;
         }
         _relayStatus[cpu].produced = size;
 
 #if 0
         LOG_Info("wakeup  CPU %d produced %d consumed %d  \n",
-                 cpu,
-                 _relayStatus[cpu].produced,
-                 _relayStatus[cpu].consumed);
+            cpu,
+            _relayStatus[cpu].produced,
+            _relayStatus[cpu].consumed);
 #endif
 
         size_t bufidx, start_subbuf, subbuf_idx;
@@ -217,34 +218,34 @@ static void ProcessInputEventsRelay(void)
             subbufs_ready = 0;
 #if 0
         LOG_Info("produced  %d   consumed %d\n",
-                 _relayStatus[cpu].produced,
-                 _relayStatus[cpu].consumed);
+            _relayStatus[cpu].produced,
+            _relayStatus[cpu].consumed);
 #endif
 
-        for (bufidx = start_subbuf; subbufs_ready-- > 0 ; bufidx++) {
+        for (bufidx = start_subbuf; subbufs_ready-- > 0; bufidx++) {
             subbuf_idx = bufidx % SENSOR_RELAY_NUM_RELAY_BUFFERS;
             subbuf_ptr = __relay_buffer[cpu] + (subbuf_idx * sizeof(union sensor_relay_broadcast_node));
-            union  sensor_relay_broadcast_node *sensorNode = (union  sensor_relay_broadcast_node *) subbuf_ptr;
+            union  sensor_relay_broadcast_node *sensorNode = (union sensor_relay_broadcast_node *)subbuf_ptr;
 
 #if 0
 
             LOG_Info("relay_buffer[%d] index %d of %d\n"
                      "%2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x\n"
                      "%2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x %2.2x\n",
-                     cpu,
-                     bufidx,
-                     subbufs_ready,
-                     subbuf_ptr[0],  subbuf_ptr[1],   subbuf_ptr[2],
-                     subbuf_ptr[3],  subbuf_ptr[4],   subbuf_ptr[5],
-                     subbuf_ptr[6],  subbuf_ptr[7],   subbuf_ptr[8],
-                     subbuf_ptr[9],  subbuf_ptr[10],  subbuf_ptr[11],
-                     subbuf_ptr[12], subbuf_ptr[13],  subbuf_ptr[14],
-                     subbuf_ptr[15], subbuf_ptr[16],  subbuf_ptr[17],
-                     subbuf_ptr[18], subbuf_ptr[19],  subbuf_ptr[20],
-                     subbuf_ptr[21], subbuf_ptr[22],  subbuf_ptr[23]);
-#endif
+                cpu,
+                bufidx,
+                subbufs_ready,
+                subbuf_ptr[0], subbuf_ptr[1], subbuf_ptr[2],
+                subbuf_ptr[3], subbuf_ptr[4], subbuf_ptr[5],
+                subbuf_ptr[6], subbuf_ptr[7], subbuf_ptr[8],
+                subbuf_ptr[9], subbuf_ptr[10], subbuf_ptr[11],
+                subbuf_ptr[12], subbuf_ptr[13], subbuf_ptr[14],
+                subbuf_ptr[15], subbuf_ptr[16], subbuf_ptr[17],
+                subbuf_ptr[18], subbuf_ptr[19], subbuf_ptr[20],
+                subbuf_ptr[21], subbuf_ptr[22], subbuf_ptr[23]);
+#endif // if 0
 
-            std::string driverName = std::string(OSPD_getSensordeviceDriverName(&sensorNode->sensorData.sensorId)); 
+            std::string driverName = std::string(OSPD_getSensordeviceDriverName(&sensorNode->sensorData.sensorId));
             if (driverName.empty()) {
                 subbufs_consumed++;
                 continue;
@@ -253,181 +254,193 @@ static void ProcessInputEventsRelay(void)
             /* Axis unit conversions & result callbacks */
             uint64_t timeTicks = sensorNode->sensorData.timeStamp;
             int64_t timeNsec = (int64_t)(_relayTickUsec * timeTicks * 1000);
-            
-            int *swapTable =   OSPD_getSensorSwapTable(&sensorNode->sensorData.sensorId);
-            osp_float_t *conversionTable = OSPD_getSensorConversionTable(&sensorNode->sensorData.sensorId);
-            
-            switch(sensorNode->sensorData.sensorId.sensorType) {
-            case SENSOR_ACCELEROMETER:
-                switch(sensorNode->sensorData.sensorId.sensorSubType) {
-                    case SENSOR_ACCELEROMETER_UNCALIBRATED:
-                        {
-                            OSPD_UncalibratedThreeAxisData_t floatVal;
-                            floatVal.timestamp.ll = timeNsec;
 
-                            _doAxisSwapAndConvertUncalibratedInt16(
-                                &sensorNode->sensorData.Data[0],
-                                &floatVal.data[0],
-                                ABS_X,
-                                ABS_Z,
-                                swapTable,
-                                conversionTable);                            
-                            _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
-                        }
-                        break;
-                    case SENSOR_ACCELEROMETER_CALIBRATED:
-                        {
-                            OSPD_CalibratedThreeAxisData_t floatVal;
-                            floatVal.timestamp.ll = timeNsec;
-                            _doAxisSwapAndConvertInt16(
-                                &sensorNode->sensorData.Data[0],
-                                &floatVal.data[0],
-                                ABS_X,
-                                ABS_Z,
-                                swapTable,
-                                conversionTable);                            
-                            _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
-                        }
-                        break;
+            int *swapTable = OSPD_getSensorSwapTable(&sensorNode->sensorData.sensorId);
+            osp_float_t *conversionTable = OSPD_getSensorConversionTable(&sensorNode->sensorData.sensorId);
+
+            switch (sensorNode->sensorData.sensorId.sensorType) {
+            case SENSOR_ACCELEROMETER:
+                switch (sensorNode->sensorData.sensorId.sensorSubType) {
+                case SENSOR_ACCELEROMETER_UNCALIBRATED:
+                {
+                    OSPD_UncalibratedThreeAxisData_t floatVal;
+                    floatVal.timestamp.ll = timeNsec;
+
+                    _doAxisSwapAndConvertUncalibratedInt16(
+                            &sensorNode->sensorData.Data[0],
+                            &floatVal.data[0],
+                            ABS_X,
+                            ABS_Z,
+                            swapTable,
+                            conversionTable);
+                    _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
+
+                case SENSOR_ACCELEROMETER_CALIBRATED:
+                {
+                    OSPD_CalibratedThreeAxisData_t floatVal;
+                    floatVal.timestamp.ll = timeNsec;
+                    _doAxisSwapAndConvertInt16(
+                            &sensorNode->sensorData.Data[0],
+                            &floatVal.data[0],
+                            ABS_X,
+                            ABS_Z,
+                            swapTable,
+                            conversionTable);
+                    _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
+                }
+                break;
+                } // switch
+
+                break;
+
             case SENSOR_MAGNETIC_FIELD:
-                switch(sensorNode->sensorData.sensorId.sensorSubType) {
-                    case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
-                        {
-                            OSPD_UncalibratedThreeAxisData_t floatVal;
-                            floatVal.timestamp.ll = timeNsec;
-                            _doAxisSwapAndConvertUncalibratedInt16(
-                                &sensorNode->sensorData.Data[0],
-                                &floatVal.data[0],
-                                ABS_X,
-                                ABS_Z,
-                                swapTable,
-                                conversionTable);                            
-                            _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
-                        }
-                        break;
-                    case SENSOR_MAGNETIC_FIELD_CALIBRATED:
-                        {
-                            OSPD_CalibratedThreeAxisData_t floatVal;
-                            floatVal.timestamp.ll = timeNsec;
-                            _doAxisSwapAndConvertInt16(
-                                &sensorNode->sensorData.Data[0],
-                                &floatVal.data[0],
-                                ABS_X,
-                                ABS_Z,
-                                swapTable,
-                                conversionTable);                            
-                            _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
-                        }
-                        break;
+                switch (sensorNode->sensorData.sensorId.sensorSubType) {
+                case SENSOR_MAGNETIC_FIELD_UNCALIBRATED:
+                {
+                    OSPD_UncalibratedThreeAxisData_t floatVal;
+                    floatVal.timestamp.ll = timeNsec;
+                    _doAxisSwapAndConvertUncalibratedInt16(
+                            &sensorNode->sensorData.Data[0],
+                            &floatVal.data[0],
+                            ABS_X,
+                            ABS_Z,
+                            swapTable,
+                            conversionTable);
+                    _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
+
+                case SENSOR_MAGNETIC_FIELD_CALIBRATED:
+                {
+                    OSPD_CalibratedThreeAxisData_t floatVal;
+                    floatVal.timestamp.ll = timeNsec;
+                    _doAxisSwapAndConvertInt16(
+                            &sensorNode->sensorData.Data[0],
+                            &floatVal.data[0],
+                            ABS_X,
+                            ABS_Z,
+                            swapTable,
+                            conversionTable);
+                    _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
+                }
+                break;
+                } // switch
+
+                break;
+
             case SENSOR_GYROSCOPE:
-                switch(sensorNode->sensorData.sensorId.sensorSubType) {
-                    case SENSOR_GYROSCOPE_UNCALIBRATED:
-                        {
-                            OSPD_UncalibratedThreeAxisData_t floatVal;
-                            floatVal.timestamp.ll = timeNsec;
-                            _doAxisSwapAndConvertUncalibratedInt16(
-                                &sensorNode->sensorData.Data[0],
-                                &floatVal.data[0],
-                                ABS_X,
-                                ABS_Z,
-                                swapTable,
-                                conversionTable);                            
-                            _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
-                        }
-                        break;
-                    case SENSOR_GYROSCOPE_CALIBRATED:
-                        {
-                            OSPD_CalibratedThreeAxisData_t floatVal;
-                            floatVal.timestamp.ll = timeNsec;
-                            _doAxisSwapAndConvertInt16(
-                                &sensorNode->sensorData.Data[0],
-                                &floatVal.data[0],
-                                ABS_X,
-                                ABS_Z,
-                                swapTable,
-                                conversionTable);                            
-                            _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
-                        }
-                        break;
+                switch (sensorNode->sensorData.sensorId.sensorSubType) {
+                case SENSOR_GYROSCOPE_UNCALIBRATED:
+                {
+                    OSPD_UncalibratedThreeAxisData_t floatVal;
+                    floatVal.timestamp.ll = timeNsec;
+                    _doAxisSwapAndConvertUncalibratedInt16(
+                            &sensorNode->sensorData.Data[0],
+                            &floatVal.data[0],
+                            ABS_X,
+                            ABS_Z,
+                            swapTable,
+                            conversionTable);
+                    _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
+
+                case SENSOR_GYROSCOPE_CALIBRATED:
+                {
+                    OSPD_CalibratedThreeAxisData_t floatVal;
+                    floatVal.timestamp.ll = timeNsec;
+                    _doAxisSwapAndConvertInt16(
+                            &sensorNode->sensorData.Data[0],
+                            &floatVal.data[0],
+                            ABS_X,
+                            ABS_Z,
+                            swapTable,
+                            conversionTable);
+                    _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
+                }
+                break;
+                } // switch
+
+                break;
+
             default:
                 //TODO Error Handling??
                 LOG_Err("Bad Sensor ID %d/%d!!",
                     sensorNode->sensorData.sensorId.sensorType,
                     sensorNode->sensorData.sensorId.sensorSubType);
                 return;
-            }
+            } // switch
 
 #if 0
-#ifdef ANDROID
-            switch(sensorIndex) {
+# ifdef ANDROID
+            switch (sensorIndex) {
             case ACCEL_INDEX:
             case MAG_INDEX:
             case GYRO_INDEX:
-                LOG_Info("bufidx %-3.3d Sensor %-2.2x  TimeStamp 0x%-8.8llx x 0x%-8.8x  y 0x%-8.8x  z 0x%-8.8x tv_usec %-20.6f   \n",
-                         bufidx,
-                         sensorNode->sensorData.sensorId,
-                         sensorNode->sensorData.TimeStamp,
-                         sensorNode->sensorData.Data[0],
-                         sensorNode->sensorData.Data[1],
-                         sensorNode->sensorData.Data[2],
-                         timeUsec / 1000000.0);
+                LOG_Info(
+                    "bufidx %-3.3d Sensor %-2.2x  TimeStamp 0x%-8.8llx x 0x%-8.8x  y 0x%-8.8x  z 0x%-8.8x tv_usec %-20.6f   \n",
+                    bufidx,
+                    sensorNode->sensorData.sensorId,
+                    sensorNode->sensorData.TimeStamp,
+                    sensorNode->sensorData.Data[0],
+                    sensorNode->sensorData.Data[1],
+                    sensorNode->sensorData.Data[2],
+                    timeUsec / 1000000.0);
 
                 LOG_Info("{!%s, %20.6f , %10.6f , %10.6f , %10.6f, 0 ,!}\n",
-                         label,
-                         (float) timeUsec / (float) 1000000.0,
-                         (float)_sfloatSensorData[sensorIndex][0],
-                         (float)_sfloatSensorData[sensorIndex][1],
-                         (float)_sfloatSensorData[sensorIndex][2]);
+                    label,
+                    (float)timeUsec / (float)1000000.0,
+                    (float)_sfloatSensorData[sensorIndex][0],
+                    (float)_sfloatSensorData[sensorIndex][1],
+                    (float)_sfloatSensorData[sensorIndex][2]);
                 break;
 
             default:
                 LOG_Info("bufidx %-3.3d Sensor %-2.2x  TimeStamp 0x%-8.8llx value 0x%-8.8x  tv_usec %-20.6f   \n",
-                         bufidx,
-                         sensorNode->sensorData.sensorId,
-                         sensorNode->sensorData.TimeStamp,
-                         sensorNode->sensorData.Data[0],
-                         timeUsec / 1000000.0);
+                    bufidx,
+                    sensorNode->sensorData.sensorId,
+                    sensorNode->sensorData.TimeStamp,
+                    sensorNode->sensorData.Data[0],
+                    timeUsec / 1000000.0);
 
                 LOG_Info("{!%s, %20.6f , %10.6f , 0 ,!}\n",
-                         label,
-                         (float) timeUsec / (float) 1000000.0,
-                         (float)_sfloatSensorData[sensorIndex][0]);
+                    label,
+                    (float)timeUsec / (float)1000000.0,
+                    (float)_sfloatSensorData[sensorIndex][0]);
                 break;
-            }
-#endif
-#endif
+            } // switch
+
+# endif // ifdef ANDROID
+#endif // if 0
 
 
 #if 0
             SensorIndexToInputProducerMap::iterator iIndexToProducer;
-            iIndexToProducer= _sensorIndexToInputProducerMap.find(sensorIndex);
+            iIndexToProducer = _sensorIndexToInputProducerMap.find(sensorIndex);
 
-            if(iIndexToProducer != _sensorIndexToInputProducerMap.end() ) {
-                InputProducerInterface* pProducer= iIndexToProducer->second;
+            if (iIndexToProducer != _sensorIndexToInputProducerMap.end() ) {
+                InputProducerInterface *pProducer = iIndexToProducer->second;
 
                 if (pProducer) {
                     switch (pProducer->getType()) {
                     case PRODUCER_IS_THREEAXIS:
                     {
-                        dynamic_cast<ThreeAxisSensorProducer*>(pProducer)->SetDataByFloat
-                                (eventTimeDbl,
-                                 _sfloatSensorData[sensorIndex],
-                                 3);
+                        dynamic_cast<ThreeAxisSensorProducer *>(pProducer)->SetDataByFloat
+                            (eventTimeDbl,
+                                _sfloatSensorData[sensorIndex],
+                                3);
                     }
-                        break;
+                    break;
+
                     case PRODUCER_IS_STEP_DATA:
                     {
                         NTTIME eventTime = TOFIX_TIME(eventTimeDbl);
                         StepData_t data;
 
                         data.startTime = eventTime;
-                        data.stopTime =  eventTime;
+                        data.stopTime = eventTime;
                         data.stepLength = 0;
                         data.stepFrequency = 0;
                         data.numStepsTotal = _numStepsTotal;
@@ -435,38 +448,41 @@ static void ProcessInputEventsRelay(void)
                         data.numStepsUp = 0;
                         data.numStepsDown = 0;
                         data.numStepsLevel = 0;
-                        dynamic_cast<StepDataProducer*>(pProducer)->SetData(data);
+                        dynamic_cast<StepDataProducer *>(pProducer)->SetData(data);
                     }
-                        break;
+                    break;
+
                     case PRODUCER_IS_QUATERNION:
                     {
                         NTTIME eventTime = TOFIX_TIME(eventTimeDbl);
                         Quat quat;
                         quat <<
-                                (float)_sfloatSensorData[sensorIndex][0],
-                                (float)_sfloatSensorData[sensorIndex][1],
-                                (float)_sfloatSensorData[sensorIndex][2],
-                                (float)_sfloatSensorData[sensorIndex][3];
+                        (float)_sfloatSensorData[sensorIndex][0],
+                        (float)_sfloatSensorData[sensorIndex][1],
+                        (float)_sfloatSensorData[sensorIndex][2],
+                        (float)_sfloatSensorData[sensorIndex][3];
 
                         AttitudeData data(eventTime, quat, 0.0f, 0.0f);
 
-                        dynamic_cast<AttitudeProducer*>(pProducer)->SetData(data);
+                        dynamic_cast<AttitudeProducer *>(pProducer)->SetData(data);
                     }
-                        break;
+                    break;
+
                     default:
-                        LOG_Err("No mapping found for producer at sensor index %d as PRODUCER_IS_THREEAXIS nor PRODUCER_IS_STEP_DATA",
-                                sensorIndex );
+                        LOG_Err(
+                            "No mapping found for producer at sensor index %d as PRODUCER_IS_THREEAXIS nor PRODUCER_IS_STEP_DATA",
+                            sensorIndex );
                         break;
-                    }
+                    } // switch
                 } else {
                     LOG_Err("No mapping found for producer at sensor index %d",
-                            sensorIndex );
+                        sensorIndex );
                 }
             } else {
                 LOG_Err("No mapping found for producer at sensor index %d",
-                        sensorIndex );
+                    sensorIndex );
             }
-#endif
+#endif // if 0
             subbufs_consumed++;
         }
 
@@ -484,7 +500,7 @@ static void ProcessInputEventsRelay(void)
 #endif
             if (write(_consumed_file[cpu], &subbufs_consumed, sizeof(subbufs_consumed)) < 0) {
                 LOG_Err("Couldn't write to consumed file for cpu %d, exiting: errcode = %d: %s",
-                        cpu, errno, strerror(errno));
+                    cpu, errno, strerror(errno));
                 exit(1);
             }
             subbufs_consumed = 0;
@@ -516,8 +532,8 @@ static void _relayReadAndProcessSensorData(int fd)
     nfds = MAX_NUM_FDS( nfds, _relay_fd);
 
     /* Wait to recieve data on the relay pipe */
-    selectResult = select(nfds+1, &readFdSet, NULL, &excFdSet, NULL);
-    if (!_relayThreadActive){
+    selectResult = select(nfds + 1, &readFdSet, NULL, &excFdSet, NULL);
+    if (!_relayThreadActive) {
         return;
     }
 
@@ -529,9 +545,9 @@ static void _relayReadAndProcessSensorData(int fd)
             //make sure this FD has data before trying to read
             if (FD_ISSET(_relay_fd, &readFdSet) ) {
                 bytesRead = read(_relay_fd, &inputEvents[0], sizeof(struct input_event));
-                if (bytesRead < 0){
+                if (bytesRead < 0) {
                     LOG_Err("I/O read error on relay input device %d", _relay_fd);
-                } else if (bytesRead == 0){
+                } else if (bytesRead == 0) {
                     FD_CLR( _relay_fd, &readFdSet );
                     FD_CLR( _relay_fd, &excFdSet );
                 } else {
@@ -546,7 +562,6 @@ static void _relayReadAndProcessSensorData(int fd)
                 }
             }
         }
-
     }
 }
 
@@ -575,7 +590,6 @@ static void *_processRelayInput(void *pData)
 }
 
 
-
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C     F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
@@ -589,6 +603,7 @@ int32_t InitializeRelayInput( std::string deviceRelayInputName, int32_t relayTic
 {
     osp_char_t devname[256];
     unsigned int cpu;
+
     _deviceRelayInputName = deviceRelayInputName;
     _relayTickUsec = relayTickUsec;
 
@@ -600,11 +615,11 @@ int32_t InitializeRelayInput( std::string deviceRelayInputName, int32_t relayTic
     _relay_fd = openInputEventDeviceExt(_deviceRelayInputName.c_str(), devname);
     if (_relay_fd < 0) {
         LOG_Err("Unable to open relay input device with name %s",
-                _deviceRelayInputName.c_str() );
+            _deviceRelayInputName.c_str() );
         return OSP_STATUS_UNKNOWN_INPUT;
     }
     LOG_Info("Open relay input device with name %s",
-             _deviceRelayInputName.c_str() );
+        _deviceRelayInputName.c_str() );
 
 
 
@@ -617,26 +632,25 @@ int32_t InitializeRelayInput( std::string deviceRelayInputName, int32_t relayTic
         if (fileHandle < 0) {
             if (cpu == 0) {
                 LOG_Err("Couldn't open relay file %s: errcode = %s\n",
-                        devname, strerror(errno));
+                    devname, strerror(errno));
             }
             break;
         }
         LOG_Info("cpu %d file", cpu);
 
-        unsigned char *bufferP = (unsigned char *) mmap(
-                    NULL,
-                    sizeof(union sensor_relay_broadcast_node) *
-                    SENSOR_RELAY_NUM_RELAY_BUFFERS, PROT_READ,
-                    MAP_PRIVATE | MAP_POPULATE, fileHandle,
-                    0);
+        unsigned char *bufferP = (unsigned char *)mmap(
+            NULL,
+            sizeof(union sensor_relay_broadcast_node) *
+            SENSOR_RELAY_NUM_RELAY_BUFFERS, PROT_READ,
+            MAP_PRIVATE | MAP_POPULATE, fileHandle,
+            0);
 
-        if(bufferP == MAP_FAILED)
-        {
+        if (bufferP == MAP_FAILED) {
             LOG_Err("Couldn't mmap relay file cpu %d, subbuf_size (%d) * n_subbufs(%d), error = %s \n",
-                    cpu,
-                    (int)sizeof(union sensor_relay_broadcast_node),
-                    SENSOR_RELAY_NUM_RELAY_BUFFERS,
-                    strerror(errno));
+                cpu,
+                (int)sizeof(union sensor_relay_broadcast_node),
+                SENSOR_RELAY_NUM_RELAY_BUFFERS,
+                strerror(errno));
             close(fileHandle);
             break;
         }
@@ -682,6 +696,7 @@ int32_t InitializeRelayInput( std::string deviceRelayInputName, int32_t relayTic
     return OSP_STATUS_OK;
 }
 
+
 /****************************************************************************************************
  * @fn      terminateRelayThread
  *          terminate the relay thread.
@@ -690,10 +705,10 @@ int32_t InitializeRelayInput( std::string deviceRelayInputName, int32_t relayTic
 void terminateRelayThread(void)
 {
     int threadStatus;
-    pthread_join(_relayThread, (void**) &threadStatus);
+
+    pthread_join(_relayThread, (void * *)&threadStatus);
     _relayThreadActive = false;
 }
-
 
 
 /*-------------------------------------------------------------------------------------------------*\

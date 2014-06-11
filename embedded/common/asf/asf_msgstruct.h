@@ -43,27 +43,23 @@
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 /* ASF common message structures */
-typedef struct MsgGenericTag
-{
+typedef struct MsgGenericTag {
     uint32_t dword;
     uint16_t word;
-    uint8_t  byte;
+    uint8_t byte;
 } MsgGeneric;
 
-typedef struct MsgNoDataTag
-{
+typedef struct MsgNoDataTag {
     uint32_t dummy; //Can't really be empty!
 } MsgNoData;
 
-typedef struct MsgTimerExpiryTag
-{
+typedef struct MsgTimerExpiryTag {
     uint16_t userValue;
-    TimerId  timerId;
+    TimerId timerId;
 } MsgTimerExpiry;
 
 
-union Message
-{
+union Message {
     #include "asf_msgdef.h"
 };
 
@@ -75,7 +71,7 @@ union Message
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
 #if defined (ASF_MSG_DEF)
-#   undef ASF_MSG_DEF
+# undef ASF_MSG_DEF
 #endif
 
 #define ASF_MSG_DEF(MsgID, Union)   MsgID,
@@ -106,7 +102,7 @@ union Message
  * Derives the MessageRec from a given Message Buffer.
  */
 #define M_GetMsgRecFromBuffer(RecPtr, MsgPtr)   \
-    (RecPtr) = (MessageRec *)((uint8_t*)&((MsgPtr)->msgId) - (offsetof(MessageRec, msg)))
+    (RecPtr) = (MessageRec*)((uint8_t*)&((MsgPtr)->msgId) - (offsetof(MessageRec, msg)))
 
 
 
@@ -129,46 +125,37 @@ union Message
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum AsfResultCodesTag
-{
-    ASF_OK                  = 0,
-    ASF_ERR_Q_FULL          = 1,
-    ASF_ERR_MSG_BUFF        = 2,
-    ASF_ERR_TIMER_IN_USE    = 3,
-    ASF_ERR_TIMEOUT         = 4,
+typedef enum AsfResultCodesTag {
+    ASF_OK = 0,
+    ASF_ERR_Q_FULL = 1,
+    ASF_ERR_MSG_BUFF = 2,
+    ASF_ERR_TIMER_IN_USE = 3,
+    ASF_ERR_TIMEOUT = 4,
 } AsfResult_t;
 
 /* Message Buffer Definitions */
-typedef enum MessageIdTag
-{
+typedef enum MessageIdTag {
     #include "asf_msgdef.h"
 
     NUM_MSG_ID          ///< Total messages
-
 } MessageId;
 
-typedef struct MsgHeaderTag
-{
-    TaskId      destTask;   ///< Destination task identifier
-    uint16_t    length;     ///< Length of the message structure
-
+typedef struct MsgHeaderTag {
+    TaskId destTask;   ///< Destination task identifier
+    uint16_t length;     ///< Length of the message structure
 } MsgHeader;
 
-typedef struct MessageRecTag
-{
-    MessageId   msgId;      ///< Enumerated identifier for the message (declared by ASF_MSG_DEF)
+typedef struct MessageRecTag {
+    MessageId msgId;      ///< Enumerated identifier for the message (declared by ASF_MSG_DEF)
     union Message msg;      ///< This encapsulates all message types
-
 } MessageRec;
 
-typedef MessageRec   MessageBuffer;
+typedef MessageRec MessageBuffer;
 
 /** The message block is allocated for creating a message type */
-typedef struct MessageBlockTag
-{
-    MsgHeader   header;     ///< See MsgHeader definition
-    MessageRec  rec;        ///< See MessageRec definition
-
+typedef struct MessageBlockTag {
+    MsgHeader header;     ///< See MsgHeader definition
+    MessageRec rec;        ///< See MessageRec definition
 } MessageBlock;
 
 

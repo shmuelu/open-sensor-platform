@@ -1,16 +1,20 @@
-/*
-    sensor_relay.h - Linux kernel module for publishing sensor measuremnents using RELAY
-
-    This file declares helper functions for the sysfs class "sensor_relay",
-    for use by sensors drivers.
-
-    Copyright (C) 2013 <sungerfeld@sensorplatforms.com>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; version 2 of the License.
+/* Open Sensor Platform Project
+* https://github.com/sensorplatforms/open-sensor-platform
+*
+* Copyright (C) 2013 Sensor Platforms Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
 */
-
 #ifndef _SENSOR_RELAY_H_
 #define _SENSOR_RELAY_H_
 
@@ -42,14 +46,14 @@ struct spi_pack sensor_relay_motion_sensor_broadcast_node {
     int16_t Data[3];    /* Raw sensor data for 3axis */
 };
 
-struct spi_pack  sensor_relay_orientation_broadcast_node {
+struct spi_pack sensor_relay_orientation_broadcast_node {
     struct SensorId_t sensorId;   /* Holds Sensor type enumeration - MUST be 1st*/
     uint64_t timeStamp; /* raw time stamp in sensor time capture ticks */
 
     int32_t Data[3];    /* Raw sensor data for 3axis in NTEXTENDED */
 };
 
-struct spi_pack  sensor_relay_motion_uncal_sensor_broadcast_node {
+struct spi_pack sensor_relay_motion_uncal_sensor_broadcast_node {
     struct SensorId_t sensorId;   /* Holds Sensor type enumeration - MUST be 1st*/
     uint64_t timeStamp; /* raw time stamp in sensor time capture ticks */
 
@@ -58,7 +62,7 @@ struct spi_pack  sensor_relay_motion_uncal_sensor_broadcast_node {
 };
 
 
-struct spi_pack  sensor_relay_quaternion_sensor_broadcast_node {
+struct spi_pack sensor_relay_quaternion_sensor_broadcast_node {
     struct SensorId_t sensorId;  /* Holds Sensor type enumeration - MUST be 1st*/
     int64_t timeStamp; /* NTTIME */
 
@@ -69,18 +73,18 @@ struct spi_pack  sensor_relay_quaternion_sensor_broadcast_node {
     int32_t E_EST;
 };
 
-struct spi_pack  sensor_relay_steps_detector_broadcast_node {
+struct spi_pack sensor_relay_steps_detector_broadcast_node {
     struct SensorId_t sensorId;   /* Holds Sensor type enumeration - MUST be 1st*/
     uint64_t timeStamp; /* raw time stamp in sensor time capture ticks */
 };
 
-struct spi_pack  sensor_relay_steps_counter_broadcast_node {
+struct spi_pack sensor_relay_steps_counter_broadcast_node {
     struct SensorId_t sensorId;   /* Holds Sensor type enumeration - MUST be 1st*/
     uint64_t timeStamp; /* raw time stamp in sensor time capture ticks */
     uint16_t numSteps;
 };
 
-struct spi_pack  sensor_relay_steps_sensitive_broadcast_node {
+struct spi_pack sensor_relay_steps_sensitive_broadcast_node {
     struct SensorId_t sensorId;   /* Holds Sensor type enumeration - MUST be 1st*/
     uint64_t timeStamp; /* raw time stamp in sensor time capture ticks */
     uint16_t numStepsTotal;
@@ -96,8 +100,7 @@ struct spi_pack sensor_relay_segment_broadcast_node {
 struct spi_pack sensor_relay_significant_motion_broadcast_node {
     struct SensorId_t sensorId;    /* Holds Sensor type enumeration - MUST be 1st*/
     int64_t timeStamp;   /* in NTTIME  */
-    unsigned char  significantMotionDetected;    /* bool */
-
+    unsigned char significantMotionDetected;    /* bool */
 };
 
 union  spi_pack sensor_relay_broadcast_node {
@@ -116,19 +119,19 @@ union  spi_pack sensor_relay_broadcast_node {
 
 struct sensor_relay_classdev {
     const char                *sensor_name;
-    int                 index;
-    int                 flags;
-    bool                enable;
-    unsigned int        delay;
+    int index;
+    int flags;
+    bool enable;
+    unsigned int delay;
 
     /*
      * Lower 16 bits reflect status
      */
-#      define SENSOR_SUSPENDED      (1 << 0)
+# define SENSOR_SUSPENDED      (1 << 0)
     /*
      * Upper 16 bits reflect control information
      */
-#      define SENSOR_CORE_SUSPENDRESUME (1 << 16)
+# define SENSOR_CORE_SUSPENDRESUME (1 << 16)
 
     /*
      * Set Sensor Enable
@@ -137,16 +140,16 @@ struct sensor_relay_classdev {
      * Must not sleep, use a workqueue if needed
      */
     int (
-    *enable_set) (
-    struct sensor_relay_classdev * sensor_relay_cdev,
-    bool enable);
+        *enable_set)(
+        struct sensor_relay_classdev *sensor_relay_cdev,
+        bool enable);
     /*
      * Get Sensor Enable
      */
     int (
-    *enable_get) (
-    struct sensor_relay_classdev * sensor_relay_cdev,
-    bool * enable);
+        *enable_get)(
+        struct sensor_relay_classdev *sensor_relay_cdev,
+        bool *enable);
 
     /*
      * Set Sensor Enable
@@ -155,16 +158,16 @@ struct sensor_relay_classdev {
      * Must not sleep, use a workqueue if needed
      */
     int (
-    *delay_set) (
-    struct sensor_relay_classdev * sensor_relay_cdev,
-    unsigned int delay);
+        *delay_set)(
+        struct sensor_relay_classdev *sensor_relay_cdev,
+        unsigned int delay);
     /*
      * Get Sensor Enable
      */
     int (
-    *delay_get) (
-    struct sensor_relay_classdev * sensor_relay_cdev,
-    unsigned int *delay);
+        *delay_get)(
+        struct sensor_relay_classdev *sensor_relay_cdev,
+        unsigned int *delay);
 
 
     struct device *dev;
@@ -195,7 +198,7 @@ int sensor_relay_write(
 
 int sensor_relay_wakeup(void);
 
-#endif
+#endif // ifdef __KERNEL__
 
 #endif /* _SENSOR_RELAY_H_ */
 /*-------------------------------------------------------------------------------------------------*\

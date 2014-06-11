@@ -103,6 +103,7 @@ static uint8_t ReadGyroReg( uint8_t regAddr )
 static void ReadGyroMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
 {
     uint8_t result;
+
     regAddr = regAddr | 0x80;     /* For multi-byte read MSB of sub-addr field should be 1 */
 
     /* Get the transfer going. Rest is handled in the ISR */
@@ -152,7 +153,7 @@ static void Gyro_DumpRegisters( void )
     D0_printf("\t INT1_DURATION(0x38) %02X\r\n", ReadGyroReg( L3GD20_INT1_DURATION ));
     D0_printf("----------------------------------------------\r\n");
     delay_ms(50);
-#endif
+#endif /* ifdef DEBUG_GYRO */
 }
 
 
@@ -208,12 +209,11 @@ void Gyro_Initialize( void )
  ***************************************************************************************************/
 void Gyro_HardwareSetup( osp_bool_t enable )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
-    EXTI_InitTypeDef  EXTI_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
 
-    if (enable == true)
-    {
+    if (enable == true) {
         /* Initialize the I2C Driver interface */
         ASF_assert( true == I2C_HardwareSetup( GYRO_BUS ) ); //TBD - can be made bus agnostic!
 
@@ -224,7 +224,7 @@ void Gyro_HardwareSetup( osp_bool_t enable )
         GPIO_InitStructure.GPIO_Pin = GYRO_RDY_INT_PIN;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-        GPIO_Init (GYRO_RDY_INT_GRP, &GPIO_InitStructure);
+        GPIO_Init(GYRO_RDY_INT_GRP, &GPIO_InitStructure);
 
         GPIO_EXTILineConfig(GPIO_PORT_SRC_GYRO_RDY_INT, GPIO_PIN_SRC_GYRO_RDY_INT);
 
@@ -244,10 +244,8 @@ void Gyro_HardwareSetup( osp_bool_t enable )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
         /* Int enabled via Gyro_ConfigDataInt() */
-    }
-    else //TODO: disable interrupts and free GPIOs
-    {
-        //TODO!!
+    } else { //TODO: disable interrupts and free GPIOs
+             //TODO!!
     }
 }
 
@@ -316,14 +314,11 @@ void Gyro_ClearDataInt( void )
  ***************************************************************************************************/
 void Gyro_ConfigDataInt( osp_bool_t enInt )
 {
-    if (enInt)
-    {
+    if (enInt) {
         /* Enable data ready interrupt */
         WriteGyroReg( L3GD20_CTRL_REG3, DRDY_ON_INT2_ENABLE );
         NVIC_CH_ENABLE( GYRO_RDY_IRQCHANNEL );
-    }
-    else
-    {
+    } else {
         uint8_t temp = ReadGyroReg( L3GD20_CTRL_REG3 );
         temp &= ~DRDY_ON_INT2_ENABLE;
         WriteGyroReg( L3GD20_CTRL_REG3, temp );

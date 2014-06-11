@@ -66,7 +66,7 @@ osp_bool_t I2C_HardwareSetup( I2C_TypeDef *busId );
 void I2C_Master_Initialise( void );
 uint8_t I2C_Transceiver_Busy( void );
 uint8_t I2C_Start_Transfer( uint8_t slaveAddr, uint16_t regAddr, uint8_t *pData, uint8_t dataSize,
-                            I2C_SendMode_t sendMode );
+    I2C_SendMode_t sendMode );
 uint8_t I2C_Get_Data_From_Transceiver( uint8_t *, uint8_t );
 void I2C_Wait_Completion( void );
 

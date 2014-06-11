@@ -72,11 +72,12 @@ static StepDetector_t stepDetectData;
  *          <brief>
  *
  ***************************************************************************************************/
-static void SetNewStepSegment(StepSegment_t * segment){
+static void SetNewStepSegment(StepSegment_t *segment)
+{
     NTTIME dt;
 
     //Check for start of walk sequence
-    if(segment->type == firstStep){
+    if (segment->type == firstStep) {
         stepDetectData.startWalkTime = segment->startTime;
         stepDetectData.step.numStepsSinceWalking = 0;
     }
@@ -89,13 +90,13 @@ static void SetNewStepSegment(StepSegment_t * segment){
 
     //Estimate step frequency and length
     dt = segment->stopTime - stepDetectData.startWalkTime;
-    stepDetectData.step.stepFrequency = ((osp_float_t)stepDetectData.step.numStepsSinceWalking)/TOFLT_TIME(dt);
+    stepDetectData.step.stepFrequency = ((osp_float_t)stepDetectData.step.numStepsSinceWalking) / TOFLT_TIME(dt);
 
     //Callback to subscribers if any
-    if(stepDetectData.stepResultReadyCallback){
+    if (stepDetectData.stepResultReadyCallback) {
         stepDetectData.stepResultReadyCallback(&stepDetectData.step);
     }
-    if(stepDetectData.stepSegmentResultReadyCallback){
+    if (stepDetectData.stepSegmentResultReadyCallback) {
         stepDetectData.stepSegmentResultReadyCallback(segment);
     }
 }
@@ -110,7 +111,9 @@ static void SetNewStepSegment(StepSegment_t * segment){
  *          <brief>
  *
  ***************************************************************************************************/
-void StepDetector_Init(OSP_StepResultCallback_t pStepResultReadyCallback, OSP_StepSegmentResultCallback_t pStepSegmentResultReadyCallback){
+void StepDetector_Init(OSP_StepResultCallback_t pStepResultReadyCallback,
+    OSP_StepSegmentResultCallback_t pStepSegmentResultReadyCallback)
+{
     //Set up callbacks
     stepDetectData.stepResultReadyCallback = pStepResultReadyCallback;
     stepDetectData.stepSegmentResultReadyCallback = pStepSegmentResultReadyCallback;
@@ -128,7 +131,8 @@ void StepDetector_Init(OSP_StepResultCallback_t pStepResultReadyCallback, OSP_St
  *          <brief>
  *
  ***************************************************************************************************/
-void StepDetector_CleanUp(void){
+void StepDetector_CleanUp(void)
+{
     stepDetectData.stepResultReadyCallback = NULL;
     stepDetectData.stepSegmentResultReadyCallback = NULL;
 
@@ -141,9 +145,11 @@ void StepDetector_CleanUp(void){
  *          <brief>
  *
  ***************************************************************************************************/
-void StepDetector_Reset(void){
+void StepDetector_Reset(void)
+{
     //reset step data
-    StepDataOSP_t * step = &stepDetectData.step;
+    StepDataOSP_t *step = &stepDetectData.step;
+
     step->startTime = TOFIX_TIME(-1.f);
     step->stopTime = TOFIX_TIME(-1.f);
     step->stepFrequency = 0;
@@ -160,15 +166,17 @@ void StepDetector_Reset(void){
  *          Set method
  *
  ***************************************************************************************************/
-void StepDetector_SetFilteredAccelerometerMeasurement(const NTTIME tstamp, const osp_float_t filteredAcc[3]){
-    osp_float_t accNorm = sqrtf(filteredAcc[0]*filteredAcc[0] + 
-                          filteredAcc[1]*filteredAcc[1] + 
-                          filteredAcc[2]*filteredAcc[2]);
+void StepDetector_SetFilteredAccelerometerMeasurement(const NTTIME tstamp, const osp_float_t filteredAcc[3])
+{
+    osp_float_t accNorm = sqrtf(filteredAcc[0] * filteredAcc[0] +
+        filteredAcc[1] * filteredAcc[1] +
+        filteredAcc[2] * filteredAcc[2]);
     NTTIME tFilter = tstamp;
 
     //Update step segmenter
     StepSegmenter_UpdateAndCheckForSegment(&stepDetectData.stepSegmenter, accNorm, tFilter);
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

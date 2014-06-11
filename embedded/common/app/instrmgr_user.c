@@ -65,27 +65,23 @@ static void UpdateRTC( void )
 
     currTime = os_time;
     /* Check for rollover */
-    if (currTime < sInitialTime)
-    {
+    if (currTime < sInitialTime) {
         currTime += 65536; //os_time is 16bit
     }
 
-    if ((currTime - sInitialTime) >= TICS_PER_SEC)
-    {
-        gRtcClockData.seconds += (currTime-sInitialTime)/TICS_PER_SEC;
-        gRtcClockData.msec = (currTime-sInitialTime)%TICS_PER_SEC * MSEC_PER_TICK;
+    if ((currTime - sInitialTime) >= TICS_PER_SEC) {
+        gRtcClockData.seconds += (currTime - sInitialTime) / TICS_PER_SEC;
+        gRtcClockData.msec = (currTime - sInitialTime) % TICS_PER_SEC * MSEC_PER_TICK;
         sInitialTime = os_time; //reset for next iteration
 
-        if (gRtcClockData.seconds >= 60)
-        {
-            gRtcClockData.minutes += gRtcClockData.seconds/60;
-            gRtcClockData.seconds = (gRtcClockData.seconds%60);
+        if (gRtcClockData.seconds >= 60) {
+            gRtcClockData.minutes += gRtcClockData.seconds / 60;
+            gRtcClockData.seconds = (gRtcClockData.seconds % 60);
         }
 
-        if (gRtcClockData.minutes >= 60)
-        {
-            gRtcClockData.hours += gRtcClockData.minutes/60;
-            gRtcClockData.minutes = (gRtcClockData.minutes%60);
+        if (gRtcClockData.minutes >= 60) {
+            gRtcClockData.hours += gRtcClockData.minutes / 60;
+            gRtcClockData.minutes = (gRtcClockData.minutes % 60);
         }
     }
 
@@ -130,11 +126,9 @@ osp_bool_t InstrManagerUserHandler( MessageBuffer *pMsg )
 {
     osp_bool_t msgHandled = false;
 
-    switch (pMsg->msgId)
-    {
+    switch (pMsg->msgId) {
     case MSG_TIMER_EXPIRY: //Note: this message is common so we don't mark it handled
-        switch (pMsg->msg.msgTimerExpiry.userValue)
-        {
+        switch (pMsg->msg.msgTimerExpiry.userValue) {
         case TIMER_REF_RTC_UPDATE:
             UpdateRTC();
 
@@ -145,14 +139,16 @@ osp_bool_t InstrManagerUserHandler( MessageBuffer *pMsg )
         default:
             break;
         }
+
         break;
 
     default:
         break;
-    }
+    } /* switch */
 
     return msgHandled;
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

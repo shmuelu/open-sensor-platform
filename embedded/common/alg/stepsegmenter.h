@@ -81,8 +81,7 @@ typedef struct {
 
     //callback variables
     OSP_StepSegmentResultCallback_t resultReadyCallback;
-    void * objPtr;
-
+    void *objPtr;
 } StepSegmenter_t;
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -101,17 +100,17 @@ extern "C" {
 #endif
 
 // Constructor/destructor
-void StepSegmenter_Init(StepSegmenter_t * pStruct, OSP_StepSegmentResultCallback_t pResultReadyCallback);
-void StepSegmenter_CleanUp(StepSegmenter_t * pStruct);
+void StepSegmenter_Init(StepSegmenter_t *pStruct, OSP_StepSegmentResultCallback_t pResultReadyCallback);
+void StepSegmenter_CleanUp(StepSegmenter_t *pStruct);
 
 // Reset functions
-void StepSegmenter_Reset(StepSegmenter_t * pStruct);
+void StepSegmenter_Reset(StepSegmenter_t *pStruct);
 
 //Update function
-void StepSegmenter_UpdateAndCheckForSegment(StepSegmenter_t * pStruct, const osp_float_t accNorm, NTTIME tstamp);
+void StepSegmenter_UpdateAndCheckForSegment(StepSegmenter_t *pStruct, const osp_float_t accNorm, NTTIME tstamp);
 
 // Get functions
-void StepSegmenter_GetLatestSegment(StepSegmenter_t * pStruct, StepSegment_t * segment);
+void StepSegmenter_GetLatestSegment(StepSegmenter_t *pStruct, StepSegment_t *segment);
 
 #ifdef __cplusplus
 }

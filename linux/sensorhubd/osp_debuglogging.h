@@ -36,13 +36,15 @@
 # define LOG_Info    LOGI
 # define LOGT(...) fprintf(stderr, __VA_ARGS__)
 # define LOGS(...) /* printf(__VA_ARGS__) */
-# define LOGE(...)   {\
-    __android_log_print(ANDROID_LOG_ERROR, "OSPD", __VA_ARGS__); \
+# define LOGE(...) \
+    { \
+        __android_log_print(ANDROID_LOG_ERROR, "OSPD", __VA_ARGS__); \
     }
-# define LOGI(...)   {\
-    __android_log_print(ANDROID_LOG_INFO, "OSPD", __VA_ARGS__); \
+# define LOGI(...) \
+    { \
+        __android_log_print(ANDROID_LOG_INFO, "OSPD", __VA_ARGS__); \
     }
-#endif
+#endif // ifdef NDEBUG
 
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S

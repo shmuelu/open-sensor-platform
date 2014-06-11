@@ -54,7 +54,7 @@
         AssertIndication();                                                                \
         FlushUart();                                                                       \
         snprintf(_errBuff, ERR_LOG_MSG_SZ, "ASSERT: %s(%d) - [%s]", __MODULE__,            \
-            __LINE__, #condition);                                                         \
+            __LINE__, # condition);                                                         \
         printf("%s\r\n", _errBuff);                                                        \
         SysRESET();                                                                        \
     }
@@ -67,7 +67,7 @@
         AssertIndication();                                                                \
         FlushUart();                                                                       \
         snprintf(_errBuff, ERR_LOG_MSG_SZ, "ASSERT: %s(%d) - [%s], 0x%X, 0x%X, 0x%X",      \
-         __MODULE__, __LINE__, #condition, (uint32_t)var1, (uint32_t)var2, (uint32_t)var3);\
+            __MODULE__, __LINE__, # condition, (uint32_t)var1, (uint32_t)var2, (uint32_t)var3); \
         printf("%s\r\n", _errBuff);                                                        \
         SysRESET();                                                                        \
     }
@@ -80,7 +80,7 @@
         AssertIndication();                                                                \
         FlushUart();                                                                       \
         snprintf(_errBuff, ERR_LOG_MSG_SZ, "ASSERT_FATAL: %s(%d) - [%s]", __MODULE__,      \
-            __LINE__, #condition);                                                         \
+            __LINE__, # condition);                                                         \
         printf("%s\r\n", _errBuff);                                                        \
         SysRESET();                                                                        \
     }
@@ -93,12 +93,12 @@
         AssertIndication();                                                                \
         FlushUart();                                                                       \
         snprintf(_errBuff, ERR_LOG_MSG_SZ, "ASSERT: %s(%d) - [%s], MSG:%.100s",            \
-            __MODULE__, __LINE__, #condition, message);                                    \
+            __MODULE__, __LINE__, # condition, message);                                    \
         printf("%s\r\n", _errBuff);                                                        \
         SysRESET();                                                                        \
     }
 
-#else
+#else // ifdef DEBUG_BUILD
 # define ASF_assert( condition )                         ((void)0)
 # define ASF_assert_var( condition, var1, var2, var3 )   ((void)0)
 # define ASF_assert_fatal( condition )                   ((void)0)
@@ -124,19 +124,17 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum AppResultCodesTag
-{
-    APP_OK      = 0,
-    APP_ERR     = 1
+typedef enum AppResultCodesTag {
+    APP_OK = 0,
+    APP_ERR = 1
 } AppResult;
 
-typedef struct AsfTimerTag
-{
-    TimerId         timerId;   /**< Id of the timer - internal use    */
-    TaskId          owner;     /**< Owner task that created the timer */
-    uint16_t        ticks;     /**< Timeout value in system ticks     */
-    uint16_t        userValue; /**< User defined value                */
-    uint32_t        sysUse;    /**< For use by the system             */
+typedef struct AsfTimerTag {
+    TimerId timerId;   /**< Id of the timer - internal use    */
+    TaskId owner;     /**< Owner task that created the timer */
+    uint16_t ticks;     /**< Timeout value in system ticks     */
+    uint16_t userValue; /**< User defined value                */
+    uint32_t sysUse;    /**< For use by the system             */
 } AsfTimer;
 
 #define NULL_TIMER {(TimerId)0, (TaskId)0, 0, 0, 0}
@@ -145,8 +143,7 @@ typedef void (*fpDmaEnables_t)(void);
 typedef osp_bool_t (*fpInputValidate_t)(uint8_t);
 
 /* UART  driver data structure */
-typedef struct PortInfoTag
-{
+typedef struct PortInfoTag {
     uint32_t       *pBuffPool;
 #ifdef UART_DMA_ENABLE
     void           *pHead;
@@ -154,8 +151,8 @@ typedef struct PortInfoTag
     fpDmaEnables_t EnableDMATxRequest;
     fpDmaEnables_t EnableDMAxferCompleteInt;
     fpDmaEnables_t EnableDMAChannel;
-    fpInputValidate_t   ValidateInput;
-    uint32_t       UartBaseAddress;
+    fpInputValidate_t ValidateInput;
+    uint32_t UartBaseAddress;
     DMA_Channel_TypeDef *DMAChannel;
 #else
     /** Circular transmit buffer:
@@ -164,39 +161,37 @@ typedef struct PortInfoTag
      *   txWriteIdx == txReadIdx == buffer is full
      *   txWriteIdx == 1 + txReadIdx == buffer is empty
      */
-    uint8_t      txBuffer[TX_BUFFER_SIZE];
-    uint16_t     txWriteIdx;               /**< Updated by task.   */
-    uint16_t     txReadIdx;                /**< Updated by TX ISR. */
-#endif
-    /** Circular receive buffer:
-     *   rxWriteIdx is the next slot to write to
-     *   rxReadIdx  is the last slot read from
-     *   rxWriteIdx == rxReadIdx == buffer is full
-     *   rxWriteIdx == 1 + rxReadIdx == buffer is empty
-     */
-    uint8_t      rxBuffer[RX_BUFFER_SIZE];
-    uint16_t     rxWriteIdx;               /**< Updated by RX ISR. */
-    uint16_t     rxReadIdx;                /**< Updated by task.   */
-    TaskId       rcvTask;                  /**< Task waiting for receive */
-
+    uint8_t txBuffer[TX_BUFFER_SIZE];
+    uint16_t txWriteIdx;               /**< Updated by task.   */
+    uint16_t txReadIdx;                /**< Updated by TX ISR. */
+#endif // ifdef UART_DMA_ENABLE
+       /** Circular receive buffer:
+        *   rxWriteIdx is the next slot to write to
+        *   rxReadIdx  is the last slot read from
+        *   rxWriteIdx == rxReadIdx == buffer is full
+        *   rxWriteIdx == 1 + rxReadIdx == buffer is empty
+        */
+    uint8_t rxBuffer[RX_BUFFER_SIZE];
+    uint16_t rxWriteIdx;               /**< Updated by RX ISR. */
+    uint16_t rxReadIdx;                /**< Updated by task.   */
+    TaskId rcvTask;                  /**< Task waiting for receive */
 } PortInfo;
 
 /* Buffers used by DMA */
 typedef unsigned long Address;
-typedef struct PktBufferTag
-{
+typedef struct PktBufferTag {
     Address  *pNext;
-    uint32_t  bufLen;
-    Address   bufStart;
+    uint32_t bufLen;
+    Address bufStart;
 } PktBuff_t;
 
 /* Buffer Macros to manage linked list */
-#define M_GetBuffStart(x)   (void *)(&(((PktBuff_t*)(x))->bufStart))
+#define M_GetBuffStart(x)   (void*)(&(((PktBuff_t*)(x))->bufStart))
 #define M_GetBuffLen(x)     (((PktBuff_t*)(x))->bufLen)
-#define M_SetBuffLen(x,l)   (((PktBuff_t*)(x))->bufLen) = l
+#define M_SetBuffLen(x, l)   (((PktBuff_t*)(x))->bufLen) = l
 #define M_NextBlock(x)      (((PktBuff_t*)(x))->pNext)
 /* Get the address of the block having the buffer address */
-#define M_GetBuffBlock(p)   (void *)((uint8_t*)(p) - offsetof(PktBuff_t, bufStart))
+#define M_GetBuffBlock(p)   (void*)((uint8_t*)(p) - offsetof(PktBuff_t, bufStart))
 
 
 /*-------------------------------------------------------------------------------------------------*\
