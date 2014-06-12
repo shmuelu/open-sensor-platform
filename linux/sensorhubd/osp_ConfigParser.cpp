@@ -30,13 +30,8 @@ size_t getline (char * *lineptr, size_t *n, FILE *stream);
 }
 #endif
 
-#ifdef ANDROID
-extern "C" {
-size_t getline (char * *lineptr, size_t *n, FILE *stream);
-}
-#endif
-OSP::ConfigParser::ConfigParser()
-{
+OSP::ConfigParser::ConfigParser(){
+
 }
 
 
