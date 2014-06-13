@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# runs the code cleanup tool uncrustify on a specified directory and its subdirectories
+#
+# \warning on ubuntu 12.04 the default uncrustify package is too old
+# you will need to manually build and install uncrustify 0.6 or later: 
+# https://github.com/bengardner/uncrustify/blob/master/INSTALL
+#
+
+if [ $# -eq 0 ] ; then	
+  echo "usage `basename $0` <path>"
+  exit
+fi
+if [ ! "$OSP_DIR" ] ; then
+  echo "first run setupenv.sh or manually set OSP_DIR"
+  exit
+fi
+  
+uncrustify -c $OSP_DIR/tools/osp-uncrustify.cfg --no-backup $(find . -name "*.cpp" -o -name "*.c" -o -name "*.h")
