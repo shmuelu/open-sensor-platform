@@ -84,7 +84,8 @@ static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *
 static void _onUncalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId,
     OSPD_UncalibratedThreeAxisData_t *pSensorData);
 static void _onStepDetectorSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_StepDetectorData_t *pData);
-static void _onStepCounterSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_StepCounterData_t *pSensorData);
+static void _onStepCounterSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_StepCounterData_t *pSensorData);
 static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *sensorId,
     OSPD_SignificantMotionData_t *pSensorData);
 
@@ -920,8 +921,8 @@ static int32_t InitializeFromConfig( void )
             osp_char_t *sysfs = NULL;
 
             if (OSPConfig::getNamedConfigItem(
-                    _ospResultCodes[index].configFileDeviceName,
-                    OSPConfig::SENSOR_ENABLE_PATH)) {
+                _ospResultCodes[index].configFileDeviceName,
+                OSPConfig::SENSOR_ENABLE_PATH)) {
                 _ospResultCodes[index].enableValue =
                     OSPConfig::getNamedConfigItemIntV(
                     _ospResultCodes[index].deviceDriverName,
@@ -935,12 +936,12 @@ static int32_t InitializeFromConfig( void )
                     1);
 
                 if (asprintf(
-                        &sysfs,
-                        "/sys/class/sensor_relay/%s/%s",
-                        _ospResultCodes[index].deviceDriverName,
-                        OSPConfig::getNamedConfigItem(
-                            _ospResultCodes[index].configFileDeviceName,
-                            OSPConfig::SENSOR_ENABLE_PATH))< 0) {
+                    &sysfs,
+                    "/sys/class/sensor_relay/%s/%s",
+                    _ospResultCodes[index].deviceDriverName,
+                    OSPConfig::getNamedConfigItem(
+                    _ospResultCodes[index].configFileDeviceName,
+                    OSPConfig::SENSOR_ENABLE_PATH))< 0) {
                     LOG_Err("asprintf call failed!");
                 } else {
                     LOG_Info("Sysfs Enable Path: %s, %d, %d",
@@ -952,13 +953,13 @@ static int32_t InitializeFromConfig( void )
                 }
             }
             if (OSPConfig::getNamedConfigItem(_ospResultCodes[index].configFileDeviceName,
-                    OSPConfig::SENSOR_DELAY_PATH)) {
+                OSPConfig::SENSOR_DELAY_PATH)) {
                 if (asprintf(
-                        &sysfs, "/sys/class/sensor_relay/%s/%s",
-                        _ospResultCodes[index].deviceDriverName,
-                        OSPConfig::getNamedConfigItem(
-                            _ospResultCodes[index].deviceDriverName,
-                            OSPConfig::SENSOR_DELAY_PATH)) < 0) {
+                    &sysfs, "/sys/class/sensor_relay/%s/%s",
+                    _ospResultCodes[index].deviceDriverName,
+                    OSPConfig::getNamedConfigItem(
+                    _ospResultCodes[index].deviceDriverName,
+                    OSPConfig::SENSOR_DELAY_PATH)) < 0) {
                     LOG_Err("asprintf call failed!");
                 } else {
                     LOG_Info("Sysfs Delay Path: %s", sysfs);

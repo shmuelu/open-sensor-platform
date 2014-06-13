@@ -33,7 +33,7 @@
 \*-------------------------------------------------------------------------------------------------*/
 class Names {
 public:
-    typedef  const char* NameString;
+    typedef  const char *NameString;
 
     static constexpr NameString INPUT_EVENT_TIMESTAMP = "EVENT_TIMESTAMP";
     static constexpr NameString INPUT_EVENT_EMBEDDED_32_BIT_TIMESTAMP = "EMBEDDED_32_BIT_TIMESTAMP";
@@ -44,7 +44,6 @@ public:
     static constexpr NameString RAW_ACCELEROMETER   = "RAW_ACCELEROMETER";
     static constexpr NameString RAW_MAGNETOMETER    = "RAW_MAGNETOMETER";
     static constexpr NameString RAW_GYROSCOPE       = "RAW_GYROSCOPE";
-
 };
 
 /*-------------------------------------------------------------------------------------------------*\

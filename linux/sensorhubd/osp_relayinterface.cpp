@@ -188,7 +188,7 @@ static void ProcessInputEventsRelay(void)
     for (unsigned int cpu = 0; cpu < _produced_file.size(); cpu++) {
         lseek(_produced_file[cpu], 0, SEEK_SET);
         if (read(_produced_file[cpu], &size,
-                sizeof(size)) < 0) {
+            sizeof(size)) < 0) {
             LOG_Info("Couldn't read from consumed file for cpu %d, exiting: errcode = %d: %s\n",
                 cpu,
                 errno,
@@ -267,12 +267,12 @@ static void ProcessInputEventsRelay(void)
                     floatVal.timestamp.ll = timeNsec;
 
                     _doAxisSwapAndConvertUncalibratedInt16(
-                            &sensorNode->sensorData.Data[0],
-                            &floatVal.data[0],
-                            ABS_X,
-                            ABS_Z,
-                            swapTable,
-                            conversionTable);
+                        &sensorNode->sensorData.Data[0],
+                        &floatVal.data[0],
+                        ABS_X,
+                        ABS_Z,
+                        swapTable,
+                        conversionTable);
                     _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
@@ -282,12 +282,12 @@ static void ProcessInputEventsRelay(void)
                     OSPD_CalibratedThreeAxisData_t floatVal;
                     floatVal.timestamp.ll = timeNsec;
                     _doAxisSwapAndConvertInt16(
-                            &sensorNode->sensorData.Data[0],
-                            &floatVal.data[0],
-                            ABS_X,
-                            ABS_Z,
-                            swapTable,
-                            conversionTable);
+                        &sensorNode->sensorData.Data[0],
+                        &floatVal.data[0],
+                        ABS_X,
+                        ABS_Z,
+                        swapTable,
+                        conversionTable);
                     _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
@@ -302,12 +302,12 @@ static void ProcessInputEventsRelay(void)
                     OSPD_UncalibratedThreeAxisData_t floatVal;
                     floatVal.timestamp.ll = timeNsec;
                     _doAxisSwapAndConvertUncalibratedInt16(
-                            &sensorNode->sensorData.Data[0],
-                            &floatVal.data[0],
-                            ABS_X,
-                            ABS_Z,
-                            swapTable,
-                            conversionTable);
+                        &sensorNode->sensorData.Data[0],
+                        &floatVal.data[0],
+                        ABS_X,
+                        ABS_Z,
+                        swapTable,
+                        conversionTable);
                     _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
@@ -317,12 +317,12 @@ static void ProcessInputEventsRelay(void)
                     OSPD_CalibratedThreeAxisData_t floatVal;
                     floatVal.timestamp.ll = timeNsec;
                     _doAxisSwapAndConvertInt16(
-                            &sensorNode->sensorData.Data[0],
-                            &floatVal.data[0],
-                            ABS_X,
-                            ABS_Z,
-                            swapTable,
-                            conversionTable);
+                        &sensorNode->sensorData.Data[0],
+                        &floatVal.data[0],
+                        ABS_X,
+                        ABS_Z,
+                        swapTable,
+                        conversionTable);
                     _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
@@ -337,12 +337,12 @@ static void ProcessInputEventsRelay(void)
                     OSPD_UncalibratedThreeAxisData_t floatVal;
                     floatVal.timestamp.ll = timeNsec;
                     _doAxisSwapAndConvertUncalibratedInt16(
-                            &sensorNode->sensorData.Data[0],
-                            &floatVal.data[0],
-                            ABS_X,
-                            ABS_Z,
-                            swapTable,
-                            conversionTable);
+                        &sensorNode->sensorData.Data[0],
+                        &floatVal.data[0],
+                        ABS_X,
+                        ABS_Z,
+                        swapTable,
+                        conversionTable);
                     _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
@@ -352,12 +352,12 @@ static void ProcessInputEventsRelay(void)
                     OSPD_CalibratedThreeAxisData_t floatVal;
                     floatVal.timestamp.ll = timeNsec;
                     _doAxisSwapAndConvertInt16(
-                            &sensorNode->sensorData.Data[0],
-                            &floatVal.data[0],
-                            ABS_X,
-                            ABS_Z,
-                            swapTable,
-                            conversionTable);
+                        &sensorNode->sensorData.Data[0],
+                        &floatVal.data[0],
+                        ABS_X,
+                        ABS_Z,
+                        swapTable,
+                        conversionTable);
                     _sensorDataPublish(&sensorNode->sensorData.sensorId, &floatVal);
                 }
                 break;
@@ -429,8 +429,8 @@ static void ProcessInputEventsRelay(void)
                     {
                         dynamic_cast<ThreeAxisSensorProducer *>(pProducer)->SetDataByFloat
                             (eventTimeDbl,
-                                _sfloatSensorData[sensorIndex],
-                                3);
+                            _sfloatSensorData[sensorIndex],
+                            3);
                     }
                     break;
 

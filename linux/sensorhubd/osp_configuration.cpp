@@ -49,31 +49,31 @@
 /* used for stl sort algorithm:
 */
 namespace {
-class CompareKeys {
+    class CompareKeys {
 public:
-bool operator()( const std::string & left,
+        bool operator()( const std::string & left,
             const std::string & right)
-{
-    if (( left.find("protocol") == 0) && ( right.find("protocol") == 0) ) {
-        return left < right;
-    } else if (left.find("protocol")== 0) {
-        return true;
-    } else if (right.find("protocol") == 0) {
-        return false;
-    }
-    if (( left.find("sensor=") == 0) && ( right.find("sensor=") == 0) ) {
-        return left < right;
-    } else if (left.find("sensor=")== 0) {
-        auto leftkey = left;
+        {
+            if (( left.find("protocol") == 0) && ( right.find("protocol") == 0) ) {
+                return left < right;
+            } else if (left.find("protocol")== 0) {
+                return true;
+            } else if (right.find("protocol") == 0) {
+                return false;
+            }
+            if (( left.find("sensor=") == 0) && ( right.find("sensor=") == 0) ) {
+                return left < right;
+            } else if (left.find("sensor=")== 0) {
+                auto leftkey = left;
 
-        return leftkey.erase( 0, 7 ) < right;
-    } else if (right.find("sensor") == 0) {
-        auto rightkey = right;
-        return left < rightkey.erase(0, 7);
-    }
-    return left < right;
-}
-};
+                return leftkey.erase( 0, 7 ) < right;
+            } else if (right.find("sensor") == 0) {
+                auto rightkey = right;
+                return left < rightkey.erase(0, 7);
+            }
+            return left < right;
+        }
+    };
 }
 
 
@@ -115,8 +115,7 @@ OSP::OspConfiguration::Init::Init()
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-const char *const
-OSP::OspConfiguration::getConfigItem( const char *const name )
+const char *const OSP::OspConfiguration::getConfigItem( const char *const name )
 {
     if (name == NULL) {
         LOG_Err("Attempt to get config item for null name");
@@ -134,10 +133,10 @@ OSP::OspConfiguration::getConfigItem( const char *const name )
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-std::vector<const char * >
-OSP::OspConfiguration::getConfigItemsMultiple( const char *const name )
+std::vector<const char * > OSP::OspConfiguration::getConfigItemsMultiple( const char *const name )
 {
     std::vector< const char *  > retval;
+
     if (name == NULL) {
         LOG_Err("Attempt to get config item for null name");
     }
@@ -159,8 +158,7 @@ OSP::OspConfiguration::getConfigItemsMultiple( const char *const name )
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-const float *
-OSP::OspConfiguration::getConfigItemFloat( const char *const name, unsigned int *size )
+const float *OSP::OspConfiguration::getConfigItemFloat( const char *const name, unsigned int *size )
 {
     if (name == NULL) {
         if (size) *size = 0;
@@ -182,8 +180,7 @@ OSP::OspConfiguration::getConfigItemFloat( const char *const name, unsigned int 
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::getConfigItemIntV(
+int OSP::OspConfiguration::getConfigItemIntV(
     const char *const name,
     const int defaultValue,
     int *status)
@@ -214,8 +211,7 @@ OSP::OspConfiguration::getConfigItemIntV(
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-const int *
-OSP::OspConfiguration::getConfigItemInt(
+const int *OSP::OspConfiguration::getConfigItemInt(
     const char *const name,
     unsigned int *size )
 {
@@ -238,8 +234,7 @@ OSP::OspConfiguration::getConfigItemInt(
  *          Helper routine for setting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::setConfigItem(
+int OSP::OspConfiguration::setConfigItem(
     const char *const name,
     const char *const value,
     const bool allowMultiple,
@@ -254,7 +249,7 @@ OSP::OspConfiguration::setConfigItem(
     } else {
         if (configItemsString.find(name) == configItemsString.end()) {
             configItemsString.insert(std::pair<std::string,
-                    std::vector<const char *> >(name, std::vector<const char *>()));
+                std::vector<const char *> >(name, std::vector<const char *>()));
         }
         if (allowMultiple) {
             bool found = false;
@@ -287,8 +282,7 @@ OSP::OspConfiguration::setConfigItem(
  *          Helper routine for setting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::setConfigItemFloat(
+int OSP::OspConfiguration::setConfigItemFloat(
     const char *const name,
     const float *const value,
     const unsigned int size,
@@ -322,8 +316,7 @@ OSP::OspConfiguration::setConfigItemFloat(
  *          Helper routine for clearing all configuration parameters
  *
  ***************************************************************************************************/
-void
-OSP::OspConfiguration::clear(const bool final)
+void OSP::OspConfiguration::clear(const bool final)
 {
     typedef std::map<std::string, std::pair< const float *, unsigned int> >::iterator it_type;
     for (it_type iterator = configItemsFloat.begin(); iterator != configItemsFloat.end(); iterator++) {
@@ -357,8 +350,7 @@ OSP::OspConfiguration::clear(const bool final)
  *          Helper routine for setting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::setConfigItemInt(
+int OSP::OspConfiguration::setConfigItemInt(
     const char *const name,
     const int *const value,
     const unsigned int size,
@@ -391,8 +383,7 @@ OSP::OspConfiguration::setConfigItemInt(
  *          Helper routine for dumping the current configuration to a file for debugging
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::dump( const char *const filename )
+int OSP::OspConfiguration::dump( const char *const filename )
 {
     FILE *f = ::fopen( filename, "w");
 

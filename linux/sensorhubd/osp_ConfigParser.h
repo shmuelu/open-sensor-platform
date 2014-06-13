@@ -26,16 +26,16 @@
 
 
 //! parses command line parameters + config file with elements specific to OSP
-namespace OSP{
-    class ConfigParser  {
-    public:
-        
-        static int parse(const char* const configFileName ,
-                         const char* const defaultProtocol = NULL);
-        
-    private:
+namespace OSP {
+    class ConfigParser {
+public:
 
-        static int process_line( const char* const line);
+        static int parse(const char *const configFileName,
+            const char *const defaultProtocol = NULL);
+
+private:
+
+        static int process_line( const char *const line);
 
         static bool tryParseInt( const std::string& first, const std::string & second);
         static bool tryParseFloat( const std::string& first, const std::string & second);

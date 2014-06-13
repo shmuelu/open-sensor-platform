@@ -30,13 +30,11 @@ size_t getline (char * *lineptr, size_t *n, FILE *stream);
 }
 #endif
 
-OSP::ConfigParser::ConfigParser(){
-
+OSP::ConfigParser::ConfigParser()
+{
 }
 
 
-/**********************************/
-/* Helper functions */
 bool OSP::ConfigParser::tryParseInt( const std::string& first, const std::string & second)
 {
     int values[18];
@@ -76,8 +74,6 @@ bool OSP::ConfigParser::tryParseFloat( const std::string& first,
     return true;
 }
 
-
-/**********************************/
 
 int OSP::ConfigParser::process_line(const char *const line)
 {
@@ -141,8 +137,7 @@ onerror:
 }
 
 
-int
-OSP::ConfigParser::parse(const char *const configFilename,
+int OSP::ConfigParser::parse(const char *const configFilename,
     const char *const defaultProtocol)
 {
     int status = 0;
@@ -151,8 +146,9 @@ OSP::ConfigParser::parse(const char *const configFilename,
     char *line = NULL;
 
     OspConfiguration::setConfigItem( OspConfiguration::keyFrom("SystemEventProducer",
-            OspConfiguration::SENSOR_TYPE).c_str(),
+        OspConfiguration::SENSOR_TYPE).c_str(),
         "SystemEventProducer");
+
     if (!f) {
         LOG_Err("Unable to read file '%s'", configFilename);
         status = -1;

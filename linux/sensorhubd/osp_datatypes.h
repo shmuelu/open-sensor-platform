@@ -40,17 +40,17 @@
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 /* Other types that are not provided by stdint */
-typedef char            osp_char_t;
+typedef char osp_char_t;
 /* Note that char cannot be replaced by int8_t or uint8_t as most compiler treats
    char, signed char and unsigned char as different because char itself maybe signed or unsigned */
-typedef unsigned char   osp_byte_t;
-typedef double          osp_dbl_t;
-typedef float           osp_float_t;
+typedef unsigned char osp_byte_t;
+typedef double osp_dbl_t;
+typedef float osp_float_t;
 
 #ifdef __cplusplus
-  typedef bool          osp_bool_t;
+typedef bool osp_bool_t;
 #else
-  typedef char          osp_bool_t;
+typedef char osp_bool_t;
 #endif
 
 typedef unsigned short osp_size_t;

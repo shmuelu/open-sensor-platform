@@ -85,7 +85,7 @@ int openInputEventDeviceExt(const char *inputName, char *actual)
     while ((de = readdir(dir))) {
         if ((de->d_name[0] == '.') &&
             ((de->d_name[1] == '\0') ||
-                ((de->d_name[1] == '.') && (de->d_name[2] == '\0'))))
+            ((de->d_name[1] == '.') && (de->d_name[2] == '\0'))))
             continue;
         strcpy(filename, de->d_name);
         fd = open(devname, O_RDONLY);
