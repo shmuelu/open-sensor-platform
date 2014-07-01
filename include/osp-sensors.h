@@ -21,12 +21,12 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    I N C L U D E   F I L E S
 \*-------------------------------------------------------------------------------------------------*/
-  /* This file is meant to provide a common definition of sensor related enumerations/defines and
-   * generally should not depend on any other includes
-   */
-   
+/* This file is meant to provide a common definition of sensor related enumerations/defines and
+ * generally should not depend on any other includes
+ */
+
 #ifndef __KERNEL__
-#include <stdint.h>
+# include <stdint.h>
 #endif
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -36,8 +36,8 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-//! use to specify the kind of sensor input or output 
-/*! 
+//! use to specify the kind of sensor input or output
+/*!
  * \sa OSP_RegisterInputSensor
  * \sa OSP_SubscribeOutputSensor
  *
@@ -45,18 +45,18 @@
  *  Flags in the descriptor specify if sensor is calibrated/uncalibrated and/or used as input
  *  If a sensor type not is supported by the library implementation, an error will be returned on its usage
  */
- 
+
 #define osp_pack __attribute__ ((__packed__))
 
-struct osp_pack SensorId_t{               
+struct osp_pack SensorId_t {
     uint8_t sensorType;
     uint8_t sensorSubType;
 };
 
- 
+
 enum SensorType_t {
     SENSOR_ENUM_FIRST_SENSOR               =  0,
-    
+
     SENSOR_MESSAGE                         =  SENSOR_ENUM_FIRST_SENSOR, //!< warnings from the library: e.g. excessive timestamp jitter, need calibration
     SENSOR_ACCELEROMETER                   =  1, //!< accelerometer data
     SENSOR_MAGNETIC_FIELD                  =  2, //!< magnetometer data
@@ -73,13 +73,13 @@ enum SensorType_t {
     SENSOR_CONTEXT_TRANSPORT               = 13, //!< context of environment relative to world frame
     SENSOR_GESTURE_EVENT                   = 15, //!< gesture event such as a double-tap or shake
     SENSOR_HEART_RATE                      = 16, //!< heart-rate data
-       
+
     SENSOR_ENUM_COUNT
 };
 
 enum MessageType_t {
     SENSOR_MESSAGE_STD = 0,
-    
+
     SENSOR_MESSAGE_ENUM_COUNT
 };
 
@@ -88,9 +88,9 @@ enum AccelerometerType_t {
     SENSOR_ACCELEROMETER_RAW                    = 0, //!< raw accelerometer data
     SENSOR_ACCELEROMETER_UNCALIBRATED           = 1, //!< calibrated accelerometer data
     SENSOR_ACCELEROMETER_CALIBRATED             = 2, //!< uncalibrated accelerometer data
-    SENSOR_ACCELEROMETER_GRAVITY                = 3, //!< gravity part of acceleration in body frame 
-    SENSOR_ACCELEROMETER_LINEAR_ACCELERATION    = 4, //!< dynamic acceleration 
-    
+    SENSOR_ACCELEROMETER_GRAVITY                = 3, //!< gravity part of acceleration in body frame
+    SENSOR_ACCELEROMETER_LINEAR_ACCELERATION    = 4, //!< dynamic acceleration
+
     SENSOR_ACCELEROMETER_ENUM_COUNT
 };
 
@@ -101,7 +101,6 @@ enum MagneticFieldType_t {
     SENSOR_MAGNETIC_FIELD_CALIBRATED            =  2, //!< uncalibrated magnetometer data
 
     SENSOR_MAGNETIC_FIELD_ENUM_COUNT
-
 };
 
 enum GyroscopeType_t {
@@ -116,7 +115,7 @@ enum GyroscopeType_t {
 
 enum PressureType_t {
     SENSOR_PRESSURE_STD                    =  0, //!< barometer pressure data
-    
+
     SENSOR_PRESSURE_ENUM_COUNT
 };
 
@@ -126,13 +125,13 @@ enum LightType_t {
     SENSOR_LIGHT_RGB                 =  1, //!< RGB light data
     SENSOR_LIGHT_UV                  =  2, //!< UV light data
     SENSOR_LIGHT_PROXIMITY           =  3, //!< proximity data
-    
+
     SENSOR_LIGHT_ENUM_COUNT
 };
 
 
 //!  Use these enums as a sub-result for  STEP result
-enum StepType_t { 
+enum StepType_t {
     SENSOR_CONTEXT_STEP             = 0,  //!< only one kind of step now
     SENSOR_STEP_DETECTOR            = 1, //!< precise time a step occured
     SENSOR_STEP_COUNTER             = 2, //!< count of steps
@@ -145,13 +144,12 @@ enum HumidityType_t {
     SENSOR_RELATIVE_HUMIDITY        =  0, //!< relative humidity data
 
     SENSOR_HUMIDITY_ENUM_COUNT
-
 };
 
 enum Orientation {
     SENSOR_ORIENTATION_STD                  =  0, //!< yaw, pitch, roll (also use this for Win8 Inclinometer)
     SENSOR_ORIENTATION_AUG_REALITY_COMPASS  =  1, //!< heading which switches to aug-reality mode when camera towards horizon (Win8 compass)
-    
+
     SENSOR_ORIENTATION_ENUM_COUNT
 };
 
@@ -226,9 +224,9 @@ enum GestureType_t {
 
 enum HeartRateType_t {
     SENSOR_HEART_RATE_STD        = 0,
-    
+
     SENSOR_HEART_RATE_ENUM_COUNT
-}; 
+};
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -248,4 +246,3 @@ enum HeartRateType_t {
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E
 \*-------------------------------------------------------------------------------------------------*/
-

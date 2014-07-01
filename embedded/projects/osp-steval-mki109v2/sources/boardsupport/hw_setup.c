@@ -30,21 +30,21 @@ extern RCC_ClocksTypeDef gRccClockInfo;
  |    P U B L I C   V A R I A B L E S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 osp_bool_t gExitFromStandby = false;
-DeviceUid_t *gDevUniqueId = (DeviceUid_t *)(DEV_UID_OFFSET);
-uint32_t g_logging = 0; //0x40;
+DeviceUid_t *gDevUniqueId = (DeviceUid_t*)(DEV_UID_OFFSET);
+uint32_t g_logging = 0; /* 0x40; */
 
 LedsInfo_t DiagLEDs[NUM_LEDS] = {
-    { //LED_GREEN
+    { /* LED_GREEN */
         RCC_APB2Periph_GPIOC,
         GPIOC,
         GPIO_Pin_10
     },
-    { //LED_RED
+    { /* LED_RED */
         RCC_APB2Periph_GPIOC,
         GPIOC,
         GPIO_Pin_11
     },
-    { //LED_YELLOW
+    { /* LED_YELLOW */
         RCC_APB2Periph_GPIOB,
         GPIOB,
         GPIO_Pin_5
@@ -60,10 +60,11 @@ uint32_t QuatTimeExtend = 0;
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#define RCC_APB2Periph_ALLGPIO             (RCC_APB2Periph_GPIOA \
-                                          | RCC_APB2Periph_GPIOB \
-                                          | RCC_APB2Periph_GPIOC \
-                                          | RCC_APB2Periph_GPIOD)
+#define RCC_APB2Periph_ALLGPIO \
+    (RCC_APB2Periph_GPIOA \
+        | RCC_APB2Periph_GPIOB \
+        | RCC_APB2Periph_GPIOC \
+        | RCC_APB2Periph_GPIOD)
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
@@ -133,9 +134,7 @@ static osp_bool_t ConfigRTCandBkupDomain( void )
     PWR_BackupAccessCmd(ENABLE);
 
     /* Check if the StandBy flag is set */
-    if(PWR_GetFlagStatus(PWR_FLAG_SB) != RESET)
-    {/* System resumed from STANDBY mode */
-
+    if (PWR_GetFlagStatus(PWR_FLAG_SB) != RESET) { /* System resumed from STANDBY mode */
         standbyState = true;
 
         /* Clear StandBy flag */
@@ -161,13 +160,11 @@ static osp_bool_t ConfigRTCandBkupDomain( void )
  ***************************************************************************************************/
 void LED_Init( void )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
     uint8_t index;
 
-    if (NUM_LEDS > 0)
-    {
-        for (index = 0; index < NUM_LEDS; index++)
-        {
+    if (NUM_LEDS > 0) {
+        for (index = 0; index < NUM_LEDS; index++) {
             RCC_APB2PeriphClockCmd( DiagLEDs[index].rccPeriph, ENABLE );
             LED_Off(index);
             GPIO_InitStructure.GPIO_Pin = DiagLEDs[index].pin;
@@ -177,6 +174,7 @@ void LED_Init( void )
         }
     }
 }
+
 
 #ifndef USE_HSI_CLOCK
 /****************************************************************************************************
@@ -192,20 +190,21 @@ void LED_Init( void )
 void SystemClkConfig( void )
 {
     ErrorStatus HSEStartUpStatus;
-#if (SYSTEM_CLOCK_FREQ == 72000000)
+
+# if (SYSTEM_CLOCK_FREQ == 72000000)
     uint32_t rccMul = RCC_PLLMul_9;
-#else
+# else
     uint32_t rccMul = RCC_PLLMul_6;
-#endif
+# endif
 
 
     /* RCC system reset (clear BootLoader settings, if any and enables HSI clock) */
     RCC_DeInit();
 
-#ifdef RTC_ON_LSI_CLOCK
+# ifdef RTC_ON_LSI_CLOCK
     /* Enable LSI for use by RTC */
     RCC_LSICmd( ENABLE );
-#endif
+# endif
 
     /* Enable HSE */
     RCC_HSEConfig(RCC_HSE_ON);
@@ -213,8 +212,7 @@ void SystemClkConfig( void )
     /* Wait till HSE is ready */
     HSEStartUpStatus = RCC_WaitForHSEStartUp();
 
-    if(HSEStartUpStatus == SUCCESS)
-    {
+    if (HSEStartUpStatus == SUCCESS) {
         /* Enable Prefetch Buffer */
         FLASH_PrefetchBufferCmd(FLASH_PrefetchBuffer_Enable);
 
@@ -225,21 +223,18 @@ void SystemClkConfig( void )
         RCC_HCLKConfig(RCC_SYSCLK_Div1);
 
         /* PCLK2 (APB2) = HCLK */
-        RCC_PCLK2Config(RCC_HCLK_Div4); //18MHz
+        RCC_PCLK2Config(RCC_HCLK_Div4); /* 18MHz */
 
         /* PCLK1 (APB1) = HCLK/2 */
         RCC_PCLK1Config(RCC_HCLK_Div2);
 
         /* ADCCLK */
-        RCC_ADCCLKConfig(RCC_PCLK2_Div2);  //9Mhz
+        RCC_ADCCLKConfig(RCC_PCLK2_Div2);  /* 9Mhz */
 
-        if (HSE_VALUE == 8000000)
-        {
+        if (HSE_VALUE == 8000000) {
             /* PLLCLK = 8MHz * rccMul = 72 or 48 MHz (Crystal = 8MHz) */
             RCC_PLLConfig(RCC_PLLSource_HSE_Div1, rccMul);
-        }
-        else
-        {
+        } else {
             /* PLLCLK = 16MHz/2 * rccMul = 72 or 48 MHz (Crystal = 16MHz) */
             RCC_PLLConfig(RCC_PLLSource_HSE_Div2, rccMul);
         }
@@ -248,30 +243,30 @@ void SystemClkConfig( void )
         RCC_PLLCmd(ENABLE);
 
         /* Wait till PLL is ready */
-        while(RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET)
-        {
+        while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET) {
         }
 
         /* Select PLL as system clock source */
         RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
 
         /* Wait till PLL is used as system clock source */
-        while(RCC_GetSYSCLKSource() != 0x08)
-        {
+        while (RCC_GetSYSCLKSource() != 0x08) {
         }
     }
     /* Note enabling individual periperals is responsibility of the modules */
     /* Enable alternate function IO clock here as it is common for most alternate function IOs */
     RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO, ENABLE );
 
-#ifdef RTCClockOutput_Enable
+# ifdef RTCClockOutput_Enable
     RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOC, ENABLE );
-#endif
+# endif
 
     /* Configure RTC and backup domain */
     gExitFromStandby = ConfigRTCandBkupDomain();
 }
-#else //If internal oscillator needs to be used
+
+
+#else /* If internal oscillator needs to be used */
 /****************************************************************************************************
  * @fn      SystemClkConfig
  *          Configures the various clock domains on the chip.
@@ -284,7 +279,7 @@ void SystemClkConfig( void )
 void SystemClkConfig( void )
 {
     /* RCC system reset(for debug purpose) */
-    RCC_DeInit();  //This enables HSI by default
+    RCC_DeInit();  /* This enables HSI by default */
 
     /* Enable LSI for use by RTC */
     RCC_LSICmd( ENABLE );
@@ -305,7 +300,7 @@ void SystemClkConfig( void )
     RCC_PCLK1Config( RCC_HCLK_Div2 );
 
     /* ADCCLK */
-    RCC_ADCCLKConfig(RCC_PCLK2_Div2);  //8Mhz
+    RCC_ADCCLKConfig(RCC_PCLK2_Div2);  /* 8Mhz */
 
     /* PLLCLK = HSI/2 * 16 = 64 MHz (HSI = 8MHz) */
     RCC_PLLConfig( RCC_PLLSource_HSI_Div2, RCC_PLLMul_16 );
@@ -314,30 +309,30 @@ void SystemClkConfig( void )
     RCC_PLLCmd( ENABLE );
 
     /* Wait till PLL is ready */
-    while(RCC_GetFlagStatus( RCC_FLAG_PLLRDY ) == RESET)
-    {
+    while (RCC_GetFlagStatus( RCC_FLAG_PLLRDY ) == RESET) {
     }
 
     /* Select PLL as system clock source */
     RCC_SYSCLKConfig( RCC_SYSCLKSource_PLLCLK );
 
     /* Wait till PLL is used as system clock source */
-    while(RCC_GetSYSCLKSource() != 0x08)
-    {
+    while (RCC_GetSYSCLKSource() != 0x08) {
     }
 
     /* Note enabling individual periperals is responsibility of the modules */
     /* Enable alternate function IO clock here as it is common for most alternate function IOs */
     RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO, ENABLE );
 
-#ifdef RTCClockOutput_Enable
+# ifdef RTCClockOutput_Enable
     RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOC, ENABLE );
-#endif
+# endif
 
     /* Configure RTC and backup domain */
     gExitFromStandby = ConfigRTCandBkupDomain();
 }
-#endif
+
+
+#endif /* ifndef USE_HSI_CLOCK */
 
 /****************************************************************************************************
  * @fn      SystemGPIOConfig
@@ -368,7 +363,6 @@ void SystemGPIOConfig( void )
  ***************************************************************************************************/
 void SystemInterruptConfig( void )
 {
-
 #ifdef  VECT_TAB_RAM
     /* Set the Vector Table base location at 0x20000000 */
     NVIC_SetVectorTable(NVIC_VectTab_RAM, 0x0);
@@ -397,22 +391,19 @@ void SystemInterruptConfig( void )
 void RTC_Configuration( void )
 {
     /* System resumed from STANDBY mode */
-    if(gExitFromStandby)
-    {
+    if (gExitFromStandby) {
         /* Wait for RTC APB registers synchronisation */
         RTC_WaitForSynchro();
         /* No need to configure the RTC as the RTC configuration(clock source, enable,
         prescaler,...) is kept after wake-up from STANDBY */
-    }
-    else
-    {/* StandBy flag is not set */
-        /* Select HSE as RTC Clock Source */
+    } else { /* StandBy flag is not set */
+             /* Select HSE as RTC Clock Source */
 #if defined USE_HSI_CLOCK || defined RTC_ON_LSI_CLOCK
         RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
 #elif defined RTC_ON_LSE_CLOCK
         RCC_LSEConfig(RCC_LSE_ON);
         /* Wait till LSE is ready */
-        while (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET);
+        while (RCC_GetFlagStatus(RCC_FLAG_LSERDY) == RESET) ;
         RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);
 #else
         RCC_RTCCLKConfig(RCC_RTCCLKSource_HSE_Div128);
@@ -472,12 +463,9 @@ void DebugUARTConfig( uint32_t baud, uint32_t dataLen, uint32_t stopBits, uint32
 
     /* Need to enable the GPIO and USART clocks first */
     RCC_APB2PeriphClockCmd( RCC_Periph_UART_GPIO, ENABLE );
-    if (DBG_IF_UART == USART1)
-    {
+    if (DBG_IF_UART == USART1) {
         RCC_APB2PeriphClockCmd( RCC_Periph_DBG_UART, ENABLE );
-    }
-    else
-    {
+    } else {
         RCC_APB1PeriphClockCmd( RCC_Periph_DBG_UART, ENABLE );
     }
 
@@ -504,7 +492,7 @@ void DebugUARTConfig( uint32_t baud, uint32_t dataLen, uint32_t stopBits, uint32
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = DBG_UART_TX_DMA_INT_SUB_PRIORITY;
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
     NVIC_Init(&NVIC_InitStructure);
-#endif
+#endif /* ifdef UART_DMA_ENABLE */
 
     /* Enable the USART Interrupt */
     NVIC_InitStructure.NVIC_IRQChannel = DBG_UART_IRQChannel;
@@ -549,7 +537,9 @@ void UartDMAConfiguration( PortInfo *pPort, uint8_t *pTxBuffer, uint16_t txBuffe
     DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
     DMA_Init(pPort->DMAChannel, &DMA_InitStructure);
 }
-#endif
+
+
+#endif /* ifdef UART_DMA_ENABLE */
 
 
 /*-------------------------------------------------------------------------------------------------*\

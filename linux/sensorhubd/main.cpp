@@ -47,7 +47,7 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#define MAX_NUM_FDS(x,y)                ((x) > (y) ? (x) : (y))
+#define MAX_NUM_FDS(x, y)                ((x) > (y) ? (x) : (y))
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #define CONTROL_PIPE_NAME               "/data/misc/osp-control"
@@ -65,8 +65,8 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    S T A T I C   V A R I A B L E S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-static void _logErrorIf(bool condition, const char* msg);
-static void _fatalErrorIf(bool condition, int code, const char* msg);
+static void _logErrorIf(bool condition, const char *msg);
+static void _fatalErrorIf(bool condition, int code, const char *msg);
 static void _handleQuitSignals(int signum);
 static void _initialize(VirtualSensorDeviceManager *vsDevMgr);
 static void _deinitialize();
@@ -88,7 +88,7 @@ static int _controlPipeFd = -1;
  *          Helper routine to log error on condition
  *
  ***************************************************************************************************/
-static void _logErrorIf(bool condition, const char* msg)
+static void _logErrorIf(bool condition, const char *msg)
 {
     if (condition) {
         LOG_Err("%s\n", msg);
@@ -101,7 +101,7 @@ static void _logErrorIf(bool condition, const char* msg)
  *          Helper routine to log error on condition & exit the application
  *
  ***************************************************************************************************/
-static void _fatalErrorIf(bool condition, int code, const char* msg)
+static void _fatalErrorIf(bool condition, int code, const char *msg)
 {
     if (condition) {
         LOG_Err("%s\n", msg);
@@ -109,10 +109,6 @@ static void _fatalErrorIf(bool condition, int code, const char* msg)
         _exit(code);
     }
 }
-
-
-
-
 
 
 /****************************************************************************************************
@@ -129,7 +125,7 @@ static void _initializeNamedPipe()
 
     _fatalErrorIf(mkfifo(CONTROL_PIPE_NAME, 0666) != 0, -1, "could not create named pipe");
 
-    _controlPipeFd = open(CONTROL_PIPE_NAME, O_RDONLY|O_NONBLOCK);
+    _controlPipeFd = open(CONTROL_PIPE_NAME, O_RDONLY | O_NONBLOCK);
     _fatalErrorIf(_controlPipeFd < 0, -1, "could not open named pipe for reading");
 }
 
@@ -146,11 +142,11 @@ static void _initialize(VirtualSensorDeviceManager *vsDevMgr)
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
 
     OSPD_initializeSensors(vsDevMgr);
-    
-    
+
+
     //Initialize OSP Daemon
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
-    status= OSPD_Initialize();
+    status = OSPD_Initialize();
 
     LOGT("%s:%d\r\n", __FUNCTION__, __LINE__);
     _fatalErrorIf(status!= OSP_STATUS_OK, status, "Failed on OSP Daemon Initialization!");
@@ -161,7 +157,6 @@ static void _initialize(VirtualSensorDeviceManager *vsDevMgr)
     //LOG_Info("OSP Daemon version %s\n", versionString);
 
     _initializeNamedPipe();
-
 }
 
 
@@ -203,10 +198,10 @@ static void _handleQuitSignals(int signum)
  *          Application entry point
  *
  ***************************************************************************************************/
-int main(int argc, char** argv)
+int main(int argc, char * *argv)
 {
 #define MS_TO_US 1000
-    int result =0;
+    int result = 0;
     fd_set readFdSet;
     fd_set errFdSet;
     int32_t maxNumFds = 0;
@@ -224,7 +219,6 @@ int main(int argc, char** argv)
     /* This loop handles sensor enable/disable requests */
     // FROM WHERE??
     while (1) {
-
         // setup the select to read on all pipes
         FD_ZERO(&readFdSet);
         FD_ZERO(&errFdSet);
@@ -234,13 +228,12 @@ int main(int argc, char** argv)
         maxNumFds = MAX_NUM_FDS( maxNumFds, _controlPipeFd);
 
         //Wait for data on one of the pipes
-        selectResult = select(maxNumFds+1, &readFdSet, NULL, &errFdSet, NULL);
+        selectResult = select(maxNumFds + 1, &readFdSet, NULL, &errFdSet, NULL);
         _logErrorIf(selectResult<0, "error on select() of named pipes");
 
-        if ( selectResult > 0 ) {
-            
+        if (selectResult > 0) {
             _logErrorIf(FD_ISSET(_controlPipeFd, &errFdSet), "error on FD!\n");
-            
+
             if (FD_ISSET(_controlPipeFd, &readFdSet) ) {
                 char readBuf[255];
                 ssize_t bytesRead = read(_controlPipeFd, readBuf, 255);
@@ -251,7 +244,7 @@ int main(int argc, char** argv)
                     //close and reopen the pipe or we'll spike CPU usage b/c select will always
                     //return available and we'll always get 0 bytes from read
                     close(_controlPipeFd);
-                    int _controlPipeFd = open(CONTROL_PIPE_NAME, O_RDONLY|O_NONBLOCK);
+                    int _controlPipeFd = open(CONTROL_PIPE_NAME, O_RDONLY | O_NONBLOCK);
                     _fatalErrorIf(_controlPipeFd < 0, -1, "could not open named pipe for reading");
 
                     continue;

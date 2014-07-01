@@ -35,8 +35,7 @@
  * NOTE: that this must hold only things that are known at compile time as
  * the C_gAsfTaskInitTable array is marked as constant i.e. in ROM.
  */
-typedef struct AsfTaskInitDefTag
-{
+typedef struct AsfTaskInitDefTag {
     TaskId      taskId;
     void        (*entryPoint)();
     char        *tskName;
@@ -45,9 +44,8 @@ typedef struct AsfTaskInitDefTag
     uint16_t    stackSize;
     uint8_t     priority;
     char        *tidString; /* String equivalent of the TASK_ID enum */
-
 } AsfTaskInitDef;
- 
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C   V A R I A B L E S   D E F I N I T I O N S
@@ -70,7 +68,7 @@ extern const AsfTaskInitDef C_gAsfTaskInitTable[NUMBER_OF_TASKS];
  |    P U B L I C   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 /**
- * This function is used to initialize all the defined tasks and their 
+ * This function is used to initialize all the defined tasks and their
  * associated queues.
  */
 void ASFInitialiseTasks ( void );

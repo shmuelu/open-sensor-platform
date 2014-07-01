@@ -34,22 +34,21 @@
  |    T Y P E / C L A S S   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 //! manages the lifecycle of virtual sensor device file descriptors
-class VirtualSensorDeviceManager
-{
+class VirtualSensorDeviceManager {
 public:
     VirtualSensorDeviceManager( const int sleepus = 10000);
     ~VirtualSensorDeviceManager();
 
-    int createSensor(const char* name, int absMin, int absMax);
+    int createSensor(const char *name, int absMin, int absMax);
     void publish(int deviceFd, input_event data);
-    void publish(int deviceFd, int* data,
-                 const unsigned int* const timeInMillis = 0);
+    void publish(int deviceFd, int *data,
+        const unsigned int *const timeInMillis = 0);
     void publish(int deviceFd, const int32_t data[],
-                 const int64_t time64, int numAxis);
+        const int64_t time64, int numAxis);
 
 protected:
 
-    void fatalErrorIf(bool condition, int code, const char* msg);
+    void fatalErrorIf(bool condition, int code, const char *msg);
 
 private:
     std::vector<int> _deviceFds;

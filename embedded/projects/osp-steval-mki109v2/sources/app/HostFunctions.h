@@ -23,7 +23,7 @@
 \*-------------------------------------------------------------------------------------------------*/
 
 #include <stdint.h>
-//#include <timers.h>
+/* #include <timers.h> */
 
 #include "osp-sensors.h"
 #include "osp_HostInterface.h"
@@ -34,20 +34,20 @@
 #define SLAVE_NUM_TX_BUFFERS 25
 
 
-extern uint64_t sensorEnable;      // bit map of (1 << sensorId) to show if sensor is enabled (1) or disabled (0)
+extern uint64_t sensorEnable;      /* bit map of (1 << sensorId) to show if sensor is enabled (1) or disabled (0) */
 
 /* evaluation of an incomming Host command:
     INVALID : unrecognized.
     GET     : handled within the I2C interrupt routine. upon return, the next interrupt will continue the I2C flow.
-    SET     : will be handled outside of the I2C interrupt routine. 
+    SET     : will be handled outside of the I2C interrupt routine.
               if while processing the command, the Host starts a new command, the device driver will NOT read/write the next bytem causing clock stretch.
               Upon completion of this command, the clock stretch condition will be handled by reading/writting the next byte, to allow free flow on Host I2C interface
 */
 typedef enum {
-	COMMAND_PROCESS_INVALID = 0,
-	COMMAND_PROCESS_GET,
-	COMMAND_PROCESS_SET
-} ProcessCommandType;	
+    COMMAND_PROCESS_INVALID = 0,
+    COMMAND_PROCESS_GET,
+    COMMAND_PROCESS_SET
+} ProcessCommandType;
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -66,8 +66,10 @@ extern uint16_t last_transmitted_offset[SLAVE_NUM_TX_BUFFERS];
 
 extern uint16_t timeStampExpansion;
 
-/* An array to hold handles to the created timers. */
-//extern xTimerHandle android_Timers[ ANDROID_NUM_TIMERS ];
+/*
+ * An array to hold handles to the created timers.
+ * extern xTimerHandle android_Timers[ ANDROID_NUM_TIMERS ];
+ */
 
 extern uint8_t androidBroadcastTrigger;
 

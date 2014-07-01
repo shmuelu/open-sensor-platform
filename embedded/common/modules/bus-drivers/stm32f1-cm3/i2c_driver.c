@@ -36,58 +36,58 @@ extern AsfTaskHandle asfTaskHandleTable[];
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#define I2C_TXRX_STATUS_ACTIVE                0
-#define I2C_TXRX_STATUS_PASSED                1
-#define I2C_TXRX_STATUS_FAILED                2
+# define I2C_TXRX_STATUS_ACTIVE                0
+# define I2C_TXRX_STATUS_PASSED                1
+# define I2C_TXRX_STATUS_FAILED                2
 
 /* I2C START mask */
-#define CR1_START_Set                         ((uint16_t)0x0100)
-#define CR1_START_Reset                       ((uint16_t)0xFEFF)
+# define CR1_START_Set                         ((uint16_t)0x0100)
+# define CR1_START_Reset                       ((uint16_t)0xFEFF)
 
 /* I2C STOP mask */
-#define CR1_STOP_Set                          ((uint16_t)0x0200)
-#define CR1_STOP_Reset                        ((uint16_t)0xFDFF)
+# define CR1_STOP_Set                          ((uint16_t)0x0200)
+# define CR1_STOP_Reset                        ((uint16_t)0xFDFF)
 
 /* I2C ACK mask */
-#define CR1_ACK_Set                           ((uint16_t)0x0400)
-#define CR1_ACK_Reset                         ((uint16_t)0xFBFF)
+# define CR1_ACK_Set                           ((uint16_t)0x0400)
+# define CR1_ACK_Reset                         ((uint16_t)0xFBFF)
 
 
 /* SR2 register flags  */
-#define I2C_STATUS_BIT_DUALF                  (0x0080)
-#define I2C_STATUS_BIT_SMBHOST                (0x0040)
-#define I2C_STATUS_BIT_SMBDEFAULT             (0x0020)
-#define I2C_STATUS_BIT_GENCALL                (0x0010)
-#define I2C_STATUS_BIT_TRA                    (0x0004)
-#define I2C_STATUS_BIT_BUSY                   (0x0002)
-#define I2C_STATUS_BIT_MASTER                 (0x0001)
+# define I2C_STATUS_BIT_DUALF                  (0x0080)
+# define I2C_STATUS_BIT_SMBHOST                (0x0040)
+# define I2C_STATUS_BIT_SMBDEFAULT             (0x0020)
+# define I2C_STATUS_BIT_GENCALL                (0x0010)
+# define I2C_STATUS_BIT_TRA                    (0x0004)
+# define I2C_STATUS_BIT_BUSY                   (0x0002)
+# define I2C_STATUS_BIT_MASTER                 (0x0001)
 
 /* SR1 register flags */
-#define I2C_STATUS_BIT_SMBALERT               (0x8000)
-#define I2C_STATUS_BIT_TIMEOUT                (0x4000)
-#define I2C_STATUS_BIT_PECERR                 (0x1000)
-#define I2C_STATUS_BIT_OVR                    (0x0800)
-#define I2C_STATUS_BIT_AF                     (0x0400)
-#define I2C_STATUS_BIT_ARLO                   (0x0200)
-#define I2C_STATUS_BIT_BERR                   (0x0100)
-#define I2C_STATUS_BIT_TXE                    (0x0080)
-#define I2C_STATUS_BIT_RXNE                   (0x0040)
-#define I2C_STATUS_BIT_STOPF                  (0x0010)
-#define I2C_STATUS_BIT_ADD10                  (0x0008)
-#define I2C_STATUS_BIT_BTF                    (0x0004)
-#define I2C_STATUS_BIT_ADDR                   (0x0002)
-#define I2C_STATUS_BIT_SB                     (0x0001)
+# define I2C_STATUS_BIT_SMBALERT               (0x8000)
+# define I2C_STATUS_BIT_TIMEOUT                (0x4000)
+# define I2C_STATUS_BIT_PECERR                 (0x1000)
+# define I2C_STATUS_BIT_OVR                    (0x0800)
+# define I2C_STATUS_BIT_AF                     (0x0400)
+# define I2C_STATUS_BIT_ARLO                   (0x0200)
+# define I2C_STATUS_BIT_BERR                   (0x0100)
+# define I2C_STATUS_BIT_TXE                    (0x0080)
+# define I2C_STATUS_BIT_RXNE                   (0x0040)
+# define I2C_STATUS_BIT_STOPF                  (0x0010)
+# define I2C_STATUS_BIT_ADD10                  (0x0008)
+# define I2C_STATUS_BIT_BTF                    (0x0004)
+# define I2C_STATUS_BIT_ADDR                   (0x0002)
+# define I2C_STATUS_BIT_SB                     (0x0001)
 
 /* Masks */
-#define I2C_MASK_SB                           (0x0001)
-#define I2C_MASK_ADDR                         (0x0002)
-#define I2C_MASK_TXE_BTF                      (0x0084)
-#define I2C_MASK_RXNE                         (0x0040)
-#define I2C_MASK_MSL                          (0x0001)
-#define I2C_MASK_BERR                         (0x0100)
-#define I2C_MASK_ARLO                         (0x0200)
-#define I2C_MASK_AF                           (0x0400)
-#define I2C_MASK_OVR                          (0x0800)
+# define I2C_MASK_SB                           (0x0001)
+# define I2C_MASK_ADDR                         (0x0002)
+# define I2C_MASK_TXE_BTF                      (0x0084)
+# define I2C_MASK_RXNE                         (0x0040)
+# define I2C_MASK_MSL                          (0x0001)
+# define I2C_MASK_BERR                         (0x0100)
+# define I2C_MASK_ARLO                         (0x0200)
+# define I2C_MASK_AF                           (0x0400)
+# define I2C_MASK_OVR                          (0x0800)
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
@@ -108,7 +108,6 @@ typedef struct _AsyncTwi {
     uint32_t num;
     /** Index of current receive/transmit buffer.*/
     uint32_t byte_index;
-
 } AsyncTwi;
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -143,13 +142,11 @@ static I2C_SendMode_t gSendMode;
  ***************************************************************************************************/
 osp_bool_t I2C_HardwareSetup( I2C_TypeDef *busId )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
 
-    if (busId == I2C_SENSOR_BUS)
-    {
-        if (sI2C_Bus1Initialized)
-        {
+    if (busId == I2C_SENSOR_BUS) {
+        if (sI2C_Bus1Initialized) {
             return true;
         }
 
@@ -168,7 +165,7 @@ osp_bool_t I2C_HardwareSetup( I2C_TypeDef *busId )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
 
-        /* Configure and enable I2C error interrupt -------------------------------*/  
+        /* Configure and enable I2C error interrupt -------------------------------*/
         NVIC_InitStructure.NVIC_IRQChannel = I2C_SENSOR_BUS_ERROR_IRQ_CH;
         NVIC_InitStructure.NVIC_IRQChannelSubPriority = I2C_SENSOR_BUS_ERROR_INT_SUB_PRIORITY;
         NVIC_Init(&NVIC_InitStructure);
@@ -208,7 +205,7 @@ osp_bool_t I2C_HardwareSetup( I2C_TypeDef *busId )
  ***************************************************************************************************/
 void I2C_Master_Initialise(void)
 {
-    I2C_InitTypeDef   I2C_InitStructure;
+    I2C_InitTypeDef I2C_InitStructure;
 
     /* Configure the I2C interface */
     I2C_Cmd(I2C_SENSOR_BUS, ENABLE);
@@ -240,8 +237,7 @@ void I2C_Wait_Completion( void )
     OS_RESULT result;
 
     result = os_evt_wait_or( I2C_TXRX_STATUS_FAILED | I2C_TXRX_STATUS_PASSED, MSEC_TO_TICS(20));
-    if (result == OS_R_TMO)
-    {
+    if (result == OS_R_TMO) {
         D0_printf("### WARNING - Timedout on I2C completion ###\r\n");
     }
 }
@@ -258,8 +254,7 @@ void I2C_Wait_Completion( void )
  ***************************************************************************************************/
 uint8_t I2C_Transceiver_Busy( void )
 {
-    if (asyncXfer.i2c_txrx_status == I2C_TXRX_STATUS_ACTIVE)
-    {
+    if (asyncXfer.i2c_txrx_status == I2C_TXRX_STATUS_ACTIVE) {
         return I2C_ERR_BUSY;
     }
     return I2C_ERR_OK;
@@ -278,26 +273,27 @@ uint8_t I2C_Transceiver_Busy( void )
  * @return  none
  *
  ***************************************************************************************************/
-uint8_t I2C_Start_Transfer( uint8_t slaveAddr, uint16_t regAddr, uint8_t *pData, uint8_t dataSize, I2C_SendMode_t sendMode )
+uint8_t I2C_Start_Transfer( uint8_t slaveAddr,
+    uint16_t regAddr,
+    uint8_t *pData,
+    uint8_t dataSize,
+    I2C_SendMode_t sendMode )
 {
     /* Check that no transfer is already pending*/
-    if (asyncXfer.i2c_txrx_status == I2C_TXRX_STATUS_ACTIVE)
-    {
-
+    if (asyncXfer.i2c_txrx_status == I2C_TXRX_STATUS_ACTIVE) {
         D0_printf("I2C_Start_Transfer: A transfer is already pending\n\r");
         return I2C_ERR_BUSY;
     }
 
-    if ((sendMode == I2C_MASTER_READ) || (sendMode == I2C_MASTER_WRITE))
-    {
+    if ((sendMode == I2C_MASTER_READ) || (sendMode == I2C_MASTER_WRITE)) {
         /* Update the transfer descriptor */
-        asyncXfer.i2c_slave_addr  = (slaveAddr << 1);
-        asyncXfer.i2c_slave_reg   = regAddr;
+        asyncXfer.i2c_slave_addr = (slaveAddr << 1);
+        asyncXfer.i2c_slave_reg = regAddr;
         asyncXfer.i2c_txrx_status = I2C_TXRX_STATUS_ACTIVE;
-        asyncXfer.pData           = pData;
-        asyncXfer.num             = dataSize;
-        asyncXfer.byte_index      = 0;
-        asyncXfer.i2c_txrx_phase  = 0;
+        asyncXfer.pData = pData;
+        asyncXfer.num = dataSize;
+        asyncXfer.byte_index = 0;
+        asyncXfer.i2c_txrx_phase = 0;
         gSendMode = sendMode;
         /* Enable interrupts and clear flags */
         I2C_ITConfig( I2C_SENSOR_BUS, I2C_IT_EVT | I2C_IT_BUF | I2C_IT_ERR, ENABLE );
@@ -309,9 +305,7 @@ uint8_t I2C_Start_Transfer( uint8_t slaveAddr, uint16_t regAddr, uint8_t *pData,
 
         /* Initiate start */
         I2C_GenerateSTART( I2C_SENSOR_BUS, ENABLE );
-    }
-    else
-    {
+    } else {
         return I2C_ERR_REQ;
     }
     return I2C_ERR_OK;
@@ -352,7 +346,6 @@ uint8_t I2C_Get_Data_From_Transceiver( uint8_t *msg, uint8_t msgSize )
  ***************************************************************************************************/
 void I2C_Driver_ISR_Handler(void)
 {
-
     __IO uint32_t SR1Register = 0;
     __IO uint32_t SR2Register = 0;
 
@@ -361,17 +354,13 @@ void I2C_Driver_ISR_Handler(void)
     SR2Register = I2C_SENSOR_BUS->SR2;
 
     /* If SB = 1, I2C master sent a START on the bus (EV5) or ReSTART in case of receive */
-    if ((SR1Register & I2C_MASK_SB) == I2C_STATUS_BIT_SB)
-    {
+    if ((SR1Register & I2C_MASK_SB) == I2C_STATUS_BIT_SB) {
         /* Send the slave address for transmssion or for reception (according to the configured value
             in the write master write routine */
-        if (gSendMode == I2C_MASTER_RESTART)
-        {
+        if (gSendMode == I2C_MASTER_RESTART) {
             I2C_SENSOR_BUS->DR = asyncXfer.i2c_slave_addr | 0x01; //Set read bit
             //After this we just wait for RXNE interrupts to read data
-        }
-        else
-        {
+        } else {
             I2C_SENSOR_BUS->DR = asyncXfer.i2c_slave_addr;
             //I2C_msgSize--;
         }
@@ -382,30 +371,24 @@ void I2C_Driver_ISR_Handler(void)
     //if ((SR2Register & I2C_MASK_MSL) == I2C_STATUS_BIT_MASTER)
     {
         /* If ADDR = 1, EV6 */
-        if ((SR1Register & I2C_MASK_ADDR) == I2C_STATUS_BIT_ADDR)
-        {
-            if (gSendMode != I2C_MASTER_RESTART)
-            {
+        if ((SR1Register & I2C_MASK_ADDR) == I2C_STATUS_BIT_ADDR) {
+            if (gSendMode != I2C_MASTER_RESTART) {
                 /* Write the device register address */
                 I2C_SENSOR_BUS->DR = asyncXfer.i2c_slave_reg;
                 //I2C_msgSize--;
 
                 /* If this is receive mode then program start bit here so that repeat start will be generated as soon as
                 ACK is received */
-                if (gSendMode == I2C_MASTER_READ)
-                {
+                if (gSendMode == I2C_MASTER_READ) {
                     gSendMode = I2C_MASTER_RESTART;
                     I2C_SENSOR_BUS->CR1 |= CR1_START_Set;
                 }
                 /* If no further data to be sent, disable the I2C BUF IT
                 in order to not have a TxE  interrupt */
-                if (asyncXfer.num == 0)
-                {
-                    I2C_SENSOR_BUS->CR2 &= (uint16_t)~I2C_IT_BUF; //This will ensure interrupt only when BTF is set (EV8_2)
+                if (asyncXfer.num == 0) {
+                    I2C_SENSOR_BUS->CR2 &= (uint16_t) ~I2C_IT_BUF; //This will ensure interrupt only when BTF is set (EV8_2)
                 }
-            }
-            else if (asyncXfer.num == 1)
-            {
+            } else if (asyncXfer.num == 1)   {
                 /* Clear ACK */
                 I2C_SENSOR_BUS->CR1 &= CR1_ACK_Reset;
                 /* Program the STOP */
@@ -414,31 +397,25 @@ void I2C_Driver_ISR_Handler(void)
 
             SR1Register = 0;
             SR2Register = 0;
-
         }
 
         /* Master transmits the remaing data: from data2 until the last one.  */
         /* If TXE is set (EV_8) */
-        if ((SR1Register & I2C_MASK_TXE_BTF) == I2C_STATUS_BIT_TXE)
-        {
-            if (gSendMode == I2C_MASTER_WRITE)
-            {
+        if ((SR1Register & I2C_MASK_TXE_BTF) == I2C_STATUS_BIT_TXE) {
+            if (gSendMode == I2C_MASTER_WRITE) {
                 /* If there is still data to write */
-                if (asyncXfer.num != 0)
-                {
+                if (asyncXfer.num != 0) {
                     /* Write the data in DR register */
                     I2C_SENSOR_BUS->DR = asyncXfer.pData[asyncXfer.byte_index++];
                     /* Decrment the number of data to be written */
                     asyncXfer.num--;
                     /* If  no data remains to write, disable the BUF IT in order
                     to not have again a TxE interrupt. */
-                    if (asyncXfer.num == 0)
-                    {
+                    if (asyncXfer.num == 0) {
                         /* Disable the BUF IT */
-                        I2C_SENSOR_BUS->CR2 &= (uint16_t)~I2C_IT_BUF; //This ensures BTF interrupt (EV8_2)
+                        I2C_SENSOR_BUS->CR2 &= (uint16_t) ~I2C_IT_BUF; //This ensures BTF interrupt (EV8_2)
                     }
                 }
-
             }
 
             SR1Register = 0;
@@ -446,53 +423,44 @@ void I2C_Driver_ISR_Handler(void)
         }
 
         /* If BTF and TXE are set (EV8_2), program the STOP */
-        if ((SR1Register & I2C_MASK_TXE_BTF) == (I2C_STATUS_BIT_TXE | I2C_STATUS_BIT_BTF))
-        {
-            if (gSendMode == I2C_MASTER_WRITE)
-            {
+        if ((SR1Register & I2C_MASK_TXE_BTF) == (I2C_STATUS_BIT_TXE | I2C_STATUS_BIT_BTF)) {
+            if (gSendMode == I2C_MASTER_WRITE) {
                 /* Program the STOP */
                 I2C_SENSOR_BUS->CR1 |= CR1_STOP_Set;
                 /* Disable EVT IT In order to not have again a BTF IT */
-                I2C_SENSOR_BUS->CR2 &= (uint16_t)~I2C_IT_EVT;
+                I2C_SENSOR_BUS->CR2 &= (uint16_t) ~I2C_IT_EVT;
                 asyncXfer.i2c_txrx_status = I2C_TXRX_STATUS_PASSED;
                 isr_evt_set(I2C_TXRX_STATUS_PASSED, asfTaskHandleTable[SENSOR_ACQ_TASK_ID].handle );
             }
             SR1Register = 0;
             SR2Register = 0;
-
         }
 
         /* If RXNE is set */
-        if ((SR1Register & I2C_MASK_RXNE) == I2C_STATUS_BIT_RXNE)
-        {
-            if (asyncXfer.num == 0) //received all expected data
-            {
+        if ((SR1Register & I2C_MASK_RXNE) == I2C_STATUS_BIT_RXNE) {
+            if (asyncXfer.num == 0) { //received all expected data
                 /* Disable the BUF IT */
-                I2C_SENSOR_BUS->CR2 &= (uint16_t)~I2C_IT_BUF;
+                I2C_SENSOR_BUS->CR2 &= (uint16_t) ~I2C_IT_BUF;
                 /* Indicate that we are done receiving */
                 asyncXfer.i2c_txrx_status = I2C_TXRX_STATUS_PASSED;
                 isr_evt_set(I2C_TXRX_STATUS_PASSED, asfTaskHandleTable[SENSOR_ACQ_TASK_ID].handle );
-            }
-            else
-            {
+            } else {
                 /* Read the data register */
                 asyncXfer.pData[asyncXfer.byte_index++] = I2C_SENSOR_BUS->DR;
                 /* Decrement the number of bytes to be read */
                 asyncXfer.num--;
 
                 /* If it remains only one byte to read, disable ACK and program the STOP (EV7_1) */
-                if (asyncXfer.num == 1)
-                {
+                if (asyncXfer.num == 1) {
                     /* Clear ACK */
                     I2C_SENSOR_BUS->CR1 &= CR1_ACK_Reset;
                     /* Program the STOP */
                     I2C_SENSOR_BUS->CR1 |= CR1_STOP_Set;
                 }
 
-                if (asyncXfer.num == 0) //received all expected data
-                {
+                if (asyncXfer.num == 0) { //received all expected data
                     /* Disable the BUF IT */
-                    I2C_SENSOR_BUS->CR2 &= (uint16_t)~I2C_IT_BUF;
+                    I2C_SENSOR_BUS->CR2 &= (uint16_t) ~I2C_IT_BUF;
                     /* Indicate that we are done receiving */
                     asyncXfer.i2c_txrx_status = I2C_TXRX_STATUS_PASSED;
                     isr_evt_set(I2C_TXRX_STATUS_PASSED, asfTaskHandleTable[SENSOR_ACQ_TASK_ID].handle );
@@ -523,33 +491,30 @@ void I2C_Driver_ERR_ISR_Handler(void)
     SR1Register = I2C_SENSOR_BUS->SR1;
 
     /* If AF = 1 */
-    if ((SR1Register & I2C_MASK_AF) == I2C_STATUS_BIT_AF)
-    {
+    if ((SR1Register & I2C_MASK_AF) == I2C_STATUS_BIT_AF) {
         I2C_SENSOR_BUS->SR1 &= (~I2C_STATUS_BIT_AF);
         SR1Register = 0;
     }
     /* If ARLO = 1 */
-    if ((SR1Register & I2C_MASK_ARLO) == I2C_STATUS_BIT_ARLO)
-    {
+    if ((SR1Register & I2C_MASK_ARLO) == I2C_STATUS_BIT_ARLO) {
         I2C_SENSOR_BUS->SR1 &= (~I2C_STATUS_BIT_ARLO);
         SR1Register = 0;
     }
     /* If BERR = 1 */
-    if ((SR1Register & I2C_MASK_BERR) == I2C_STATUS_BIT_BERR)
-    {
+    if ((SR1Register & I2C_MASK_BERR) == I2C_STATUS_BIT_BERR) {
         I2C_SENSOR_BUS->SR1 &= (~I2C_STATUS_BIT_BERR);
         SR1Register = 0;
     }
 
     /* If OVR = 1 */
-    if ((SR1Register & I2C_MASK_OVR) == I2C_STATUS_BIT_OVR)
-    {
+    if ((SR1Register & I2C_MASK_OVR) == I2C_STATUS_BIT_OVR) {
         I2C_SENSOR_BUS->SR1 &= (~I2C_STATUS_BIT_OVR);
         SR1Register = 0;
     }
     asyncXfer.i2c_txrx_status = I2C_TXRX_STATUS_FAILED;
     isr_evt_set(I2C_TXRX_STATUS_FAILED, asfTaskHandleTable[SENSOR_ACQ_TASK_ID].handle );
 }
+
 
 #endif //I2C_DRIVER
 /*-------------------------------------------------------------------------------------------------*\

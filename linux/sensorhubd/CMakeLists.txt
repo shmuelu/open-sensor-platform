@@ -55,6 +55,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x -fPIC -Wall -Werror")
 set(app_SOURCES
   main.cpp
   osp_ConfigParser.cpp
+  android_getline.c
   ospd.cpp
   virtualsensordevicemanager.h
   virtualsensordevicemanager.cpp

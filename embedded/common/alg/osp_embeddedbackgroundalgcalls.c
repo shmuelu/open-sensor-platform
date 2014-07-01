@@ -59,8 +59,8 @@ static OSP_BackgroundAlgResultCallback_t _fpBackgroundDataCallback = NULL;
  *          Call to initialize the algorithms implementation.
  *
  ***************************************************************************************************/
-void OSPBackgroundAlg_InitializeAlgorithms(void){
-
+void OSPBackgroundAlg_InitializeAlgorithms(void)
+{
 }
 
 
@@ -69,8 +69,8 @@ void OSPBackgroundAlg_InitializeAlgorithms(void){
  *          Call this to reset the algorithms to initial startup state
  *
  ***************************************************************************************************/
-void OSPBackgroundAlg_ResetAlgorithms(void){
-
+void OSPBackgroundAlg_ResetAlgorithms(void)
+{
 }
 
 
@@ -79,9 +79,10 @@ void OSPBackgroundAlg_ResetAlgorithms(void){
  *          Call this function before exit to shutdown the algorithms properly
  *
  ***************************************************************************************************/
-void OSPBackgroundAlg_DestroyAlgorithms(void){
-
+void OSPBackgroundAlg_DestroyAlgorithms(void)
+{
 }
+
 
 /****************************************************************************************************
  * @fn      OSPBackgroundAlg_SetStoredResult
@@ -89,28 +90,33 @@ void OSPBackgroundAlg_DestroyAlgorithms(void){
  *          (for example, initial stored calibration values)
  *
  ***************************************************************************************************/
-void OSPBackgroundAlg_SetStoredResult(OSP_BackgroundAlgResultType_t resultType, OSP_BackgroundAlgResult_t * pCal){
-
+void OSPBackgroundAlg_SetStoredResult(OSP_BackgroundAlgResultType_t resultType, OSP_BackgroundAlgResult_t *pCal)
+{
 }
+
 
 /****************************************************************************************************
  * @fn      OSPBackgroundAlg_SetAccelerometerMeasurement
  *          API to feed accelerometer data into the background algorithms
  *
  ***************************************************************************************************/
-void OSPBackgroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES]){
-
+void OSPBackgroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds,
+    const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES])
+{
     //No background algorithms implemented at this time
 }
+
 
 /****************************************************************************************************
  * @fn      OSPBackgroundAlg_RegisterBackgroundResultCallback
  *          Register for all background algorithm results
  *
  ***************************************************************************************************/
-void OSPBackgroundAlg_RegisterBackgroundResultCallback(OSP_BackgroundAlgResultCallback_t fpCallback) {
+void OSPBackgroundAlg_RegisterBackgroundResultCallback(OSP_BackgroundAlgResultCallback_t fpCallback)
+{
     _fpBackgroundDataCallback = fpCallback;
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

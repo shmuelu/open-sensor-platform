@@ -47,61 +47,82 @@ extern PortInfo gDbgUartPort;
 void UartDMAConfiguration( PortInfo *pPort, uint8_t *pTxBuffer, uint16_t txBufferSize );
 
 #ifndef UART_DMA_ENABLE
-osp_bool_t GetNextByteToTx( uint8_t* pucByte );
+osp_bool_t GetNextByteToTx( uint8_t*pucByte );
 #else
 void *GetNextBuffer( PortInfo *pPort );
 #endif
 
 /* Support functions for DEBUG Uart */
-static __inline void DisableDbgUartInterrupt( void ) {
+static __inline void DisableDbgUartInterrupt( void )
+{
     NVIC_DisableIRQ(DBG_UART_IRQChannel);
 }
 
-static __inline void EnableDbgUartInterrupt( void ) {
+
+static __inline void EnableDbgUartInterrupt( void )
+{
     NVIC_EnableIRQ(DBG_UART_IRQChannel);
 }
 
+
 #ifdef UART_DMA_ENABLE
-static __inline void EnableDbgUartDMAxferCompleteInt( void ) {
+static __inline void EnableDbgUartDMAxferCompleteInt( void )
+{
     DMA_ITConfig(DBG_UART_TX_DMA_Channel, DMA_IT_TC, ENABLE);
 }
 
-static __inline void EnableDbgUartDMAChannel( void ) {
+
+static __inline void EnableDbgUartDMAChannel( void )
+{
     DMA_Cmd(DBG_UART_TX_DMA_Channel, ENABLE);
 }
 
-static __inline void DisableDbgUartDMAChannel( void ) {
+
+static __inline void DisableDbgUartDMAChannel( void )
+{
     DMA_Cmd(DBG_UART_TX_DMA_Channel, DISABLE);
 }
 
-static __inline void EnableDbgUartDMATxRequest( void ) {
+
+static __inline void EnableDbgUartDMATxRequest( void )
+{
     USART_DMACmd(DBG_IF_UART, USART_DMAReq_Tx, ENABLE);
 }
-#endif
 
-static __inline void DbgUartSendByte( uint8_t byte ) {
+
+#endif /* ifdef UART_DMA_ENABLE */
+
+static __inline void DbgUartSendByte( uint8_t byte )
+{
     USART_SendData(DBG_IF_UART, byte);
 }
 
-static __inline uint8_t DbgUartReadByte( void ) {
-    return (uint8_t) (USART_ReceiveData(DBG_IF_UART) & 0xFF);
+
+static __inline uint8_t DbgUartReadByte( void )
+{
+    return (uint8_t)(USART_ReceiveData(DBG_IF_UART) & 0xFF);
 }
 
-static __inline osp_bool_t DbgUartTransmitBufferEmpty( void ) {
+
+static __inline osp_bool_t DbgUartTransmitBufferEmpty( void )
+{
     if (USART_GetFlagStatus(DBG_IF_UART, USART_FLAG_TXE) != RESET) {
         return true;
     }
     return false;
 }
 
-static __inline void EnableDbgUartTxBufferEmptyInterrupt( void ) {
+
+static __inline void EnableDbgUartTxBufferEmptyInterrupt( void )
+{
     USART_ITConfig(DBG_IF_UART, USART_IT_TXE, ENABLE);
 }
 
-static __inline void DisableDbgUartTxBufferEmptyInterrupt( void ) {
+
+static __inline void DisableDbgUartTxBufferEmptyInterrupt( void )
+{
     USART_ITConfig(DBG_IF_UART, USART_IT_TXE, DISABLE);
 }
-
 
 
 #endif /* DEBUGPRINT_H */

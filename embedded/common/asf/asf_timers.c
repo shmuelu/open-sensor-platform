@@ -65,10 +65,9 @@ static void SendTimerExpiry ( AsfTimer *pTimer )
 
     ASF_assert( ASFCreateMessage( MSG_TIMER_EXPIRY, sizeof(MsgTimerExpiry), &pSendMsg ) == ASF_OK );
     pSendMsg->msg.msgTimerExpiry.userValue = pTimer->userValue;
-    pSendMsg->msg.msgTimerExpiry.timerId   = pTimer->timerId;
+    pSendMsg->msg.msgTimerExpiry.timerId = pTimer->timerId;
     ASF_assert( ASFSendMessage( pTimer->owner, pSendMsg ) == ASF_OK );
 }
-
 
 
 /****************************************************************************************************
@@ -85,6 +84,7 @@ static void SendTimerExpiry ( AsfTimer *pTimer )
 static void _TimerStart ( AsfTimer *pTimer, char *_file, int _line )
 {
     uint16_t info = (uint16_t)((uint32_t)pTimer); //We only need to store the LSB16 of the pointer as the system RAM is < 64K
+
     ASF_assert( pTimer != NULLP );
     ASF_assert( pTimer->sysUse != TIMER_SYS_ID ); //In case we are trying to restart a running timer
     pTimer->sysUse = TIMER_SYS_ID;
@@ -110,7 +110,7 @@ static void _TimerStart ( AsfTimer *pTimer, char *_file, int _line )
  ***************************************************************************************************/
 osp_bool_t ASFTimerStarted ( AsfTimer *pTimer )
 {
-    return (pTimer->sysUse == TIMER_SYS_ID? true : false);
+    return (pTimer->sysUse == TIMER_SYS_ID ? true : false);
 }
 
 
@@ -150,9 +150,10 @@ void _ASFTimerExpiry ( uint16_t info, char *_file, int _line )
 {
     AsfTimer *pTimer;
     int wasMasked = __disable_irq();
-    pTimer = (AsfTimer *)(RAM_START + info);
+
+    pTimer = (AsfTimer*)(RAM_START + info);
     //Look for our magic number to be sure we got the right pointer
-    ASF_assert_var( pTimer->sysUse == TIMER_SYS_ID,  pTimer->ticks, pTimer->userValue, pTimer->owner);
+    ASF_assert_var( pTimer->sysUse == TIMER_SYS_ID, pTimer->ticks, pTimer->userValue, pTimer->owner);
     SendTimerExpiry( pTimer );
     pTimer->sysUse = (uint32_t)-1; //Timer no longer in use
     if (!wasMasked) __enable_irq();
@@ -173,6 +174,7 @@ void _ASFTimerExpiry ( uint16_t info, char *_file, int _line )
 void _ASFKillTimer ( AsfTimer *pTimer, char *_file, int _line )
 {
     TimerId ret;
+
     ASF_assert( pTimer != NULLP );
     ret = os_tmr_kill( pTimer->timerId );
     ASF_assert( ret == NULL );

@@ -33,7 +33,7 @@
 
 // decimation count inside prefiltering
 #define DECIMATION_COUNT_2N (3)
-#define DECIMATION_MASK ((1 << DECIMATION_COUNT_2N)-1)
+#define DECIMATION_MASK ((1 << DECIMATION_COUNT_2N) - 1)
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
@@ -43,7 +43,6 @@ typedef struct {
 
     osp_float_t accbuf[NUM_ACCEL_AXES][AVERAGING_FILTER_BUF_SIZE];
     osp_float_t accAccumulator[NUM_ACCEL_AXES];
-
 } SignalGenerator_t;
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -54,7 +53,8 @@ static SignalGenerator_t _signalGenerator;
 /*-------------------------------------------------------------------------------------------------*\
  |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-static osp_bool_t PerformFiltering(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES], osp_float_t* accFilteredOut);
+static osp_bool_t PerformFiltering(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES],
+    osp_float_t*accFilteredOut);
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C   V A R I A B L E S   D E F I N I T I O N S
@@ -69,34 +69,41 @@ static osp_bool_t PerformFiltering(const osp_float_t accInMetersPerSecondSquare[
  *          Initializes memory for signal generator structure
  *
  ***************************************************************************************************/
-void SignalGenerator_Init(void) {
-    memset(&_signalGenerator,0,sizeof(_signalGenerator));
+void SignalGenerator_Init(void)
+{
+    memset(&_signalGenerator, 0, sizeof(_signalGenerator));
 }
+
 
 /****************************************************************************************************
  * @fn      SignalGenerator_SetAccelerometerData
- *          Main caller function for signal generation. Since this module decimates the 
- *          incoming signal after filtering, this function returns a boolean which indicates 
+ *          Main caller function for signal generation. Since this module decimates the
+ *          incoming signal after filtering, this function returns a boolean which indicates
  *          when the accFilteredOut variable has been updated.
  *
  ***************************************************************************************************/
-osp_bool_t SignalGenerator_SetAccelerometerData(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES], osp_float_t* accFilteredOut){
+osp_bool_t SignalGenerator_SetAccelerometerData(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES],
+    osp_float_t*accFilteredOut)
+{
     return PerformFiltering(accInMetersPerSecondSquare, accFilteredOut);
 }
+
 
 /****************************************************************************************************
  * @fn      SignalGenerator_UpdateMovingWindowMean
  *          Generic function for updating a moving window mean for a buffer of size 2^buflen2N
  *
  ***************************************************************************************************/
-osp_float_t SignalGenerator_UpdateMovingWindowMean(osp_float_t * buffer, osp_float_t * pMeanAccumulator,
-                                             osp_float_t newmeas, uint16_t idx, uint16_t buflen2N) {
+osp_float_t SignalGenerator_UpdateMovingWindowMean(osp_float_t *buffer, osp_float_t *pMeanAccumulator,
+    osp_float_t newmeas, uint16_t idx, uint16_t buflen2N)
+{
     *pMeanAccumulator += newmeas;
     *pMeanAccumulator -= buffer[idx];
     buffer[idx] = newmeas;
 
-    return (osp_float_t) ((*pMeanAccumulator)/((osp_float_t)(1 << buflen2N)));
+    return (osp_float_t)((*pMeanAccumulator) / ((osp_float_t)(1 << buflen2N)));
 }
+
 
 /****************************************************************************************************
  * @fn      PerformFiltering
@@ -104,7 +111,8 @@ osp_float_t SignalGenerator_UpdateMovingWindowMean(osp_float_t * buffer, osp_flo
  *          Returns true if filtered data was updated.
  *
  ***************************************************************************************************/
-osp_bool_t PerformFiltering(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES], osp_float_t *accFilteredOut) {
+osp_bool_t PerformFiltering(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES], osp_float_t *accFilteredOut)
+{
     uint8_t iAxis;
     osp_bool_t success = FALSE;
 
@@ -113,14 +121,14 @@ osp_bool_t PerformFiltering(const osp_float_t accInMetersPerSecondSquare[NUM_ACC
     // Compute moving average of input acceleration data
     for (iAxis = 0; iAxis < NUM_ACCEL_AXES; iAxis++) {
         accFilteredOut[iAxis] = SignalGenerator_UpdateMovingWindowMean(_signalGenerator.accbuf[iAxis],
-                                                                    &_signalGenerator.accAccumulator[iAxis],
-                                                                    accInMetersPerSecondSquare[iAxis],
-                                                                    movingWindowIdx,
-                                                                    AVERAGING_FILTER_BUF_SIZE_2N);
+            &_signalGenerator.accAccumulator[iAxis],
+            accInMetersPerSecondSquare[iAxis],
+            movingWindowIdx,
+            AVERAGING_FILTER_BUF_SIZE_2N);
     }
 
     /// Decimate
-    if ((_signalGenerator.callcounter > AVERAGING_FILTER_BUF_SIZE-1) &&
+    if ((_signalGenerator.callcounter > AVERAGING_FILTER_BUF_SIZE - 1) &&
         ((_signalGenerator.callcounter & DECIMATION_MASK) == DECIMATION_MASK)) {
         success = TRUE;
     }

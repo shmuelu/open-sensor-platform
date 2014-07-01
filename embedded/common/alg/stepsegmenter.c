@@ -29,17 +29,17 @@
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
 //Define peak property flags
-#define PEAKPROP_PEAK_PERIOD_SHORT_ENOUGH           (1<<0)
-#define PEAKPROP_STEP_PERIOD_SHORT_ENOUGH           (1<<1)
-#define PEAKPROP_MAG_LARGE_ENOUGH                   (1<<2)
-#define PEAKPROP_STRIDE_PERIOD_NEAR_EXPECTED        (1<<3)
-#define PEAKPROP_CONSECUTIVE_SMALL_PEAKS            (1<<4)
-#define PEAKPROP_CONSECUTIVE_LARGE_ENOUGH_PEAKS     (1<<5)
-#define PEAKPROP_VALID_NEG_PEAK_SINCE_LAST_STEP     (1<<6)
+#define PEAKPROP_PEAK_PERIOD_SHORT_ENOUGH           (1 << 0)
+#define PEAKPROP_STEP_PERIOD_SHORT_ENOUGH           (1 << 1)
+#define PEAKPROP_MAG_LARGE_ENOUGH                   (1 << 2)
+#define PEAKPROP_STRIDE_PERIOD_NEAR_EXPECTED        (1 << 3)
+#define PEAKPROP_CONSECUTIVE_SMALL_PEAKS            (1 << 4)
+#define PEAKPROP_CONSECUTIVE_LARGE_ENOUGH_PEAKS     (1 << 5)
+#define PEAKPROP_VALID_NEG_PEAK_SINCE_LAST_STEP     (1 << 6)
 
 //Define step property flags
-#define STEPPROP_MAG_VALID                          (1<<0)
-#define STEPPROP_INVALID_NEG_PEAK                   (1<<4)
+#define STEPPROP_MAG_VALID                          (1 << 0)
+#define STEPPROP_INVALID_NEG_PEAK                   (1 << 4)
 
 //local constants
 #define DEFAULT_EXPECTED_STRIDE_PERIOD    TOFIX_TIME(1.8f)
@@ -80,17 +80,18 @@ static osp_float_t MIN_PEAK_ACC_INITIAL = 0.5; //m/s^2
  *          Takes new accel norm data and checks for a peak
  *
  ***************************************************************************************************/
-static osp_bool_t UpdateAndLookForPeak(StepSegmenter_t * pStruct, osp_float_t accNorm, EExtremaType * peakType){
+static osp_bool_t UpdateAndLookForPeak(StepSegmenter_t *pStruct, osp_float_t accNorm, EExtremaType *peakType)
+{
     osp_bool_t peakFound = FALSE;
 
-    if(accNorm >= pStruct->prevAccNorm){
-        if(pStruct->prevPeakType == potentialNegPeak){
+    if (accNorm >= pStruct->prevAccNorm) {
+        if (pStruct->prevPeakType == potentialNegPeak) {
             peakFound = TRUE;
             *peakType = negativePeak;
         }
         pStruct->prevPeakType = potentialPosPeak;
-    } else if(accNorm < pStruct->prevAccNorm){
-        if(pStruct->prevPeakType == potentialPosPeak){
+    } else if (accNorm < pStruct->prevAccNorm) {
+        if (pStruct->prevPeakType == potentialPosPeak) {
             peakFound = TRUE;
             *peakType = positivePeak;
         }
@@ -106,20 +107,20 @@ static osp_bool_t UpdateAndLookForPeak(StepSegmenter_t * pStruct, osp_float_t ac
  *          <brief>
  *
  ***************************************************************************************************/
-static osp_bool_t IsValidNegativePeak(StepSegmenter_t * pStruct){
-
+static osp_bool_t IsValidNegativePeak(StepSegmenter_t *pStruct)
+{
     //if in the middle of walking, use peak if:
     //(1) peak magnitude is sufficient,
     //(2) it shows up near where expected, or
     //(3) it has been longer than expected since we had a negative peak
-    if((pStruct->segmenterState == midWalk)){
+    if ((pStruct->segmenterState == midWalk)) {
         NTTIME timeSinceLastPeak = pStruct->prevTime - pStruct->lastNegPeakTime;
         NTTIME expectedTimeSinceLastPeak = (pStruct->expectedStridePeriod >> 1);
         NTPRECISE peakMag = pStruct->lastStepPeakMag - pStruct->prevAccNorm;
-        if((timeSinceLastPeak > expectedTimeSinceLastPeak) ||
-           (peakMag > MIN_PEAK_ACC_INITIAL) ||
-           (expectedTimeSinceLastPeak - timeSinceLastPeak < (pStruct->expectedStridePeriod >> 2))){
-               return TRUE;
+        if ((timeSinceLastPeak > expectedTimeSinceLastPeak) ||
+            (peakMag > MIN_PEAK_ACC_INITIAL) ||
+            (expectedTimeSinceLastPeak - timeSinceLastPeak < (pStruct->expectedStridePeriod >> 2))) {
+            return TRUE;
         } else {
             return FALSE;
         }
@@ -134,13 +135,14 @@ static osp_bool_t IsValidNegativePeak(StepSegmenter_t * pStruct){
  *          <brief>
  *
  ***************************************************************************************************/
-static void ComputeStepProperties(StepSegmenter_t * pStruct){
+static void ComputeStepProperties(StepSegmenter_t *pStruct)
+{
     pStruct->stepFlags = 0;
 
-    if(pStruct->peakFlags & PEAKPROP_MAG_LARGE_ENOUGH){
-        pStruct->stepFlags |=  STEPPROP_MAG_VALID;
+    if (pStruct->peakFlags & PEAKPROP_MAG_LARGE_ENOUGH) {
+        pStruct->stepFlags |= STEPPROP_MAG_VALID;
     }
-    if(pStruct->lastNegPeakTime > pStruct->lastPosPeakTime){
+    if (pStruct->lastNegPeakTime > pStruct->lastPosPeakTime) {
         pStruct->stepFlags |= STEPPROP_INVALID_NEG_PEAK;
     }
 }
@@ -151,7 +153,8 @@ static void ComputeStepProperties(StepSegmenter_t * pStruct){
  *          <brief>
  *
  ***************************************************************************************************/
-static void ComputePeakProperties(StepSegmenter_t * pStruct){
+static void ComputePeakProperties(StepSegmenter_t *pStruct)
+{
     NTTIME peakPeriod = pStruct->prevTime - pStruct->lastPosPeakTime;
     NTTIME stepPeriod = pStruct->prevTime - pStruct->stepSegment.stopTime;
     osp_float_t peakMag = pStruct->prevAccNorm - pStruct->lastNegPeakMag;
@@ -160,32 +163,32 @@ static void ComputePeakProperties(StepSegmenter_t * pStruct){
     pStruct->peakFlags = 0;
 
     //compute properties:
-    if(peakPeriod <= MAX_STRIDE_TIME){
+    if (peakPeriod <= MAX_STRIDE_TIME) {
         pStruct->peakFlags |= PEAKPROP_PEAK_PERIOD_SHORT_ENOUGH;
     }
-    if(stepPeriod <= MAX_STEP_TIME){
+    if (stepPeriod <= MAX_STEP_TIME) {
         pStruct->peakFlags |= PEAKPROP_STEP_PERIOD_SHORT_ENOUGH;
     }
-    if(pStruct->lastNegPeakTime < pStruct->stepSegment.stopTime){
+    if (pStruct->lastNegPeakTime < pStruct->stepSegment.stopTime) {
         pStruct->peakFlags |= PEAKPROP_VALID_NEG_PEAK_SINCE_LAST_STEP;
     }
-    if(peakMag > MIN_PEAK_ACC){
+    if (peakMag > MIN_PEAK_ACC) {
         pStruct->peakFlags |= PEAKPROP_MAG_LARGE_ENOUGH;
     } else {
-        if(pStruct->segmenterState == midWalk){
-            if((pStruct->stepFlags & STEPPROP_MAG_VALID)){
+        if (pStruct->segmenterState == midWalk) {
+            if ((pStruct->stepFlags & STEPPROP_MAG_VALID)) {
                 pStruct->peakFlags |= PEAKPROP_CONSECUTIVE_LARGE_ENOUGH_PEAKS;
             }
         }
         //if this is a potential first step, use lower peak mag requirement
-        if(pStruct->segmenterState == endWalk && peakMag > MIN_PEAK_ACC_INITIAL){
+        if ((pStruct->segmenterState == endWalk) && (peakMag > MIN_PEAK_ACC_INITIAL)) {
             pStruct->peakFlags |= PEAKPROP_MAG_LARGE_ENOUGH;
         }
     }
 
-    if(pStruct->segmenterState == midWalk){
+    if (pStruct->segmenterState == midWalk) {
         NTTIME stridePeriod = pStruct->prevTime - pStruct->stepSegment.startTime;
-        if(ABS(stridePeriod-pStruct->expectedStridePeriod) <= (pStruct->expectedStridePeriod >> 2)){
+        if (ABS(stridePeriod - pStruct->expectedStridePeriod) <= (pStruct->expectedStridePeriod >> 2)) {
             pStruct->peakFlags |= PEAKPROP_STRIDE_PERIOD_NEAR_EXPECTED;
         }
     }
@@ -197,26 +200,26 @@ static void ComputePeakProperties(StepSegmenter_t * pStruct){
  *          <brief>
  *
  ***************************************************************************************************/
-static osp_bool_t PeakMeetsStepCriteria(uint16_t peakFlags){
-
+static osp_bool_t PeakMeetsStepCriteria(uint16_t peakFlags)
+{
     //must have small enough period if not in swingingMode (where we may have missed a step)
-    if(!(peakFlags & PEAKPROP_PEAK_PERIOD_SHORT_ENOUGH)){
+    if (!(peakFlags & PEAKPROP_PEAK_PERIOD_SHORT_ENOUGH)) {
         return FALSE;
     }
 
     //check peak magnitudes
-    if((peakFlags & PEAKPROP_MAG_LARGE_ENOUGH)){
+    if ((peakFlags & PEAKPROP_MAG_LARGE_ENOUGH)) {
         return TRUE;
     }
 
     //check for valid negative peak
-    if(!(peakFlags & PEAKPROP_VALID_NEG_PEAK_SINCE_LAST_STEP)){
+    if (!(peakFlags & PEAKPROP_VALID_NEG_PEAK_SINCE_LAST_STEP)) {
         return FALSE;
     }
 
     //if midwalk consecutive peaks are okay magnitude-wise and the peak is where we expect it, use it
-    if((peakFlags & PEAKPROP_CONSECUTIVE_LARGE_ENOUGH_PEAKS) &&
-       (peakFlags & PEAKPROP_STRIDE_PERIOD_NEAR_EXPECTED)){
+    if ((peakFlags & PEAKPROP_CONSECUTIVE_LARGE_ENOUGH_PEAKS) &&
+        (peakFlags & PEAKPROP_STRIDE_PERIOD_NEAR_EXPECTED)) {
         return TRUE;
     }
     return FALSE;
@@ -228,10 +231,11 @@ static osp_bool_t PeakMeetsStepCriteria(uint16_t peakFlags){
  *          <brief>
  *
  ***************************************************************************************************/
-static void AddStep(StepSegmenter_t * pStruct, StepSegment_t segment){
+static void AddStep(StepSegmenter_t *pStruct, StepSegment_t segment)
+{
     EStepSegmenterState initState = pStruct->segmenterState;
     NTTIME stridePeriod = segment.stopTime - pStruct->stepSegment.startTime;
-    uint8_t stepIdx = (pStruct->numStoredSteps-1) & (uint16_t)STORED_STEPS_MASK;
+    uint8_t stepIdx = (pStruct->numStoredSteps - 1) & (uint16_t)STORED_STEPS_MASK;
     osp_bool_t validStep = TRUE;
 
     //Compute step props
@@ -241,20 +245,20 @@ static void AddStep(StepSegmenter_t * pStruct, StepSegment_t segment){
     pStruct->stepSegment = segment;
 
     //check for initial state changes
-    if(pStruct->segmenterState != endWalk && pStruct->stepSegment.type == lastStep){
+    if ((pStruct->segmenterState != endWalk) && (pStruct->stepSegment.type == lastStep)) {
         pStruct->segmenterState = endWalk;
         pStruct->expectedStridePeriod = DEFAULT_EXPECTED_STRIDE_PERIOD;
-    } else if(pStruct->segmenterState == endWalk) {
+    } else if (pStruct->segmenterState == endWalk) {
         pStruct->segmenterState = startWalk;
         pStruct->numStoredSteps = 0;
     }
 
 
     // STATE MACHINE
-    switch(pStruct->segmenterState){
+    switch (pStruct->segmenterState) {
     case endWalk:
         //if we just ended walking, send out final step
-        if(initState == midWalk && pStruct->resultReadyCallback){
+        if ((initState == midWalk) && pStruct->resultReadyCallback) {
             pStruct->storedSteps[stepIdx].type = lastStep;
             pStruct->resultReadyCallback(&pStruct->stepSegment);
         }
@@ -262,27 +266,27 @@ static void AddStep(StepSegmenter_t * pStruct, StepSegment_t segment){
 
 
     case startWalk:
-        if(pStruct->numStoredSteps < NUM_STEPS_BEFORE_REPORTING){
+        if (pStruct->numStoredSteps < NUM_STEPS_BEFORE_REPORTING) {
             //peak height delta = peakLeft - peakRight
             //                  = (posPeakMag - negPeakMag) - (prevZ - negPeakMag)
             //                  = (posPeakMag - prevZ)
             osp_float_t peakHeightDelta = ABS(pStruct->lastPosPeakMag - pStruct->prevAccNorm);
             osp_float_t peakHeightRight = pStruct->prevAccNorm - pStruct->lastNegPeakMag;
-            osp_float_t peakComp = PEAK_TO_PEAK_COMPARE_RATIO*peakHeightRight;
-            if(((pStruct->numStoredSteps == 0) &&
-                (peakHeightDelta > peakComp))){
+            osp_float_t peakComp = PEAK_TO_PEAK_COMPARE_RATIO * peakHeightRight;
+            if (((pStruct->numStoredSteps == 0) &&
+                    (peakHeightDelta > peakComp))) {
                 validStep = FALSE;
                 stepIdx = 0;
                 pStruct->numStoredSteps = 0;
             }
-            if(pStruct->numStoredSteps == 0){
+            if (pStruct->numStoredSteps == 0) {
                 pStruct->stepSegment.type = firstStep;
             }
         } else {
             //we've reached the number of stored steps - send
-            if(pStruct->resultReadyCallback){
+            if (pStruct->resultReadyCallback) {
                 uint8_t i;
-                for(i = 0; i < NUM_STEPS_BEFORE_REPORTING; i++){
+                for (i = 0; i < NUM_STEPS_BEFORE_REPORTING; i++) {
                     pStruct->resultReadyCallback(&pStruct->storedSteps[i]);
                 }
             }
@@ -293,20 +297,20 @@ static void AddStep(StepSegmenter_t * pStruct, StepSegment_t segment){
 
 
     case midWalk:
-        if(pStruct->resultReadyCallback){
+        if (pStruct->resultReadyCallback) {
             pStruct->resultReadyCallback(&pStruct->stepSegment);
         }
         break;
-    }
+    } /* switch */
 
     // Update expected stride period if mid-walk
-    if(pStruct->segmenterState == midWalk){
+    if (pStruct->segmenterState == midWalk) {
         pStruct->expectedStridePeriod = stridePeriod;
     }
 
     // If valid step, add step to stored steps
-    if(pStruct->segmenterState == startWalk){
-        if(validStep){
+    if (pStruct->segmenterState == startWalk) {
+        if (validStep) {
             stepIdx = (pStruct->numStoredSteps) & (uint16_t)STORED_STEPS_MASK;
             pStruct->numStoredSteps++;
         }
@@ -320,7 +324,8 @@ static void AddStep(StepSegmenter_t * pStruct, StepSegment_t segment){
  *          <brief>
  *
  ***************************************************************************************************/
-static osp_bool_t CheckForPotentialNewStep(StepSegmenter_t *pStruct, EExtremaType peakType, StepSegment_t * potSegment){
+static osp_bool_t CheckForPotentialNewStep(StepSegmenter_t *pStruct, EExtremaType peakType, StepSegment_t *potSegment)
+{
     osp_bool_t endWalkConditions = FALSE;
 
     //set potential segment params
@@ -330,32 +335,33 @@ static osp_bool_t CheckForPotentialNewStep(StepSegmenter_t *pStruct, EExtremaTyp
     pStruct->lastStepPeakMag = pStruct->prevAccNorm;
 
     //Check for end-walk conditions
-    if((!(pStruct->peakFlags & PEAKPROP_STEP_PERIOD_SHORT_ENOUGH)) ||
-       (pStruct->peakFlags & PEAKPROP_CONSECUTIVE_SMALL_PEAKS)){
+    if ((!(pStruct->peakFlags & PEAKPROP_STEP_PERIOD_SHORT_ENOUGH)) ||
+        (pStruct->peakFlags & PEAKPROP_CONSECUTIVE_SMALL_PEAKS)) {
         endWalkConditions = TRUE;
-        if(pStruct->segmenterState != endWalk){
+        if (pStruct->segmenterState != endWalk) {
             potSegment->type = lastStep;
-            if(pStruct->stepSegment.stopTime > pStruct->lastPosPeakTime){
+            if (pStruct->stepSegment.stopTime > pStruct->lastPosPeakTime) {
                 potSegment->stopTime = pStruct->lastPosPeakTime;
             }
         }
     }
 
     //Check if this is a potential segment
-    if(PeakMeetsStepCriteria(pStruct->peakFlags)){
-        if(pStruct->segmenterState == endWalk){
+    if (PeakMeetsStepCriteria(pStruct->peakFlags)) {
+        if (pStruct->segmenterState == endWalk) {
             potSegment->startTime = pStruct->lastPosPeakTime;
             potSegment->type = firstStep;
         }
         return TRUE;
     } else {
-        if((pStruct->segmenterState != endWalk) && endWalkConditions){
+        if ((pStruct->segmenterState != endWalk) && endWalkConditions) {
             return TRUE;
         }
     }
 
     return FALSE;
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C     F U N C T I O N S
@@ -366,10 +372,10 @@ static osp_bool_t CheckForPotentialNewStep(StepSegmenter_t *pStruct, EExtremaTyp
  *          Initialize segmenter struct initialization variables
  *
  ***************************************************************************************************/
-void StepSegmenter_Init(StepSegmenter_t * pStruct, OSP_StepSegmentResultCallback_t pResultReadyCallback){
-
+void StepSegmenter_Init(StepSegmenter_t *pStruct, OSP_StepSegmentResultCallback_t pResultReadyCallback)
+{
     //Set up callback
-    pStruct->resultReadyCallback= pResultReadyCallback;
+    pStruct->resultReadyCallback = pResultReadyCallback;
 
     //reset remaining parameters
     StepSegmenter_Reset(pStruct);
@@ -381,7 +387,8 @@ void StepSegmenter_Init(StepSegmenter_t * pStruct, OSP_StepSegmentResultCallback
  *          Reset all parameters in step segmenter struct
  *
  ***************************************************************************************************/
-void StepSegmenter_Reset(StepSegmenter_t * pStruct){
+void StepSegmenter_Reset(StepSegmenter_t *pStruct)
+{
     pStruct->stepSegment.startTime = 0;
     pStruct->stepSegment.stopTime = 0;
     pStruct->stepSegment.type = lastStep;
@@ -407,7 +414,8 @@ void StepSegmenter_Reset(StepSegmenter_t * pStruct){
  *          <brief>
  *
  ***************************************************************************************************/
-void StepSegmenter_CleanUp(StepSegmenter_t * pStruct){
+void StepSegmenter_CleanUp(StepSegmenter_t *pStruct)
+{
     StepSegmenter_Reset(pStruct);
     pStruct->resultReadyCallback = NULL;
 }
@@ -418,28 +426,27 @@ void StepSegmenter_CleanUp(StepSegmenter_t * pStruct){
  *          <brief>
  *
  ***************************************************************************************************/
-void StepSegmenter_UpdateAndCheckForSegment(StepSegmenter_t * pStruct, const osp_float_t accNorm, NTTIME tstamp){
+void StepSegmenter_UpdateAndCheckForSegment(StepSegmenter_t *pStruct, const osp_float_t accNorm, NTTIME tstamp)
+{
     EExtremaType peakType;
     StepSegment_t potSegment;
 
     // Check for peak
-    if(UpdateAndLookForPeak(pStruct, accNorm, &peakType)){
-
+    if (UpdateAndLookForPeak(pStruct, accNorm, &peakType)) {
         //If negative peak, check validity and then update info if valid
-        if(peakType == negativePeak){
-            if(IsValidNegativePeak(pStruct)){
+        if (peakType == negativePeak) {
+            if (IsValidNegativePeak(pStruct)) {
                 pStruct->lastNegPeakTime = pStruct->prevTime;
                 pStruct->lastNegPeakMag = pStruct->prevAccNorm;
             }
         }
-
         //ELSE this is a positive peak - check for potential new step
         else {
             //Compute peak properties
             ComputePeakProperties(pStruct);
 
             //If potential new step, add step to state machine
-            if(CheckForPotentialNewStep(pStruct, peakType, &potSegment)){
+            if (CheckForPotentialNewStep(pStruct, peakType, &potSegment)) {
                 AddStep(pStruct, potSegment);
             }
 

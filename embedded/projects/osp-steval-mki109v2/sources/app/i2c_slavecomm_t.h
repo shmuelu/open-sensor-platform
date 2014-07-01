@@ -45,4 +45,4 @@ void SH_Host_Slave_cmd_processing_active(void);
 void SH_Host_Slave_terminate_cmd_processing(void);
 
 
-#endif // I2C_SLAVECOMM_T_H
+#endif /* I2C_SLAVECOMM_T_H */

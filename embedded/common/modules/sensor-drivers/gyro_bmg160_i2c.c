@@ -109,6 +109,7 @@ static uint8_t ReadGyroReg( uint8_t regAddr )
 static void ReadGyroMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
 {
     uint8_t result;
+
     regAddr = regAddr | 0x80;     /* For multi-byte read MSB of sub-addr field should be 1 */
 
     /* Get the transfer going. Rest is handled in the ISR */
@@ -118,7 +119,9 @@ static void ReadGyroMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count 
     /* Wait for status */
     I2C_Wait_Completion();
 }
-#endif
+
+
+#endif /* if 0 */
 
 /****************************************************************************************************
  * @fn      Gyro_DumpRegisters
@@ -154,8 +157,8 @@ static void Gyro_DumpRegisters( void )
 void Gyro_Initialize( void )
 {
     /* Init the Bosch Driver for Gyro */
-    bmg160.bus_write  = dev_i2c_write;
-    bmg160.bus_read   = dev_i2c_read;
+    bmg160.bus_write = dev_i2c_write;
+    bmg160.bus_read = dev_i2c_read;
     bmg160.delay_msec = dev_i2c_delay;
     bmg160_init(&bmg160);
 
@@ -194,12 +197,11 @@ void Gyro_Initialize( void )
  ***************************************************************************************************/
 void Gyro_HardwareSetup( osp_bool_t enable )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
-    EXTI_InitTypeDef  EXTI_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
 
-    if (enable == true)
-    {
+    if (enable == true) {
         /* Initialize the I2C Driver interface */
         ASF_assert( true == I2C_HardwareSetup( I2C_SENSOR_BUS ) );
 
@@ -207,12 +209,12 @@ void Gyro_HardwareSetup( osp_bool_t enable )
         RCC_APB2PeriphClockCmd( RCC_Periph_GYRO_INT_GPIO, ENABLE );
 
         /* Configure INT interrupt Pin */
-        GPIO_InitStructure.GPIO_Pin   = GYRO_INT;
-        GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-        GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
+        GPIO_InitStructure.GPIO_Pin = GYRO_INT;
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+        GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_400KHz; //Don't care for input mode
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;     //Don't care for input mode
-        GPIO_Init (GYRO_INT_GPIO_GRP, &GPIO_InitStructure);
+        GPIO_Init(GYRO_INT_GPIO_GRP, &GPIO_InitStructure);
 
         /* Enable SYSCFG clock */
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
@@ -235,14 +237,10 @@ void Gyro_HardwareSetup( osp_bool_t enable )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
         /* Int enabled via Gyro_ConfigDataInt() */
+    } else { //TODO: disable interrupts and free GPIOs
+             //TODO!!
     }
-    else //TODO: disable interrupts and free GPIOs
-    {
-        //TODO!!
-    }
-
 }
-
 
 
 /****************************************************************************************************
@@ -261,8 +259,7 @@ void Gyro_ReadData( GyroData_t *pxyzData )
     pxyzData->Z = gyro_raw.dataz;
     //add timestamp here!
     pxyzData->timeStamp = RTC_GetCounter();
-    if (pxyzData->timeStamp < lastRtc)
-    {
+    if (pxyzData->timeStamp < lastRtc) {
         GyroTimeExtend++; //Rollover counter
     }
     lastRtc = pxyzData->timeStamp;
@@ -286,12 +283,9 @@ void Gyro_ClearDataInt( void )
  ***************************************************************************************************/
 void Gyro_ConfigDataInt( osp_bool_t enInt )
 {
-    if (enInt)
-    {
+    if (enInt) {
         bmg160_set_data_en(1);
-    }
-    else
-    {
+    } else {
         bmg160_set_data_en(0);
     }
 }
@@ -319,6 +313,7 @@ osp_bool_t Gyro_SelfTest( void )
 {
     return true; //Not supported
 }
+
 
 /****************************************************************************************************
  * @fn      Gyro_SetLowPowerMode

@@ -116,7 +116,9 @@ static uint8_t ReadMagReg( uint8_t regAddr )
 
     return retVal;
 }
-#endif
+
+
+#endif /* ifdef DEBUG_MAG */
 
 
 /****************************************************************************************************
@@ -127,6 +129,7 @@ static uint8_t ReadMagReg( uint8_t regAddr )
 static void ReadMagMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
 {
     uint8_t result;
+
     regAddr = regAddr | 0x80;     /* For multi-byte read MSB of sub-addr field should be 1 */
 
     /* Get the transfer going. Rest is handled in the ISR */
@@ -164,7 +167,7 @@ static void Mag_DumpRegisters( void )
     D0_printf("\t TEMPERATURE_L   (0x32) %02X\r\n", ReadMagReg( LSM_M_TEMPERATURE_L ));
     D0_printf("-------------------------------------\r\n");
     delay_ms(50);
-#endif
+#endif /* ifdef DEBUG_MAG */
 }
 
 
@@ -193,7 +196,7 @@ void Mag_Initialize( void )
 
     WriteMagReg( LSM_M_CRA_REG, regCRA );
     WriteMagReg( LSM_M_CRB_REG, regCRB );
-    WriteMagReg( LSM_M_MR_REG,  regMR );
+    WriteMagReg( LSM_M_MR_REG, regMR );
 
     Mag_DumpRegisters();
 }
@@ -210,12 +213,11 @@ void Mag_Initialize( void )
  ***************************************************************************************************/
 void Mag_HardwareSetup( osp_bool_t enable )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
-    EXTI_InitTypeDef  EXTI_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
 
-    if (enable == true)
-    {
+    if (enable == true) {
         /* Initialize the I2C Driver interface */
         ASF_assert( true == I2C_HardwareSetup( MAG_BUS ) ); //TBD - can be made bus agnostic!
 
@@ -226,7 +228,7 @@ void Mag_HardwareSetup( osp_bool_t enable )
         GPIO_InitStructure.GPIO_Pin = MAG_RDY_INT_PIN;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
         GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-        GPIO_Init (MAG_RDY_INT_GRP, &GPIO_InitStructure);
+        GPIO_Init(MAG_RDY_INT_GRP, &GPIO_InitStructure);
 
         GPIO_EXTILineConfig(GPIO_PORT_SRC_MAG_RDY_INT, GPIO_PIN_SRC_MAG_RDY_INT);
 
@@ -246,11 +248,8 @@ void Mag_HardwareSetup( osp_bool_t enable )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
         /* Int enabled via Mag_ConfigDataInt() */
-
-    }
-    else //TODO: disable interrupts and free GPIOs
-    {
-        //TODO!!
+    } else { //TODO: disable interrupts and free GPIOs
+             //TODO!!
     }
 }
 
@@ -296,7 +295,7 @@ void Mag_TriggerDataAcq( void )
 void Mag_ClearDataInt( void )
 {
 #if 0 //Mag DRDY is not latched so this can be skipped
-    /* DRDY interrupt is only cleared by reading data registers */
+      /* DRDY interrupt is only cleared by reading data registers */
     volatile int16_t xyzData[3];
 
     ReadMagMultiByte( LSM_M_OUT_X_H, (uint8_t *)xyzData, 6 );
@@ -313,13 +312,10 @@ void Mag_ClearDataInt( void )
 void Mag_ConfigDataInt( osp_bool_t enInt )
 {
     /* Data sheet not clear about how DRDY signal is enabled */
-    if (enInt)
-    {
+    if (enInt) {
         /* Enable DRDY */
         NVIC_CH_ENABLE( MAG_RDY_IRQCHANNEL );
-    }
-    else
-    {
+    } else {
         /* Disable DRDY */
         NVIC_CH_DISABLE( MAG_RDY_IRQCHANNEL );
     }

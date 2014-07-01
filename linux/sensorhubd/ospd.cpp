@@ -82,19 +82,21 @@ typedef struct OspSensorAttributes_t {
     char     disableValue;  //Value that disables the device (typically 0)
     osp_float_t  conversion[3];
     int         swap[3];
-
-    
 } OspSensorAttributes_t;
 
 
 /*-------------------------------------------------------------------------------------------------*\
  |    F O R W A R D   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_CalibratedThreeAxisData_t* pSensorData);
-static void _onUncalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_UncalibratedThreeAxisData_t* pSensorData);
+static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_CalibratedThreeAxisData_t *pSensorData);
+static void _onUncalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_UncalibratedThreeAxisData_t *pSensorData);
 static void _onStepDetectorSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_StepDetectorData_t* pData);
-static void _onStepCounterSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_StepCounterData_t* pSensorData);
-static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_SignificantMotionData_t* pSensorData);
+static void _onStepCounterSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_StepCounterData_t *pSensorData);
+static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_SignificantMotionData_t *pSensorData);
 
 
 
@@ -107,8 +109,12 @@ static VirtualSensorDeviceManager* _pVsDevMgr;
 
 static struct OspSensorAttributes_t _ospResultCodes[]= {
     {
-        { SENSOR_STEP, SENSOR_STEP_COUNTER },
-        { 0, 1, 0, 0 },
+        {
+			SENSOR_STEP, SENSOR_STEP_COUNTER 
+		},
+        {
+			0, 1, 0, 0
+		},
         "osp-step-counter",
         "osp-step-counter",
         (OSPD_ResultDataCallback_t)_onStepCounterSensorResultDataUpdate,
@@ -117,12 +123,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_STEP, SENSOR_STEP_DETECTOR },
-        { 0, 1, 0, 0 },
+        {
+			SENSOR_STEP, SENSOR_STEP_DETECTOR
+		},
+        {
+			0, 1, 0, 0
+		},
         "osp-step-detector",
         "osp-step-detector",
        (OSPD_ResultDataCallback_t) _onStepDetectorSensorResultDataUpdate,
@@ -131,12 +145,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_CONTEXT_DEVICE_MOTION, CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION },
-        { 0, 1, 0, 0 },
+        {
+			SENSOR_CONTEXT_DEVICE_MOTION, CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION
+		},
+        {
+			0, 1, 0, 0
+		},
         "osp-significant-motion",
         "osp-significant-motion",
         (OSPD_ResultDataCallback_t)_onSignificantMotionSensorResultDataUpdate,
@@ -145,12 +167,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		 }
     },
     {
-        { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_UNCALIBRATED },
-        { 0, 1, 1, 1 },
+        {
+			SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_UNCALIBRATED
+		},
+        {
+			0, 1, 1, 1
+		},
         "osp-uncal-accelerometer",
         "osp-uncal-accelerometer",
         (OSPD_ResultDataCallback_t)_onUncalibratedTriAxisSensorResultDataUpdate,
@@ -159,13 +189,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
-
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_CALIBRATED },
-        { 0, 1, 0, 1 },
+        {
+			SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_CALIBRATED
+		},
+        {
+			0, 1, 0, 1
+		},
         "osp-cal-accelerometer",
         "osp-cal-accelerometer",
         (OSPD_ResultDataCallback_t)_onCalibratedTriAxisSensorResultDataUpdate,
@@ -174,13 +211,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
-
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED },
-        { 0, 1, 1, 1 },
+        {
+			SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED
+		},
+        {
+			0, 1, 1, 1
+		},
         "osp-uncal-magnetometer",
         "osp-uncal-magnetometer",
         (OSPD_ResultDataCallback_t)_onUncalibratedTriAxisSensorResultDataUpdate,
@@ -189,13 +233,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
-
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_CALIBRATED },
-        { 0, 1, 0, 1 },
+        {
+			SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_CALIBRATED
+		},
+        {
+			0, 1, 0, 1
+		},
         "osp-cal-magnetometer",
         "osp-cal-magnetometer",
         (OSPD_ResultDataCallback_t)_onCalibratedTriAxisSensorResultDataUpdate,
@@ -204,13 +255,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
-
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED },
-        { 0, 1, 1, 1 },
+        {
+			SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED
+		},
+        {
+			0, 1, 1, 1
+		},
         "osp-uncal-gyroscope",
         "osp-uncal-gyroscope",
         (OSPD_ResultDataCallback_t)_onUncalibratedTriAxisSensorResultDataUpdate,
@@ -219,13 +277,20 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
-
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		}
     },
     {
-        { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_CALIBRATED },
-        { 0, 1, 0, 1 },
+        {
+			SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_CALIBRATED
+		},
+        {
+			0, 1, 0, 1
+		},
         "osp-cal-gyroscope",
         "osp-cal-gyroscope",
         (OSPD_ResultDataCallback_t)_onCalibratedTriAxisSensorResultDataUpdate,
@@ -234,8 +299,12 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
         std::string(""),
         '1',
         '0',
-        { 0.0f, 0.0f, 0.0f },
-        { 0, 1, 2 }        
+        {
+			0.0f, 0.0f, 0.0f
+		},
+        {
+			0, 1, 2
+		 }
     },
 };
 
@@ -258,6 +327,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
 void OSPD_parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer)
 {
     int16_t index;
+
     if (NULL == buffer) {
         LOG_Err("buffer should never be NULL!!!\n");
         return;
@@ -293,6 +363,7 @@ void OSPD_parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer)
         } else {
         }
         break;
+
     case OSP_HOST_SENSOR_SET_DELAY:
         LOG_Info("%s: OSP_HOST_SENSOR_SET_DELAY %d/%d :  %d milli-seconds",
             __FUNCTION__,
@@ -300,11 +371,11 @@ void OSPD_parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer)
             commandStructure->delay.sensorId.sensorSubType,
             commandStructure->delay.delay_milisec);
         break;
+
     default:
         break;
-    }        
+    }  // switch      
 }
-
 
 
 /****************************************************************************************************
@@ -314,7 +385,8 @@ void OSPD_parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer)
  * @param   data pointer
  *
  ***************************************************************************************************/
-static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_CalibratedThreeAxisData_t* pSensorData)
+static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_CalibratedThreeAxisData_t *pSensorData)
 {
     int32_t uinputCompatibleDataFormat[3];
     char ok = 0;
@@ -325,23 +397,29 @@ static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *
         case SENSOR_ACCELEROMETER_CALIBRATED:
             ok = 1;
             break;
+
         default:
             LOG_Err("%s unexpected result subtype for SENSOR_ACCELEROMETER : %d\n",
                 __FUNCTION__, sensorId->sensorSubType);
            break;
         }
+
         break;
+
     case SENSOR_MAGNETIC_FIELD:
         switch(sensorId->sensorSubType)  {
         case SENSOR_MAGNETIC_FIELD_CALIBRATED:
             ok = 1;
             break;             
+
         default:
             LOG_Err("%s unexpected result subtype for SENSOR_MAGNETIC_FIELD : %d\n",
                 __FUNCTION__, sensorId->sensorSubType);
             break;
         }
+
         break;
+
     case SENSOR_GYROSCOPE:
         switch(sensorId->sensorSubType)  {
         case SENSOR_GYROSCOPE_CALIBRATED:
@@ -351,13 +429,16 @@ static void _onCalibratedTriAxisSensorResultDataUpdate(const struct SensorId_t *
                 __FUNCTION__, sensorId->sensorSubType);
             break;
         }
+
         break;
+
     default:
         LOG_Err("%s unexpected result type %d/%d\n",
             __FUNCTION__,
             sensorId->sensorType,
             sensorId->sensorSubType);
-    }
+    } // switch
+
     if (ok) {
         int16_t index = OSPD_getResultIndex(sensorId);
         if (index >= 0) {
@@ -463,18 +544,22 @@ static void _onStepCounterSensorResultDataUpdate(const struct SensorId_t *sensor
         case SENSOR_STEP_DETECTOR:
             ok = 1;
             break;
+
         default:
             LOG_Err("%s unexpected result subtype for SENSOR_STEP : %d\n",
                 __FUNCTION__, sensorId->sensorSubType);
            break;
         }
+
         break;
+
     default:
         LOG_Err("%s unexpected result type %d/%d\n",
             __FUNCTION__,
             sensorId->sensorType,
             sensorId->sensorSubType);
-    }
+    } // switch
+
     if (ok) {
         int16_t index = OSPD_getResultIndex(sensorId);
         if (index >= 0) {
@@ -492,7 +577,8 @@ static void _onStepCounterSensorResultDataUpdate(const struct SensorId_t *sensor
 }
 
 
-static void _onStepDetectorSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_StepDetectorData_t* pSensorData)
+static void _onStepDetectorSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_StepDetectorData_t *pSensorData)
 {
     char ok = 0;
     
@@ -502,18 +588,22 @@ static void _onStepDetectorSensorResultDataUpdate(const struct SensorId_t *senso
         case SENSOR_STEP_DETECTOR:
             ok = 1;
             break;
+
         default:
             LOG_Err("%s unexpected result subtype for SENSOR_STEP : %d\n",
                 __FUNCTION__, sensorId->sensorSubType);
            break;
         }
+
         break;
+
     default:
         LOG_Err("%s unexpected result type %d/%d\n",
             __FUNCTION__,
             sensorId->sensorType,
             sensorId->sensorSubType);
-    }
+    } // switch
+
     if (ok) {
         int16_t index = OSPD_getResultIndex(sensorId);
         if (index >= 0) {
@@ -530,7 +620,9 @@ static void _onStepDetectorSensorResultDataUpdate(const struct SensorId_t *senso
     }
 }
 
-static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *sensorId, OSPD_SignificantMotionData_t* pSensorData)
+
+static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *sensorId,
+    OSPD_SignificantMotionData_t *pSensorData)
 {
     int32_t uinputCompatibleDataFormat;
     char ok = 0;
@@ -541,18 +633,22 @@ static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *
         case CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION:
             ok = 1;
             break;
+
         default:
             LOG_Err("%s unexpected result subtype for SENSOR_CONTEXT_DEVICE_MOTION : %d\n",
                 __FUNCTION__, sensorId->sensorSubType);
            break;
         }
+
         break;
+
     default:
         LOG_Err("%s unexpected result type %d/%d\n",
             __FUNCTION__,
             sensorId->sensorType,
             sensorId->sensorSubType);
-    }
+    } // switch
+
     if (ok) {
         int16_t index = OSPD_getResultIndex(sensorId);
         if (index >= 0) {
@@ -571,6 +667,7 @@ static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *
     }
 }
 
+
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C     F U N C T I O N S
 \*-------------------------------------------------------------------------------------------------*/
@@ -583,7 +680,8 @@ static void _onSignificantMotionSensorResultDataUpdate(const struct SensorId_t *
  * @return  returns an index if record in _ospResultCodes for specifies sensorId, otherwise returns -1
  *
  ***************************************************************************************************/
-int16_t OSPD_getResultIndex(const struct SensorId_t *sensorId) {
+int16_t OSPD_getResultIndex(const struct SensorId_t *sensorId)
+{
     for (unsigned int index = 0; index < ARRAY_SIZE(_ospResultCodes); index++) {
         if ((_ospResultCodes[index].sensorId.sensorType == sensorId->sensorType) &&
             (_ospResultCodes[index].sensorId.sensorSubType == sensorId->sensorSubType)) {
@@ -601,7 +699,8 @@ int16_t OSPD_getResultIndex(const struct SensorId_t *sensorId) {
  * @return  returns an call back function pointer if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-OSPD_ResultDataCallback_t OSPD_getResultDataReadyCallbackFunction(const struct SensorId_t *sensorId) {
+OSPD_ResultDataCallback_t OSPD_getResultDataReadyCallbackFunction(const struct SensorId_t *sensorId)
+{
     for (unsigned int index = 0; index < ARRAY_SIZE(_ospResultCodes); index++) {
         if ((_ospResultCodes[index].sensorId.sensorType == sensorId->sensorType) &&
             (_ospResultCodes[index].sensorId.sensorSubType == sensorId->sensorSubType)) {
@@ -618,7 +717,8 @@ OSPD_ResultDataCallback_t OSPD_getResultDataReadyCallbackFunction(const struct S
  * @return  returns a pointer to SWAP table if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-int * OSPD_getSensorSwapTable(const struct SensorId_t *sensorId) {
+int *OSPD_getSensorSwapTable(const struct SensorId_t *sensorId)
+{
     for (unsigned int index = 0; index < ARRAY_SIZE(_ospResultCodes); index++) {
         if ((_ospResultCodes[index].sensorId.sensorType == sensorId->sensorType) &&
             (_ospResultCodes[index].sensorId.sensorSubType == sensorId->sensorSubType)) {
@@ -635,7 +735,8 @@ int * OSPD_getSensorSwapTable(const struct SensorId_t *sensorId) {
  * @return  returns a pointer to SWAP table if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-osp_float_t * OSPD_getSensorConversionTable(const struct SensorId_t *sensorId) {
+osp_float_t *OSPD_getSensorConversionTable(const struct SensorId_t *sensorId)
+{
     for (unsigned int index = 0; index < ARRAY_SIZE(_ospResultCodes); index++) {
         if ((_ospResultCodes[index].sensorId.sensorType == sensorId->sensorType) &&
             (_ospResultCodes[index].sensorId.sensorSubType == sensorId->sensorSubType)) {
@@ -652,7 +753,8 @@ osp_float_t * OSPD_getSensorConversionTable(const struct SensorId_t *sensorId) {
  * @return  returns a pointer to to driver name if sensorId record is in _ospResultCodes, otherwise returns NULL
  *
  ***************************************************************************************************/
-const char *OSPD_getSensordeviceDriverName(const struct SensorId_t *sensorId) {
+const char *OSPD_getSensordeviceDriverName(const struct SensorId_t *sensorId)
+{
     for (unsigned int index = 0; index < ARRAY_SIZE(_ospResultCodes); index++) {
         if ((_ospResultCodes[index].sensorId.sensorType == sensorId->sensorType) &&
             (_ospResultCodes[index].sensorId.sensorSubType == sensorId->sensorSubType)) {
@@ -661,8 +763,6 @@ const char *OSPD_getSensordeviceDriverName(const struct SensorId_t *sensorId) {
     }
     return NULL;
 }
-
-
 
 
 /****************************************************************************************************
@@ -747,6 +847,7 @@ void parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer)
         } else {
         }
         break;
+
     case OSP_HOST_SENSOR_SET_DELAY:
         LOG_Info("%s: OSP_HOST_SENSOR_SET_DELAY %d/%d :  %d milli-seconds",
             __FUNCTION__,
@@ -754,9 +855,10 @@ void parseAndHandleSensorControls(char* buffer, ssize_t numBytesInBuffer)
             commandStructure->delay.sensorId.sensorSubType,
             commandStructure->delay.delay_milisec);
         break;
+
     default:
         break;
-    }        
+    } // switch
 }
 
 
@@ -791,51 +893,48 @@ static int32_t InitializeFromConfig( void )
         }
 
 
-        if ( _ospResultCodes[index].flags.hasSwap == 1) {
-            swap = OSPConfig::getNamedConfigItemInt(
-                        _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_SWAP, &swaplen);
-            if (!swap){
-                for (unsigned int j = 0; j < 3; ++j){
-                    _ospResultCodes[index].swap[j] = j;
-                }
-            } else if (swaplen == 3){
-                for (unsigned int j = 0; j < 3; ++j){
-                    _ospResultCodes[index].swap[j] = swap[j];
-                }
-            } else {
-                LOG_Err("Invalid swap indices length of %d fo %s. ABORTING",
-                        swaplen, _ospResultCodes[index].configFileDeviceName);
-                assert(swaplen == 3);
+        swap = OSPConfig::getNamedConfigItemInt(
+                    _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_SWAP, &swaplen);
+        if (!swap){
+            for (unsigned int j = 0; j < 3; ++j){
+                _ospResultCodes[index].swap[j] = j;
             }
-        }
-        if ( _ospResultCodes[index].flags.hasConversions == 1) {
-            conv = OSPConfig::getNamedConfigItemFloat(
-                        _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_CONVERSION, &convlen);
-            if (!conv){
-                for (unsigned int j = 0; j < 3; ++j){
-                    _ospResultCodes[index].conversion[j] = 1.0f;
-                }
-            } else if (convlen == 1){
-                for (unsigned int j = 0; j < 3; ++j){
-                    _ospResultCodes[index].conversion[j] = conv[0];
-                }
-            } else if (convlen == 3){
-                for (unsigned int j = 0; j < convlen; ++j){
-                    _ospResultCodes[index].conversion[j] = conv[j];
-                }
-            } else {
-                LOG_Err("Invalid conversion value array length of %d fo %s",
-                        convlen, _ospResultCodes[index].configFileDeviceName);
-                assert(convlen == 3);
+        } else if (swaplen == 3){
+            for (unsigned int j = 0; j < 3; ++j){
+                _ospResultCodes[index].swap[j] = swap[j];
             }
+        } else {
+            LOG_Err("Invalid swap indices length of %d fo %s. ABORTING",
+                    swaplen, _ospResultCodes[index].configFileDeviceName);
+            assert(swaplen == 3);
         }
+
+        conv = OSPConfig::getNamedConfigItemFloat(
+                    _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_CONVERSION, &convlen);
+        if (!conv){
+            for (unsigned int j = 0; j < 3; ++j){
+                _ospResultCodes[index].conversion[j] = 1.0f;
+            }
+        } else if (convlen == 1){
+            for (unsigned int j = 0; j < 3; ++j){
+                _ospResultCodes[index].conversion[j] = conv[0];
+            }
+        } else if (convlen == 3){
+            for (unsigned int j = 0; j < convlen; ++j){
+                _ospResultCodes[index].conversion[j] = conv[j];
+            }
+        } else {
+            LOG_Err("Invalid conversion value array length of %d fo %s",
+                    convlen, _ospResultCodes[index].configFileDeviceName);
+            assert(convlen == 3);
+        }
+        
         if(_ospResultCodes[index].deviceDriverName && strlen(_ospResultCodes[index].deviceDriverName)) {
             osp_char_t *sysfs = NULL;
 
             if (OSPConfig::getNamedConfigItem(
                 _ospResultCodes[index].configFileDeviceName,
-                OSPConfig::SENSOR_ENABLE_PATH)) {
-            
+                OSPConfig::SENSOR_ENABLE_PATH)) {            
                     _ospResultCodes[index].enableValue =
                         OSPConfig::getNamedConfigItemIntV(
                             _ospResultCodes[index].deviceDriverName,
@@ -865,21 +964,19 @@ static int32_t InitializeFromConfig( void )
                     free(sysfs);
                 }
             }
-            if ( _ospResultCodes[index].flags.hasDelay == 1) {
-                if (OSPConfig::getNamedConfigItem(_ospResultCodes[index].configFileDeviceName,
-                                                  OSPConfig::SENSOR_DELAY_PATH)) {
-                    if(asprintf(
-                        &sysfs, "/sys/class/sensor_relay/%s/%s",
+            if (OSPConfig::getNamedConfigItem(_ospResultCodes[index].configFileDeviceName,
+                                              OSPConfig::SENSOR_DELAY_PATH)) {
+                if(asprintf(
+                    &sysfs, "/sys/class/sensor_relay/%s/%s",
+                    _ospResultCodes[index].deviceDriverName,
+                    OSPConfig::getNamedConfigItem(
                         _ospResultCodes[index].deviceDriverName,
-                        OSPConfig::getNamedConfigItem(
-                            _ospResultCodes[index].deviceDriverName,
-                            OSPConfig::SENSOR_DELAY_PATH)) < 0) {
-                        LOG_Err("asprintf call failed!");
-                    } else {
-                        LOG_Info("Sysfs Delay Path: %s", sysfs);
-                        _ospResultCodes[index].sysDelayPath.assign(sysfs);
-                        free(sysfs);
-                    }
+                        OSPConfig::SENSOR_DELAY_PATH)) < 0) {
+                    LOG_Err("asprintf call failed!");
+                } else {
+                    LOG_Info("Sysfs Delay Path: %s", sysfs);
+                    _ospResultCodes[index].sysDelayPath.assign(sysfs);
+                    free(sysfs);
                 }
             }
         }
@@ -912,8 +1009,10 @@ static int32_t InitializeFromConfig( void )
  *          Initialize remote procedure call for the daemon
  *
  ***************************************************************************************************/
-osp_status_t OSPD_Initialize(void) {
+osp_status_t OSPD_Initialize(void)
+{
     osp_status_t result = OSP_STATUS_OK;
+
     //int tick_us = 24;
     LOGT("%s\r\n", __FUNCTION__);
     OSP::ConfigParser::parse("/data/misc/osp.config", "relay");
@@ -924,7 +1023,6 @@ osp_status_t OSPD_Initialize(void) {
     result = InitializeFromConfig();
     if (result != OSP_STATUS_OK) {
         LOG_Err("Initialize failed (%d)", result);
-
     }
     return result;
 }
@@ -934,7 +1032,8 @@ osp_status_t OSPD_Initialize(void) {
  *          Helper routine for getting daemon version information
  *
  ***************************************************************************************************/
-osp_status_t OSPD_GetVersion(char* versionString, int bufSize) {
+osp_status_t OSPD_GetVersion(char *versionString, int bufSize)
+{
     osp_status_t result = OSP_STATUS_OK;
 
     LOGT("%s\r\n", __FUNCTION__);
@@ -947,7 +1046,8 @@ osp_status_t OSPD_GetVersion(char* versionString, int bufSize) {
  *          Enables subscription for results
  *
  ***************************************************************************************************/
-osp_status_t OSPD_SubscribeResult(const struct SensorId_t *sensorId) {
+osp_status_t OSPD_SubscribeResult(const struct SensorId_t *sensorId)
+{
     LOGT("%s\r\n", __FUNCTION__);
     
     uint16_t index = OSPD_getResultIndex(sensorId);
@@ -964,7 +1064,8 @@ osp_status_t OSPD_SubscribeResult(const struct SensorId_t *sensorId) {
  *          Unsubscribe from sensor results
  *
  ***************************************************************************************************/
-osp_status_t OSPD_UnsubscribeResult(const struct SensorId_t *sensorId) {
+osp_status_t OSPD_UnsubscribeResult(const struct SensorId_t *sensorId)
+{
     LOGT("%s\r\n", __FUNCTION__);
 
     uint16_t index = OSPD_getResultIndex(sensorId);
@@ -983,6 +1084,7 @@ osp_status_t OSPD_UnsubscribeResult(const struct SensorId_t *sensorId) {
  ***************************************************************************************************/
 osp_status_t OSPD_Deinitialize(void) {
     osp_status_t result = OSP_STATUS_OK;
+
     LOGT("%s\r\n", __FUNCTION__);
     terminateRelayThread();
     return result;

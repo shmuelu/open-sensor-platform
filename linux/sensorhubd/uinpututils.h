@@ -41,8 +41,8 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    P U B L I C   F U N C T I O N   D E C L A R A T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-int openInputEventDevice(const char* inputName);
-int openInputEventDeviceExt(const char* inputName, char *actual);
+int openInputEventDevice(const char *inputName);
+int openInputEventDeviceExt(const char *inputName, char *actual);
 
 #endif // UINPUTUTILS_H
 /*-------------------------------------------------------------------------------------------------*\

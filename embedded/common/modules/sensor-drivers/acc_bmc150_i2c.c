@@ -105,6 +105,7 @@ static uint8_t ReadAccReg( uint8_t regAddr )
     return retVal;
 }
 
+
 /****************************************************************************************************
  * @fn      ReadAccMultiByte
  *          Reads data > 1 byte from digital Accelerometer's specified register start address
@@ -113,6 +114,7 @@ static uint8_t ReadAccReg( uint8_t regAddr )
 static void ReadAccMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
 {
     uint8_t result;
+
     regAddr = regAddr | 0x80;     /* For multi-byte read MSB of sub-addr field should be 1 */
 
     /* Get the transfer going. Rest is handled in the ISR */
@@ -122,7 +124,9 @@ static void ReadAccMultiByte( uint8_t regAddr, uint8_t *pBuffer, uint8_t count )
     /* Wait for status */
     I2C_Wait_Completion();
 }
-#endif
+
+
+#endif /* if 0 */
 
 
 /****************************************************************************************************
@@ -159,8 +163,8 @@ static void Accel_DumpRegisters( void )
 void Accel_Initialize( AccelInitOption option )
 {
     /* Init the Bosch Driver for accel */
-    bma2x2.bus_write  = dev_i2c_write;
-    bma2x2.bus_read   = dev_i2c_read;
+    bma2x2.bus_write = dev_i2c_write;
+    bma2x2.bus_read = dev_i2c_read;
     bma2x2.delay_msec = dev_i2c_delay;
     bma2x2_init(&bma2x2);
 
@@ -200,12 +204,11 @@ void Accel_Initialize( AccelInitOption option )
  ***************************************************************************************************/
 void Accel_HardwareSetup( osp_bool_t enable )
 {
-    GPIO_InitTypeDef  GPIO_InitStructure;
-    NVIC_InitTypeDef  NVIC_InitStructure;
-    EXTI_InitTypeDef  EXTI_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+    EXTI_InitTypeDef EXTI_InitStructure;
 
-    if (enable == true)
-    {
+    if (enable == true) {
         /* Initialize the I2C Driver interface */
         ASF_assert( true == I2C_HardwareSetup( I2C_SENSOR_BUS ) );
 
@@ -213,12 +216,12 @@ void Accel_HardwareSetup( osp_bool_t enable )
         RCC_APB2PeriphClockCmd( RCC_Periph_ACCEL_INT_GPIO, ENABLE );
 
         /* Configure INT interrupt Pin */
-        GPIO_InitStructure.GPIO_Pin   = ACCEL_INT;
-        GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
-        GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+        GPIO_InitStructure.GPIO_Pin = ACCEL_INT;
+        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+        GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
         GPIO_InitStructure.GPIO_Speed = GPIO_Speed_400KHz; //Don't care for input mode
         GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;     //Don't care for input mode
-        GPIO_Init (ACCEL_INT_GPIO_GRP, &GPIO_InitStructure);
+        GPIO_Init(ACCEL_INT_GPIO_GRP, &GPIO_InitStructure);
 
         /* Enable SYSCFG clock */
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_SYSCFG, ENABLE);
@@ -241,14 +244,10 @@ void Accel_HardwareSetup( osp_bool_t enable )
         NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
         NVIC_Init(&NVIC_InitStructure);
         /* Int enabled via Accel_ConfigDataInt() */
+    } else { //TODO: disable interrupts and free GPIOs
+             //TODO!!
     }
-    else //TODO: disable interrupts and free GPIOs
-    {
-        //TODO!!
-    }
-
 }
-
 
 
 /****************************************************************************************************
@@ -260,6 +259,7 @@ void Accel_ReadData( AccelData_t *pxyzData )
 {
     static uint32_t lastRtc = 0;
     bma2x2acc_t acc;                //create object of type bma250acc_t
+
     bma2x2_read_accel_xyz(&acc);    //get acceleration data from sensor
 
     pxyzData->X = acc.x;
@@ -268,8 +268,7 @@ void Accel_ReadData( AccelData_t *pxyzData )
 
     //add timestamp here!
     pxyzData->timeStamp = RTC_GetCounter();
-    if (pxyzData->timeStamp < lastRtc)
-    {
+    if (pxyzData->timeStamp < lastRtc) {
         AccelTimeExtend++; //Rollover counter
     }
     lastRtc = pxyzData->timeStamp;
@@ -293,12 +292,9 @@ void Accel_ClearDataInt( void )
  ***************************************************************************************************/
 void Accel_ConfigDataInt( osp_bool_t enInt )
 {
-    if (enInt)
-    {
+    if (enInt) {
         bma2x2_set_Int_Enable( BMA2x2_DATA_EN, 1 );
-    }
-    else
-    {
+    } else {
         bma2x2_set_Int_Enable( BMA2x2_DATA_EN, 0 );
     }
 }
@@ -326,6 +322,7 @@ osp_bool_t Accel_SelfTest( void )
 {
     return true; //Not supported
 }
+
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E N D   O F   F I L E

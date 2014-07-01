@@ -25,11 +25,11 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#define BIT(x)                          ( 1<<(x) )
-#define BITS(val, pos)                  ((val)<<(pos))
+#define BIT(x)                          ( 1 << (x) )
+#define BITS(val, pos)                  ((val) << (pos))
 
 /* Accelerometer I2C Slave Address */
-#define BMC150_A_I2C_ADDRESS            ??
+#define BMC150_A_I2C_ADDRESS            ? ?
 #define BMC150_A_I2C_ADDRESS_7BIT       (BMC150_A_I2C_ADDRESS >> 1)
 
 /* Accelerometer Register Mapping */

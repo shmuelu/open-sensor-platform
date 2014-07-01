@@ -73,44 +73,36 @@ static uint8_t SerialRead( PortInfo *pPort, int8_t *pBuff, uint16_t length, uint
 {
     uint32_t readIdx;
     uint16_t bytesRead = 0;
-    uint8_t  retVal = APP_OK;
+    uint8_t retVal = APP_OK;
     uint16_t evtFlags = 0;
 
-    if ((pBuff == NULL) || (length == 0) || (length > RX_BUFFER_SIZE))
-    {
+    if ((pBuff == NULL) || (length == 0) || (length > RX_BUFFER_SIZE)) {
         return APP_ERR;
     }
 
-    while (bytesRead < length)
-    {
+    while (bytesRead < length) {
         /* If the write index is 1 in front of read, the buffer is now empty. */
         if (pPort->rxWriteIdx ==
-            ((pPort->rxReadIdx + 1) % RX_BUFFER_SIZE))
-        {
+            ((pPort->rxReadIdx + 1) % RX_BUFFER_SIZE)) {
             /* Wait here for ISR event */
             os_evt_wait_or( UART_CMD_RECEIVE | UART_CRLF_RECEIVE, EVT_WAIT_FOREVER );
             evtFlags = os_evt_get();
-        }
-        else
-        {
+        } else {
             /* Data is available: get the read index, retrieve the data byte, and adjust the global
                index AFTER. */
             readIdx = pPort->rxReadIdx + 1;
-            if (readIdx >= RX_BUFFER_SIZE)
-            {
+            if (readIdx >= RX_BUFFER_SIZE) {
                 readIdx = 0;
             }
             pBuff[bytesRead++] = pPort->rxBuffer[readIdx];
             pPort->rxReadIdx = readIdx;
-            if ( evtFlags & UART_CRLF_RECEIVE )
-            {
+            if (evtFlags & UART_CRLF_RECEIVE) {
                 break;
             }
         }
     }
 
-    if (pBytesRead)
-    {
+    if (pBytesRead) {
         *pBytesRead = bytesRead;
     }
 
@@ -139,11 +131,9 @@ ASF_TASK void CmdHandlerTask( ASF_TASK_ARG )
 
     D2_printf("\r\n** SERIAL COMMAND HANDLER READY **\r\n");
 
-    while(1)
-    {
-        retVal = SerialRead( &gDbgUartPort, inputBuffer, COMMAND_LINE_SIZE-1, &bytesRead );
-        if (retVal == APP_OK)
-        {
+    while (1) {
+        retVal = SerialRead( &gDbgUartPort, inputBuffer, COMMAND_LINE_SIZE - 1, &bytesRead );
+        if (retVal == APP_OK) {
             CmdParse_User( inputBuffer, bytesRead ); //Implemented in application code
         }
     }

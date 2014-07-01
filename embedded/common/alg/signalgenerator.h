@@ -38,10 +38,11 @@
 #define SIGNAL_GENERATOR_TOTAL_DECIMATION_2N (3)
 
 // This is the expected output sample period of the signal generator
-#define SIGNAL_GENERATOR_OUTPUT_SAMPLE_PERIOD (SIGNAL_GENERATOR_EXPECTED_SAMPLE_PERIOD << SIGNAL_GENERATOR_TOTAL_DECIMATION_2N)
+#define SIGNAL_GENERATOR_OUTPUT_SAMPLE_PERIOD (SIGNAL_GENERATOR_EXPECTED_SAMPLE_PERIOD << \
+        SIGNAL_GENERATOR_TOTAL_DECIMATION_2N)
 
 // This is the expected time delay of the signal generator output
-#define SIGNAL_GENERATOR_DELAY (((AVERAGING_FILTER_BUF_SIZE-1) * SIGNAL_GENERATOR_EXPECTED_SAMPLE_PERIOD) >> 1)
+#define SIGNAL_GENERATOR_DELAY (((AVERAGING_FILTER_BUF_SIZE - 1) * SIGNAL_GENERATOR_EXPECTED_SAMPLE_PERIOD) >> 1)
 
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
@@ -67,11 +68,12 @@ extern "C" {
 void SignalGenerator_Init(void);
 
 // Returns true if filtered signal is updated
-osp_bool_t SignalGenerator_SetAccelerometerData(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES], osp_float_t* accFilteredOut);
+osp_bool_t SignalGenerator_SetAccelerometerData(const osp_float_t accInMetersPerSecondSquare[NUM_ACCEL_AXES],
+    osp_float_t*accFilteredOut);
 
 // Moving average function
-osp_float_t SignalGenerator_UpdateMovingWindowMean(osp_float_t * buffer, osp_float_t * pMeanAccumulator,
-                                             osp_float_t newmeas, uint16_t idx, uint16_t buflen2N);
+osp_float_t SignalGenerator_UpdateMovingWindowMean(osp_float_t *buffer, osp_float_t *pMeanAccumulator,
+    osp_float_t newmeas, uint16_t idx, uint16_t buflen2N);
 
 #ifdef __cplusplus
 }

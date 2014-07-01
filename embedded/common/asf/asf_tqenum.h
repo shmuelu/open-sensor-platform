@@ -27,14 +27,12 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum TaskIdTag
-{
-
+typedef enum TaskIdTag {
 #include "asf_tasks.h"
 
     NUMBER_OF_TASKS,
 
-    UNKNOWN_TASK_ID       = 0xFF,
+    UNKNOWN_TASK_ID = 0xFF,
 } TaskId;
 
 

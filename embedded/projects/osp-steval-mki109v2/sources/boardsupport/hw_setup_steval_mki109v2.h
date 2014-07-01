@@ -21,7 +21,7 @@
 \*-------------------------------------------------------------------------------------------------*/
 #include "stm32f10x.h"
 #include "osp-types.h"
-#include <stddef.h>     
+#include <stddef.h>
 
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
@@ -32,26 +32,26 @@
 /* #    T I M I N G S                                                       # */
 /* ########################################################################## */
 /** System clock & tick configuration */
-#define SYSTEM_CLOCK_FREQ                       72000000  //Make sure this matches the settings in system_stm32f10x.c
-#define USEC_PER_TICK                           5000       ///< (in uS) = 200Hz
-#define TICS_PER_SEC                            ((uint32_t)(1000000/USEC_PER_TICK))
-#define MSEC_PER_TICK                           ((uint32_t)(USEC_PER_TICK/1000))
+#define SYSTEM_CLOCK_FREQ                       72000000  /* Make sure this matches the settings in system_stm32f10x.c */
+#define USEC_PER_TICK                           5000       /* (in uS) = 200Hz */
+#define TICS_PER_SEC                            ((uint32_t)(1000000 / USEC_PER_TICK))
+#define MSEC_PER_TICK                           ((uint32_t)(USEC_PER_TICK / 1000))
 
 #if defined USE_HSI_CLOCK || defined RTC_ON_LSI_CLOCK
-# define RTC_PRESCALAR                          0 ///< RTC period = 40KHz/(RTC_PRESCALAR+1)
+# define RTC_PRESCALAR                          0 /* RTC period = 40KHz/(RTC_PRESCALAR+1) */
 # define US_PER_RTC_TICK                        25
 #elif defined RTC_ON_LSE_CLOCK
-# define RTC_PRESCALAR                          32767 ///< RTC period = 32.768 KHz/(RTC_PRESCALAR+1)
+# define RTC_PRESCALAR                          32767 /* RTC period = 32.768 KHz/(RTC_PRESCALAR+1) */
 # define US_PER_RTC_TICK                        1000000
 #else
-# define US_PER_RTC_TICK                        32  //micro-seconds
-# define RTC_PRESCALAR                          (((US_PER_RTC_TICK * HSE_VALUE)/(128000000))-1) ///< RTC period = 125KHz/(RTC_PRESCALAR+1)
+# define US_PER_RTC_TICK                        32  /* micro-seconds */
+# define RTC_PRESCALAR                          (((US_PER_RTC_TICK * HSE_VALUE) / (128000000)) - 1) /* RTC period = 125KHz/(RTC_PRESCALAR+1) */
 #endif
 
 /* Tick conversion macros */
-#define TICS_TO_SEC(T)                          ((uint32_t)(((T) + (TICS_PER_SEC/2))/TICS_PER_SEC))
-#define SEC_TO_TICS(S)                          ((uint32_t)((S) * TICS_PER_SEC))
-#define MSEC_TO_TICS(M)                         ((uint32_t)(((M) + (MSEC_PER_TICK-1))/MSEC_PER_TICK))
+#define TICS_TO_SEC(T)                          ((uint32_t)(((T) + (TICS_PER_SEC / 2)) / TICS_PER_SEC))
+#define SEC_TO_TICS(S)                          ((uint32_t)((S)*TICS_PER_SEC))
+#define MSEC_TO_TICS(M)                         ((uint32_t)(((M) + (MSEC_PER_TICK - 1)) / MSEC_PER_TICK))
 
 
 /* ########################################################################## */
@@ -75,9 +75,9 @@ enum _Leds {
 };
 
 typedef struct _Leds_info {
-    uint32_t        rccPeriph;
-    GPIO_TypeDef*   grp;
-    uint16_t        pin;
+    uint32_t rccPeriph;
+    GPIO_TypeDef*grp;
+    uint16_t pin;
 } LedsInfo_t;
 
 extern LedsInfo_t DiagLEDs[NUM_LEDS];
@@ -85,24 +85,24 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 /* Hardware independent LED designation - unused ones should be assigned 0xFF */
 #define FRONT_LED                               LED_GREEN
 #define HARD_FAULT_LED                          LED_RED
-#define BLUE_LED                                0xFF    //Don't use this LED when USB interface is enabled
+#define BLUE_LED                                0xFF    /* Don't use this LED when USB interface is enabled */
 
 #define LED_On(led)                                     \
     if (led < NUM_LEDS) {                               \
-         DiagLEDs[led].grp->BRR = DiagLEDs[led].pin;    \
+        DiagLEDs[led].grp->BRR = DiagLEDs[led].pin;    \
     }
 
 #define LED_Off(led)                                    \
     if (led < NUM_LEDS) {                               \
-         DiagLEDs[led].grp->BSRR = DiagLEDs[led].pin;   \
+        DiagLEDs[led].grp->BSRR = DiagLEDs[led].pin;   \
     }
 
-# define LED_Toggle(led)                                \
+#define LED_Toggle(led)                                \
     if (led < NUM_LEDS) {                               \
         if (DiagLEDs[led].grp->ODR & DiagLEDs[led].pin) \
             DiagLEDs[led].grp->BRR = DiagLEDs[led].pin; \
         else                                            \
-            DiagLEDs[led].grp->BSRR = DiagLEDs[led].pin;\
+            DiagLEDs[led].grp->BSRR = DiagLEDs[led].pin; \
     }
 
 /* Assert LED assignment */
@@ -124,10 +124,10 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 #define ACCEL_INT                               GPIO_Pin_3
 #define GPIO_PORT_SRC_ACCEL_INT                 GPIO_PortSourceGPIOC
 #define GPIO_PIN_SRC_ACCEL_INT                  GPIO_PinSource3
-#define EXTI_LINE_ACCEL_INT                     EXTI_Line3 ///< Also dependent on interrupt assignments
+#define EXTI_LINE_ACCEL_INT                     EXTI_Line3 /* Also dependent on interrupt assignments */
 
 /* Interrupt channel assignments */
-#define ACCEL_INT_IRQChannel                    EXTI3_IRQn  ///< Linked to GPIO assignment
+#define ACCEL_INT_IRQChannel                    EXTI3_IRQn  /* Linked to GPIO assignment */
 
 /* XL-A Bus Config */
 #define ACCEL_BUS                               I2C_SENSOR_BUS
@@ -138,12 +138,12 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 /* ########################################################################## */
 /* DRDY Interrupt input config  (INT2) */
 /* Magnetometer (Honeywell die on LSM303) */
-#define MAG_RDY_INT_PIN                         GPIO_Pin_12  //-->EXTI15_10_IRQn
+#define MAG_RDY_INT_PIN                         GPIO_Pin_12  /* -->EXTI15_10_IRQn */
 #define MAG_RDY_INT_GRP                         GPIOC
 #define RCC_Periph_MAG_RDY_GPIO                 RCC_APB2Periph_GPIOC
 #define GPIO_PORT_SRC_MAG_RDY_INT               GPIO_PortSourceGPIOC
 #define GPIO_PIN_SRC_MAG_RDY_INT                GPIO_PinSource12
-#define MAG_RDY_INT_EXTI_LINE                   EXTI_Line12  //-->EXTI15_10_IRQn
+#define MAG_RDY_INT_EXTI_LINE                   EXTI_Line12  /* -->EXTI15_10_IRQn */
 #define MAG_RDY_IRQCHANNEL                      EXTI15_10_IRQn
 
 #define MAG_BUS                                 I2C_SENSOR_BUS
@@ -153,12 +153,12 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 /* #    G Y R O S C O P E  I N T E R F A C E                                # */
 /* ########################################################################## */
 /* Gyroscope */
-#define GYRO_RDY_INT_PIN                        GPIO_Pin_14  //-->EXTI15_10_IRQn
+#define GYRO_RDY_INT_PIN                        GPIO_Pin_14  /* -->EXTI15_10_IRQn */
 #define GYRO_RDY_INT_GRP                        GPIOB
 #define RCC_Periph_GYRO_RDY_GPIO                RCC_APB2Periph_GPIOB
 #define GPIO_PORT_SRC_GYRO_RDY_INT              GPIO_PortSourceGPIOB
 #define GPIO_PIN_SRC_GYRO_RDY_INT               GPIO_PinSource14
-#define GYRO_RDY_INT_EXTI_LINE                  EXTI_Line14  //-->EXTI15_10_IRQn
+#define GYRO_RDY_INT_EXTI_LINE                  EXTI_Line14  /* -->EXTI15_10_IRQn */
 #define GYRO_RDY_IRQCHANNEL                     EXTI15_10_IRQn
 
 #define GYRO_BUS                                I2C_SENSOR_BUS
@@ -201,7 +201,7 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 #define I2C_SENSOR_BUS                          (I2C1)
 #define I2C_SENSOR_BUS_BASE                     ((U32)I2C1_BASE)
 #define I2C_SENSOR_BUS_DR_ADDR                  ((U32)(I2C_SENSOR_BUS_BASE + I2C_Register_DR))
-#define I2C_SENSOR_BUS_CLOCK                    400000  //Fast mode
+#define I2C_SENSOR_BUS_CLOCK                    400000  /* Fast mode */
 #define I2C_SENSOR_BUS_GPIO_GRP                 GPIOB
 #define RCC_Periph_I2C_SENSOR_BUS_GPIO          RCC_APB2Periph_GPIOB
 #define RCC_Periph_I2C_SENSOR_BUS               RCC_APB1Periph_I2C1
@@ -217,7 +217,7 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 #define I2C_SLAVE_BUS                           (I2C2)
 #define I2C_SLAVE_BUS_BASE                      ((U32)I2C2_BASE)
 #define I2C_SLAVE_BUS_DR_ADDR                   ((U32)(I2C_SLAVE_BUS_BASE + I2C_Register_DR))
-#define I2C_SLAVE_BUS_CLOCK                     400000  //Don't care
+#define I2C_SLAVE_BUS_CLOCK                     400000  /* Don't care */
 #define I2C_SLAVE_BUS_GPIO_GRP                  GPIOB
 #define RCC_Periph_I2C_SLAVE_BUS_GPIO           RCC_APB2Periph_GPIOB
 #define RCC_Periph_I2C_SLAVE_BUS                RCC_APB1Periph_I2C2
@@ -242,8 +242,8 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 
 #define DBG_IF_UART                             USART1
 #define RCC_Periph_DBG_UART                     RCC_APB2Periph_USART1
-#define DBG_UART_TX_PIN                         GPIO_Pin_9     ///< PA.09
-#define DBG_UART_RX_PIN                         GPIO_Pin_10    ///< PA.10
+#define DBG_UART_TX_PIN                         GPIO_Pin_9     /* PA.09 */
+#define DBG_UART_RX_PIN                         GPIO_Pin_10    /* PA.10 */
 #define DBG_UART_DR_Base                        USART1_DR_Base
 
 #define RCC_Periph_UART_GPIO                    RCC_APB2Periph_GPIOA
@@ -254,7 +254,7 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 # define RCC_UART_Periph_DMA                    RCC_AHBPeriph_DMA1
 # define DBG_UART_TX_DMA_Channel                DMA1_Channel4
 /* Interrupt channel assignment */
-# define DBG_UART_TX_DMA_IRQChannel             DMA1_Channel4_IRQn //< Dependent on UART selection
+# define DBG_UART_TX_DMA_IRQChannel             DMA1_Channel4_IRQn /* Dependent on UART selection */
 #endif
 
 /* IRQ Channel for TX and RX interrupts */
@@ -275,33 +275,33 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
  Note that lower number = higher priority (subpriority). All priorities are in relationship to
  each other & the priority group so changing one may affect others.
  */
-#define SYSTEM_INTERRUPT_PRIORITY_GRP           NVIC_PriorityGroup_2    //2-bit Preemption, 2-bit Sub
+#define SYSTEM_INTERRUPT_PRIORITY_GRP           NVIC_PriorityGroup_2    /* 2-bit Preemption, 2-bit Sub */
 
-#define DBG_UART_DMA_INT_PREEMPT_PRIORITY       3   // Uart DMA channel preemption prio. group
-#define DBG_UART_TX_DMA_INT_SUB_PRIORITY        2  // Uart DMA channel subprio within group
+#define DBG_UART_DMA_INT_PREEMPT_PRIORITY       3   /* Uart DMA channel preemption prio. group */
+#define DBG_UART_TX_DMA_INT_SUB_PRIORITY        2   /* Uart DMA channel subprio within group */
 
-#define DBG_UART_INT_PREEMPT_PRIORITY           3   // Lowest group Preemption priority
-#define DBG_UART_INT_SUB_PRIORITY               3  // Lowest Priority within group
+#define DBG_UART_INT_PREEMPT_PRIORITY           3   /* Lowest group Preemption priority */
+#define DBG_UART_INT_SUB_PRIORITY               3   /* Lowest Priority within group */
 
-#define ACCEL_A_INT_PREEMPT_PRIO                1   ///< Accelerometer A preemption priority group
-#define ACCEL_A_INT_SUB_PRIORITY                0   ///< Accelerometer A subpriority within group
+#define ACCEL_A_INT_PREEMPT_PRIO                1   /* Accelerometer A preemption priority group */
+#define ACCEL_A_INT_SUB_PRIORITY                0   /* Accelerometer A subpriority within group */
 
 /* Priorities for I2C Bus interrupts */
-#define I2C_SENSOR_BUS_INT_PREEMPT_PRIORITY     0   ///< I2C IRQ, I2C TX DMA and I2C RX DMA priority
-#define I2C_SENSOR_BUS_EVENT_INT_SUB_PRIORITY   0   ///< I2C EV IRQ subpriority !!!! IMPORTANT - THIS NEEDS TO BE HIGHEST PRIORITY !!!!
-#define I2C_SENSOR_BUS_ERROR_INT_SUB_PRIORITY   1   ///< I2C ER IRQ subpriority
+#define I2C_SENSOR_BUS_INT_PREEMPT_PRIORITY     0   /* I2C IRQ, I2C TX DMA and I2C RX DMA priority */
+#define I2C_SENSOR_BUS_EVENT_INT_SUB_PRIORITY   0   /* I2C EV IRQ subpriority !!!! IMPORTANT - THIS NEEDS TO BE HIGHEST PRIORITY !!!! */
+#define I2C_SENSOR_BUS_ERROR_INT_SUB_PRIORITY   1   /* I2C ER IRQ subpriority */
 
-#define I2C_SLAVE_BUS_INT_PREEMPT_PRIORITY      2   ///< I2C IRQ, I2C TX DMA and I2C RX DMA priority
-#define I2C_SLAVE_BUS_EVENT_INT_SUB_PRIORITY    0   ///< I2C EV IRQ subpriority
-#define I2C_SLAVE_BUS_ERROR_INT_SUB_PRIORITY    1   ///< I2C ER IRQ subpriority
-
-/* Priorities for Mag DRDY interrupt */
-#define MAG_DRDY_INT_PREEMPT_PRIORITY         1   ///< Mag DRDY IRQ preemption priority
-#define MAG_DRDY_INT_SUB_PRIORITY             1   ///< Mag DRDY IRQ subpriority
+#define I2C_SLAVE_BUS_INT_PREEMPT_PRIORITY      2   /* I2C IRQ, I2C TX DMA and I2C RX DMA priority */
+#define I2C_SLAVE_BUS_EVENT_INT_SUB_PRIORITY    0   /* I2C EV IRQ subpriority */
+#define I2C_SLAVE_BUS_ERROR_INT_SUB_PRIORITY    1   /* I2C ER IRQ subpriority */
 
 /* Priorities for Mag DRDY interrupt */
-#define GYRO_DRDY_INT_PREEMPT_PRIORITY        1   ///< Gyro DRDY IRQ preemption priority
-#define GYRO_DRDY_INT_SUB_PRIORITY            2   ///< Gyro DRDY IRQ subpriority
+#define MAG_DRDY_INT_PREEMPT_PRIORITY           1   /* Mag DRDY IRQ preemption priority */
+#define MAG_DRDY_INT_SUB_PRIORITY               1   /* Mag DRDY IRQ subpriority */
+
+/* Priorities for Mag DRDY interrupt */
+#define GYRO_DRDY_INT_PREEMPT_PRIORITY          1   /* Gyro DRDY IRQ preemption priority */
+#define GYRO_DRDY_INT_SUB_PRIORITY              2   /* Gyro DRDY IRQ subpriority */
 
 #define NVIC_CH_ENABLE(IRQCh)                   NVIC_EnableIRQ(IRQCh)
 #define NVIC_CH_DISABLE(IRQCh)                  NVIC_DisableIRQ(IRQCh)
@@ -328,16 +328,14 @@ extern LedsInfo_t DiagLEDs[NUM_LEDS];
 /*-------------------------------------------------------------------------------------------------*\
  |    T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
-typedef enum MsgContextTag
-{
-    CTX_THREAD,     ///< Message sent from within a thread context
-    CTX_ISR         ///< Message sent from ISR
+typedef enum MsgContextTag {
+    CTX_THREAD,     /* Message sent from within a thread context */
+    CTX_ISR         /* Message sent from ISR */
 } MsgContext;
 
-typedef union DeviceUidTag
-{
+typedef union DeviceUidTag {
     uint32_t uidWords[3];
-    uint8_t  uidBytes[12];
+    uint8_t uidBytes[12];
 } DeviceUid_t;
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -372,9 +370,8 @@ static __inline MsgContext GetContext( void )
 {
     extern uint32_t gStackMem;
 
-    return (__current_sp() < (uint32_t)&gStackMem)? CTX_THREAD : CTX_ISR;
+    return (__current_sp() < (uint32_t)&gStackMem) ? CTX_THREAD : CTX_ISR;
 }
-
 
 
 /*-------------------------------------------------------------------------------------------------*\

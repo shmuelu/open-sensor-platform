@@ -51,7 +51,7 @@ typedef struct {
 } StepSegment_t;
 
 //struct for defining a step
-typedef struct StepDataOSP_t{
+typedef struct StepDataOSP_t {
     NTTIME startTime;
     NTTIME stopTime;
     osp_float_t stepFrequency;
@@ -61,18 +61,18 @@ typedef struct StepDataOSP_t{
 
 //! Enumeration for calibration sensor type
 typedef enum {
-       OSPCalTypeAccelerometer = 0,
-       OSPCalTypeMagnetometer = 1,
-       OSPCalTypeGyroscope = 2,
-       OSPCalTypeGyroscopeExternal = 3
+    OSPCalTypeAccelerometer = 0,
+    OSPCalTypeMagnetometer = 1,
+    OSPCalTypeGyroscope = 2,
+    OSPCalTypeGyroscopeExternal = 3
 } OSPEnumCalType_t;
 
 //! Enumeration for calibration complexity type
 typedef enum {
-       OSPCalibratorDefault = 0,
-       OSPCalibratorInit = 1,
-       OSPCalibratorRegular = 2,
-       OSPCalibratorPremium = 3
+    OSPCalibratorDefault = 0,
+    OSPCalibratorInit = 1,
+    OSPCalibratorRegular = 2,
+    OSPCalibratorPremium = 3
 } OSPEnumCalSource_t;
 
 //! struct for storing all relevant calibration information
@@ -81,7 +81,7 @@ typedef struct {
     int32_t skew[NUM_TRIAXIS_SENSOR_AXES];
     int32_t offset[NUM_TRIAXIS_SENSOR_AXES];
     int32_t rotation[NUM_TRIAXIS_SENSOR_AXES];
-    int32_t quality[NUM_TRIAXIS_SENSOR_AXES*(NUM_TRIAXIS_SENSOR_AXES+1)];
+    int32_t quality[NUM_TRIAXIS_SENSOR_AXES * (NUM_TRIAXIS_SENSOR_AXES + 1)];
     OSPEnumCalType_t sensortype;
     OSPEnumCalSource_t calsource;
     uint16_t crc;
@@ -94,18 +94,20 @@ typedef union {
 
 //! enum for distinguishing between different types of background alg results
 typedef enum {
-    BKGALG_ACCELEROMETER_CALIBRATION          = 0,
-    BKGALG_MAGNETOMETER_CALIBRATION           = 1,
-    BKGALG_GYROSCOPE_CALIBRATION              = 2,
+    BKGALG_ACCELEROMETER_CALIBRATION = 0,
+    BKGALG_MAGNETOMETER_CALIBRATION = 1,
+    BKGALG_GYROSCOPE_CALIBRATION = 2,
     BKGALG_ENUM_COUNT
 } OSP_BackgroundAlgResultType_t;
 
 
-typedef void (*OSP_StepSegmentResultCallback_t)(StepSegment_t * segment);
-typedef void (*OSP_StepResultCallback_t)(StepDataOSP_t* stepData);
-typedef void (*OSP_EventResultCallback_t)(NTTIME * eventTime);
-typedef void (*OSP_BackgroundAlgResultCallback_t)(OSP_BackgroundAlgResultType_t resultType, const NTTIME time, OSP_BackgroundAlgResult_t * cal, osp_bool_t storeResult);
-typedef void (*OSP_CalibratedSensorCallback_t)(enum SensorType_t sensorType, const NTTIME time, const int32_t calibratedData[NUM_TRIAXIS_SENSOR_AXES]);
+typedef void (*OSP_StepSegmentResultCallback_t)(StepSegment_t *segment);
+typedef void (*OSP_StepResultCallback_t)(StepDataOSP_t*stepData);
+typedef void (*OSP_EventResultCallback_t)(NTTIME *eventTime);
+typedef void (*OSP_BackgroundAlgResultCallback_t)(OSP_BackgroundAlgResultType_t resultType, const NTTIME time,
+    OSP_BackgroundAlgResult_t *cal, osp_bool_t storeResult);
+typedef void (*OSP_CalibratedSensorCallback_t)(enum SensorType_t sensorType, const NTTIME time,
+    const int32_t calibratedData[NUM_TRIAXIS_SENSOR_AXES]);
 
 /*-------------------------------------------------------------------------------------------------*\
  |    E X T E R N A L   V A R I A B L E S   &   F U N C T I O N S

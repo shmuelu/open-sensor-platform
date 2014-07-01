@@ -65,7 +65,8 @@
  *          Utility function for searching and opening an input device with the given name
  *
  ***************************************************************************************************/
-int openInputEventDeviceExt(const char *inputName, char *actual) {
+int openInputEventDeviceExt(const char *inputName, char *actual)
+{
     int fd = -1;
     const char *dirname = "/dev/input";
     char devname[PATH_MAX];
@@ -73,17 +74,18 @@ int openInputEventDeviceExt(const char *inputName, char *actual) {
     DIR *dir;
     struct dirent *de;
     char failure_msg[40];
+
     snprintf(failure_msg, 40, "Could not open device %s", inputName);
     dir = opendir(dirname);
-    if(dir == NULL)
+    if (dir == NULL)
         return -1;
     strcpy(devname, dirname);
     filename = devname + strlen(devname);
     *filename++ = '/';
-    while((de = readdir(dir))) {
-        if((de->d_name[0] == '.') &&
-                ((de->d_name[1] == '\0') ||
-                 ((de->d_name[1] == '.') && (de->d_name[2] == '\0'))))
+    while ((de = readdir(dir))) {
+        if ((de->d_name[0] == '.') &&
+            ((de->d_name[1] == '\0') ||
+            ((de->d_name[1] == '.') && (de->d_name[2] == '\0'))))
             continue;
         strcpy(filename, de->d_name);
         fd = open(devname, O_RDONLY);
@@ -112,7 +114,8 @@ int openInputEventDeviceExt(const char *inputName, char *actual) {
  *          Utility function for searching and opening an input device with the given name
  *
  ***************************************************************************************************/
-int openInputEventDevice(const char* inputName) {
+int openInputEventDevice(const char *inputName)
+{
     return openInputEventDeviceExt(inputName, NULL);
 }
 

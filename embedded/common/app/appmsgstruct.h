@@ -34,65 +34,57 @@
 #pragma pack(push)  /* push current alignment to stack */
 #pragma pack(4)
 
-typedef struct MsgSensorDataTag
-{
-    uint32_t    timeStamp;
-    int16_t     X;
-    int16_t     Y;
-    int16_t     Z;
+typedef struct MsgSensorDataTag {
+    uint32_t timeStamp;
+    int16_t X;
+    int16_t Y;
+    int16_t Z;
 } MsgSensorData;
 
 typedef MsgSensorData MsgAccelData;
 typedef MsgSensorData MsgMagData;
 typedef MsgSensorData MsgGyroData;
 
-typedef struct MsgInclinationDataTag
-{
-    uint32_t    timeStamp;
-    int16_t     pitch;
-    int16_t     roll;
-    int16_t     yaw;
+typedef struct MsgInclinationDataTag {
+    uint32_t timeStamp;
+    int16_t pitch;
+    int16_t roll;
+    int16_t yaw;
 }  MsgInclinationData;
 
-typedef struct MsgQuaternionDataTag
-{
-    uint32_t    timeStamp;
-    int16_t     x;
-    int16_t     y;
-    int16_t     z;
-    int16_t     w;
+typedef struct MsgQuaternionDataTag {
+    uint32_t timeStamp;
+    int16_t x;
+    int16_t y;
+    int16_t z;
+    int16_t w;
 } MsgQuaternionData;
 
-typedef struct MsgSensorDataRdyTag
-{
-    uint32_t     timeStamp;
+typedef struct MsgSensorDataRdyTag {
+    uint32_t timeStamp;
     struct SensorId_t sensorId;
 } MsgSensorDataRdy;
 
-typedef struct MsgCDSegmentDataTag
-{
+typedef struct MsgCDSegmentDataTag {
     uint64_t endTime;
     uint32_t duration;
-    uint8_t  type;
+    uint8_t type;
 } MsgCDSegmentData;
 
 
-typedef struct MsgSensorEnableTag
-{
+typedef struct MsgSensorEnableTag {
     struct SensorId_t sensorId;
-    uint8_t         enabled;
+    uint8_t enabled;
 } MsgSensorEnable;
 
-typedef struct MsgSensorDelayTag
-{
+typedef struct MsgSensorDelayTag {
     struct SensorId_t sensorId;
-    uint16_t    delayMiliSec;
+    uint16_t delayMiliSec;
 } MsgSensorDelay;
 
-typedef struct MsgInputSensorsControlTag
-{
-	uint16_t Command;						//!< command to sensor (power on/off, change rate, etc...)
-	uint16_t mask;							//!< mask per index to _SensorTable for each sensor to act on
+typedef struct MsgInputSensorsControlTag {
+    uint16_t Command;                       //!< command to sensor (power on/off, change rate, etc...)
+    uint16_t mask;                          //!< mask per index to _SensorTable for each sensor to act on
 } MsgInputSensorsControl;
 
 

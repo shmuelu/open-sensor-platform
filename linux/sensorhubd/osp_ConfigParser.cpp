@@ -1,26 +1,20 @@
-/*****************************************************************************
- *                                                                           *
- *                       Sensor Platforms Inc.                               *
- *                   2860 Zanker Road, Suite 210                             *
- *                        San Jose, CA 95134                                 *
- *                                                                           *
- *****************************************************************************
- *                                                                           *
- *               Copyright (c) 2012 Sensor Platforms Inc.                    *
- *                       All Rights Reserved                                 *
- *                                                                           *
- *                   Proprietary and Confidential                            *
- *             Use only under license described in EULA.txt                  *
- *                                                                           *
- ****************************************************************************/
-/*! \file                                                                    *
- *                                                                           *
- *  @author Sensor Platforms Inc: http://www.sensorplatforms.com             *
- *  @author        Support Email: support@sensorplatforms.com                *
+/* Open Sensor Platform Project
+* https://github.com/sensorplatforms/open-sensor-platform
  *
+* Copyright (C) 2013 Sensor Platforms Inc.
  *
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
  *
- ****************************************************************************/
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 //Define module ID
 #include <stdio.h>
 #include <algorithm>
@@ -30,72 +24,11 @@
 #include "osp_configuration.h"
 #include "osp_ConfigParser.h"
 
-#ifdef ANDROID
 
-extern "C"{
-    size_t getline(char **lineptr, size_t *n, FILE *stream) {
-        char *bufptr = NULL;
-        char *p = bufptr;
-        size_t diff;
-        size_t size;
-        int c;
-    
-        if (lineptr == NULL) {
-            return -1;
-        }
-        if (stream == NULL) {
-            return -1;
-        }
-        if (n == NULL) {
-            return -1;
-        }
-        bufptr = *lineptr;
-        if(n)
-            size = *n;
-    
-        c = fgetc(stream);
-        if (c == EOF) {
-            return -1;
-        }
-        if (bufptr == NULL) {
-            bufptr = (char*)malloc(128);
-            if (bufptr == NULL) {
-                return -1;
-            }
-            size = 128;
-        }
-        p = bufptr;
-        while(c != EOF) {
-            if ((p - bufptr) > (size - 1)) {
-                size = size + 128;
-                diff = p - bufptr;
-                bufptr = (char*)realloc(bufptr, size);
-                if (bufptr == NULL) {
-                    return -1;
-                }
-                p = bufptr + diff;
-            }
-            *p++ = c;
-            if (c == '\n') {
-                break;
-            }
-            c = fgetc(stream);
-        }
-    
-        *p++ = '\0';
-        *lineptr = bufptr;
-        if(n)
-            *n = size;
-    
-        return p - bufptr - 1;
-    }
-}
-
-#else
 extern "C"{
     size_t getline (char **lineptr, size_t *n, FILE *stream);
 }
-#endif
+
 
 OSP::ConfigParser::ConfigParser(){
 
@@ -122,7 +55,6 @@ bool OSP::ConfigParser::tryParseInt( const std::string& first, const std::string
 }
 
 
-
 bool OSP::ConfigParser::tryParseFloat( const std::string& first, 
                                        const std::string & second)
 {
@@ -147,8 +79,8 @@ int OSP::ConfigParser::process_line(const char* const line){
     std::string cppline = line;
     int pos = -1;
     if (cppline.size() && 
-        cppline[0] != '#' &&
-        (pos = cppline.find('=')) != std::string::npos ){
+        ( cppline[0] != '#') &&
+        ( (pos = cppline.find('=')) != std::string::npos) ) {
         std::string first = line;
         first.erase( pos );
         first.erase( std::remove_if( first.begin(), first.end(), ::isspace ), first.end() );
@@ -158,7 +90,7 @@ int OSP::ConfigParser::process_line(const char* const line){
             ++pos;
         }
         bool have_quote = false;
-        if ( pos < (int)second.size() && second[pos] == '"'){
+        if ((pos < (int)second.size()) && (second[pos] == '"')) {
             ++pos;
             have_quote = true;
         }
@@ -170,27 +102,26 @@ int OSP::ConfigParser::process_line(const char* const line){
             while( pos < (int)second.size() && second[pos] != '"'){
                 ++pos;
             }
-            if ( pos == (int)second.size() || second[pos] != '"'){
+            if ((pos == (int)second.size()) || (second[pos] != '"')) {
                 LOG_Err("Unterminated quote in value. Aborting");
                 status = -1;
                 goto onerror;
             }
             ++pos;
             while( ++pos < (int)second.size()){
-                if ( second[pos] != ' ' &&  second[pos] != '\t'){
+                if ((second[pos] != ' ') && (second[pos] != '\t')) {
                     LOG_Err("Trailing text after closing quote. Aborting");
                     status = -2;
                     goto onerror;
                 }
             }
             --pos;//remove trailing quote
-            second.erase( pos-1, second.size());
-            
+            second.erase( pos-1, second.size());            
         }
         if (!tryParseInt( first, second )){
             if (!tryParseFloat( first, second) ){
-                if( first == "sensor" || first == "module" || 
-                    first.find (".product") != std::string::npos){
+                if ((first == "sensor") || (first == "module") ||
+                    ( first.find(".product") != std::string::npos) ) {
                     OspConfiguration::setConfigItem( first.c_str(), second.c_str(), true);
                 } else {
                     OspConfiguration::setConfigItem( first.c_str(), second.c_str());
@@ -202,15 +133,17 @@ int OSP::ConfigParser::process_line(const char* const line){
     return status;
 }
 
-int
-OSP::ConfigParser::parse(const char* const configFilename,
-                         const char* const defaultProtocol){
+
+int OSP::ConfigParser::parse(const char *const configFilename,
+    const char *const defaultProtocol)
+{
     int status = 0;
     FILE * const f = fopen( configFilename, "r");
     size_t size = 0;
     char* line = NULL;
 
-    OspConfiguration::setConfigItem( OspConfiguration::keyFrom("SystemEventProducer", OspConfiguration::SENSOR_TYPE).c_str(),
+    OspConfiguration::setConfigItem( OspConfiguration::keyFrom("SystemEventProducer",
+        OspConfiguration::SENSOR_TYPE).c_str(),
                    "SystemEventProducer");
     if(!f){
         LOG_Err("Unable to read file '%s'", configFilename);
@@ -245,13 +178,13 @@ OSP::ConfigParser::parse(const char* const configFilename,
         line = NULL;
         do{
             status = getline( &line, &size, f);
-            if (status >= 0 && line){
+            if ((status >= 0) && line) {
                 ConfigParser::process_line(line);  
                 free(line);
             }
             line = NULL;
         } while (status != EOF && status >= 0);
-        if (status != EOF || status < 0){
+        if ((status != EOF) || (status < 0)) {
             if (!feof(f)){
                 LOG_Err("I/O error reading '%s'", configFilename);
                 status = -1;
@@ -261,8 +194,7 @@ OSP::ConfigParser::parse(const char* const configFilename,
         } else {
             LOG_Info("Done procesing config file.");
             status = 0;
-        }
-        
+        }        
     }
  onerror:
     return status;

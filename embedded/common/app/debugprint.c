@@ -80,11 +80,11 @@ void AddToList( PortInfo *pPort, void *pPBuff, uint16_t length )
     int wasMasked;
     Address *pTemp;
     Address *pObj = M_GetBuffBlock(pPBuff);
+
     M_SetBuffLen(pObj, length);
 
     wasMasked = __disable_irq();
-    if (pPort->pHead == NULL)
-    {
+    if (pPort->pHead == NULL) {
         pPort->pTail = pPort->pHead = pObj; //First DWORD is reserved for list management
         M_NextBlock(pObj) = NULL;
 
@@ -99,9 +99,7 @@ void AddToList( PortInfo *pPort, void *pPBuff, uint16_t length )
 
         /* Enable UART DMA channel */
         pPort->EnableDMAChannel();
-    }
-    else
-    {
+    } else {
         pTemp = pPort->pTail;
         pPort->pTail = pObj;
         M_NextBlock(pObj) = NULL;
@@ -123,16 +121,19 @@ void *RemoveFromList( PortInfo *pPort )
        should call this function, free the memory and then use the buffer pointed by the Head pointer */
     void *pTemp;
     int wasMasked;
+
     ASF_assert(pPort->pHead != NULL);
     wasMasked = __disable_irq();
     pTemp = pPort->pHead;
-    pPort->pHead = (void *)M_NextBlock(pPort->pHead); //If this is the last element then spHead will now be NULL
+    pPort->pHead = (void*)M_NextBlock(pPort->pHead); //If this is the last element then spHead will now be NULL
     /* Here we should check if spHead is NULL and correspondingly set spTail to NULL but since
        we probably won't check for spTail == NULL, we skip that step here. */
     if (!wasMasked) __enable_irq();
     return pTemp;
 }
-#endif
+
+
+#endif /* ifdef UART_DMA_ENABLE */
 
 
 /****************************************************************************************************
@@ -145,10 +146,10 @@ void DebugPortInit( void )
     _init_box( gMemPoolDprintf, sizeof(gMemPoolDprintf), DPRINTF_MPOOL_SIZE );
     gDbgUartPort.pBuffPool = gMemPoolDprintf;
     gDbgUartPort.rxWriteIdx = 1;
-    gDbgUartPort.rxReadIdx  = 0;
+    gDbgUartPort.rxReadIdx = 0;
     gDbgUartPort.rcvTask = CMD_HNDLR_TASK_ID;
 #ifndef UART_DMA_ENABLE
-    gDbgUartPort.txReadIdx  = 0;
+    gDbgUartPort.txReadIdx = 0;
     gDbgUartPort.txWriteIdx = 1;
 #else
     gDbgUartPort.pHead = NULL;
@@ -160,8 +161,9 @@ void DebugPortInit( void )
     gDbgUartPort.EnableDMAChannel = EnableDbgUartDMAChannel;
     gDbgUartPort.EnableDMATxRequest = EnableDbgUartDMATxRequest;
     gDbgUartPort.EnableDMAxferCompleteInt = EnableDbgUartDMAxferCompleteInt;
-#endif
+#endif /* ifndef UART_DMA_ENABLE */
 }
+
 
 /****************************************************************************************************
  * @fn      RxBytesToBuff
@@ -174,8 +176,8 @@ void DebugPortInit( void )
  ***************************************************************************************************/
 void RxBytesToBuff( PortInfo *pPort, uint8_t byte )
 {
-    uint16_t  left;
-    uint16_t  readIdx, writeIdx;
+    uint16_t left;
+    uint16_t readIdx, writeIdx;
 
     /* Snapshot the two index values for local use. */
     readIdx = pPort->rxReadIdx;
@@ -183,35 +185,26 @@ void RxBytesToBuff( PortInfo *pPort, uint8_t byte )
 
     /* Check if enough room in the buffer to store the new data. */
     left = readIdx - writeIdx;
-    if(readIdx < writeIdx)
-    {
+    if (readIdx < writeIdx) {
         left += RX_BUFFER_SIZE;
     } /* Here, ulLeft should be correct (between 0 and RX_BUFFER_SIZE). */
 
-    if ((left > 0) && pPort->ValidateInput(byte))
-    {
+    if ((left > 0) && pPort->ValidateInput(byte)) {
         pPort->rxBuffer[writeIdx] = byte;
 
         /* Check if a task is waiting for it. */
-        if (pPort->rcvTask != UNKNOWN_TASK_ID)
-        {
-            if (byte == '\r' || byte == '\n')
-            {
+        if (pPort->rcvTask != UNKNOWN_TASK_ID) {
+            if ((byte == '\r') || (byte == '\n')) {
                 isr_evt_set( UART_CRLF_RECEIVE, asfTaskHandleTable[pPort->rcvTask].handle );
-            }
-            else
-            {
+            } else {
                 /* Wake up the task. */
                 isr_evt_set( UART_CMD_RECEIVE, asfTaskHandleTable[pPort->rcvTask].handle );
             }
         }
 
-        if (writeIdx < RX_BUFFER_SIZE-1)
-        {
+        if (writeIdx < RX_BUFFER_SIZE - 1) {
             ++writeIdx;
-        }
-        else
-        {
+        } else {
             writeIdx = 0;
         }
     }
@@ -230,10 +223,13 @@ void RxBytesToBuff( PortInfo *pPort, uint8_t byte )
 void *GetNextBuffer( PortInfo *pPort )
 {
     void *pFreeBuff = RemoveFromList( pPort );
+
     ASF_assert(_free_box( pPort->pBuffPool, pFreeBuff ) == 0); //Free the current consumed buffer
     return pPort->pHead; //Return the current head of the list
 }
-#endif
+
+
+#endif /* ifdef UART_DMA_ENABLE */
 
 /****************************************************************************************************
  * @fn      Print_LIPS
@@ -253,6 +249,7 @@ int Print_LIPS( const char *fmt, ... )
     uint16_t maxsize = DPRINTF_BUFF_SIZE - 8 - 4; /*4 for header & footer, 2 for "\r\n", 4 for
                                                        checksum value, 1 for ',' & 1 for null termination */
     uint8_t chkSum = 0;
+
 #if defined UART_DMA_ENABLE
     int8_t *pNewBuff;
 #else
@@ -266,8 +263,7 @@ int Print_LIPS( const char *fmt, ... )
     pNewBuff = _alloc_box(pPort->pBuffPool);
     ASF_assert( pNewBuff != NULL );
     pPrintBuff = M_GetBuffStart(pNewBuff);
-    if (pPrintBuff != NULL)
-    {
+    if (pPrintBuff != NULL) {
         pPrintBuff[0] = '{';
         pPrintBuff[1] = '!';
         len = vsnprintf( (char*)&pPrintBuff[2], maxsize, fmt, args );
@@ -276,9 +272,8 @@ int Print_LIPS( const char *fmt, ... )
 
         /* Checksum is XOR checksum calculated after the first '!' and upto but not inc. the ',' before
         the checksum itself */
-        for (i = 0; i < len; i++)
-        {
-            chkSum ^= pPrintBuff[2+i];
+        for (i = 0; i < len; i++) {
+            chkSum ^= pPrintBuff[2 + i];
         }
 
         len += 2; //account for header
@@ -289,9 +284,9 @@ int Print_LIPS( const char *fmt, ... )
     }
 
     return len;
-#else
+#else /* if defined UART_DMA_ENABLE */
     return 0; //Not implemented!
-#endif
+#endif /* if defined UART_DMA_ENABLE */
 }
 
 
@@ -308,47 +303,47 @@ int _dprintf( uint8_t dbgLvl, const char *fmt, ... )
 {
     va_list args;
     const PortInfo *pPort = &gDbgUartPort;
+
 #ifdef UART_DMA_ENABLE
     uint16_t len = 0;
     int8_t *pNewBuff, *pPrintBuff;
 #else
-    
+
 #endif
 
-    switch( dbgLvl )
-    {
+    switch (dbgLvl) {
 #if (DEBUG_LVL < 1)
-        case 1:
-            return 0;
+    case 1:
+        return 0;
+
 #endif
 #if (DEBUG_LVL < 2)
-        case 2:
-            return 0;
+    case 2:
+        return 0;
 #endif
 
-        default:
-            va_start( args, fmt );
+    default:
+        va_start( args, fmt );
 
 #ifdef UART_DMA_ENABLE
-            /* Note: Output will be truncated to allowed max size */
-            pNewBuff = _alloc_box(pPort->pBuffPool);
-            ASF_assert( pNewBuff != NULL );
-            if (pNewBuff != NULL)
-            {
-                pPrintBuff = M_GetBuffStart(pNewBuff);
-                len = vsnprintf( (char*)pPrintBuff, DPRINTF_BUFF_SIZE, fmt, args );
+        /* Note: Output will be truncated to allowed max size */
+        pNewBuff = _alloc_box(pPort->pBuffPool);
+        ASF_assert( pNewBuff != NULL );
+        if (pNewBuff != NULL) {
+            pPrintBuff = M_GetBuffStart(pNewBuff);
+            len = vsnprintf( (char*)pPrintBuff, DPRINTF_BUFF_SIZE, fmt, args );
 
-                ASF_assert( len > 0 );
+            ASF_assert( len > 0 );
 
-                /* Add the print buffer to list */
-                AddToList( (PortInfo*)pPort, pPrintBuff, len );
-                return len;
-            }
-            return 0;
+            /* Add the print buffer to list */
+            AddToList( (PortInfo*)pPort, pPrintBuff, len );
+            return len;
+        }
+        return 0;
 #else
-            return 0;
-#endif
-    }
+        return 0;
+#endif /* ifdef UART_DMA_ENABLE */
+    } /* switch */
 }
 
 

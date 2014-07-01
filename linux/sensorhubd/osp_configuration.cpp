@@ -52,15 +52,16 @@ namespace{
 class CompareKeys{
 public:
     bool operator()( const std::string & left,
-                     const std::string & right){
-        if (left.find("protocol") == 0 && right.find("protocol") == 0){
+            const std::string & right)
+        {
+            if (( left.find("protocol") == 0) && ( right.find("protocol") == 0) ) {
             return left < right;
         } else if (left.find("protocol")== 0){
             return true;
         } else if (right.find("protocol") == 0){
             return false;
         }
-        if (left.find("sensor=") == 0 && right.find("sensor=") == 0){
+            if (( left.find("sensor=") == 0) && ( right.find("sensor=") == 0) ) {
             return left < right;
         } else if (left.find("sensor=")== 0){
             auto leftkey = left;
@@ -104,7 +105,8 @@ public:
  *          Init routine
  *
  ***************************************************************************************************/
-OSP::OspConfiguration::Init::Init(){
+OSP::OspConfiguration::Init::Init()
+{
 }
 
 
@@ -113,8 +115,8 @@ OSP::OspConfiguration::Init::Init(){
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
- const char * const
-OSP::OspConfiguration::getConfigItem( const char* const name ){
+const char *const OSP::OspConfiguration::getConfigItem( const char *const name )
+{
     if (name == NULL){
         LOG_Err("Attempt to get config item for null name");
         return NULL;
@@ -125,9 +127,8 @@ OSP::OspConfiguration::getConfigItem( const char* const name ){
     }
     if (configItemsString.find(name)->second.size() == 0) {
         LOG_Err("Attempt to get Multiple items that was not populated : %s", name);
-        return NULL;
-    }
-    
+    return NULL;
+	}
     LOG_Info("Getting config  item %s value %s", name, (configItemsString.find(name)->second)[0]);
     return  (configItemsString.find(name)->second)[0];
 }
@@ -138,8 +139,8 @@ OSP::OspConfiguration::getConfigItem( const char* const name ){
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-std::vector<const char* >
-OSP::OspConfiguration::getConfigItemsMultiple( const char* const name ){
+std::vector<const char * > OSP::OspConfiguration::getConfigItemsMultiple( const char *const name )
+{
     std::vector< const char*  > retval;
     if (name == NULL){
         LOG_Err("Attempt to get config item for null name");
@@ -153,7 +154,7 @@ OSP::OspConfiguration::getConfigItemsMultiple( const char* const name ){
     
     for (auto it = configItemsString.find(name)->second.begin();
          it != configItemsString.find(name)->second.end();
-         ++it) {
+         ++it){
         if(*it)
             retval.push_back( *it );
     }
@@ -167,8 +168,8 @@ OSP::OspConfiguration::getConfigItemsMultiple( const char* const name ){
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-const float *
-OSP::OspConfiguration::getConfigItemFloat( const char* const name ,  unsigned int* size ){
+const float *OSP::OspConfiguration::getConfigItemFloat( const char *const name, unsigned int *size )
+{
     if (name == NULL){
         if(size) *size = 0;
         LOG_Err("Attempt to get float item from null name");
@@ -192,11 +193,11 @@ OSP::OspConfiguration::getConfigItemFloat( const char* const name ,  unsigned in
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::getConfigItemIntV(
+int OSP::OspConfiguration::getConfigItemIntV(
         const char* const name,
         const int defaultValue,
-        int* status){
+        int* status)
+{
     unsigned  int size;
     if(status)
         *status = OSP_STATUS_OK;
@@ -212,10 +213,9 @@ OSP::OspConfiguration::getConfigItemIntV(
             if(status)*status = -1;
             item = NULL;
         }
-
     }
     LOG_Info("Getting config item %s : %d", name, item ? *item : defaultValue);
-    return item ? *item : defaultValue;
+    return item?*item:defaultValue;
 }
 
 
@@ -224,10 +224,10 @@ OSP::OspConfiguration::getConfigItemIntV(
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-const int *
-OSP::OspConfiguration::getConfigItemInt(
-        const char* const name,
-        unsigned int* size ){
+const int *OSP::OspConfiguration::getConfigItemInt(
+    const char* const name,
+    unsigned int *size )
+{
     if (name == NULL){
         if (size) *size = 0;
         return NULL;
@@ -247,12 +247,12 @@ OSP::OspConfiguration::getConfigItemInt(
  *          Helper routine for setting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::setConfigItem(
-        const char* const name,
-        const char* const value,
-        const bool allowMultiple,
-        const bool override) {
+int OSP::OspConfiguration::setConfigItem(
+    const char* const name,
+    const char* const value,
+    const bool allowMultiple,
+    const bool override)
+{
     if ( name == NULL || value == NULL){
         LOG_Err("Failed to set not fully specified config item %s : %s",
             name ? name : "unknown",
@@ -266,30 +266,30 @@ OSP::OspConfiguration::setConfigItem(
         return -1;
     }
     
-    if (configItemsString.find(name) == configItemsString.end()){
-        configItemsString.insert(std::pair<std::string,
-                                 std::vector<const char*> >(name, std::vector<const char*>()));
-    }
-    if (allowMultiple){
-        bool found = false;
-        for(  auto item =  configItemsString.find(name)->second.begin();
-              item  !=  configItemsString.find(name)->second.end();
-              ++item){
-            found = found || (std::string(value) == std::string(*item));
+        if (configItemsString.find(name) == configItemsString.end()){
+            configItemsString.insert(std::pair<std::string,
+                                     std::vector<const char*> >(name, std::vector<const char*>()));
         }
-        if(!found){
+        if (allowMultiple){
+            bool found = false;
+            for(  auto item =  configItemsString.find(name)->second.begin();
+                  item  !=  configItemsString.find(name)->second.end();
+                  ++item){
+                found = found || (std::string(value) == std::string(*item));
+            }
+            if(!found){
+                char *clone = new char[strlen(value)+1];
+                clone[strlen(value)] = 0;
+                memcpy( clone, value, strlen(value));
+                configItemsString.find(name)->second.push_back(clone);
+            }
+        } else {
             char *clone = new char[strlen(value)+1];
             clone[strlen(value)] = 0;
             memcpy( clone, value, strlen(value));
+            configItemsString.find(name)->second.clear();
             configItemsString.find(name)->second.push_back(clone);
         }
-    } else {
-        char *clone = new char[strlen(value)+1];
-        clone[strlen(value)] = 0;
-        memcpy( clone, value, strlen(value));
-        configItemsString.find(name)->second.clear();
-        configItemsString.find(name)->second.push_back(clone);
-    }
     LOG_Info("Setting config item %s : %s", name, value);
     return 0;
 }
@@ -305,7 +305,8 @@ OSP::OspConfiguration::setConfigItemFloat(
         const char* const name,
         const float* const value,
         const unsigned int size,
-        const bool override){
+        const bool override)
+{
     if ( name == NULL || value == NULL){
         LOG_Err("Failed to set not fully specified config float item %s : %s",
             name ? name : "unknown",
@@ -317,7 +318,7 @@ OSP::OspConfiguration::setConfigItemFloat(
         LOG_Err("Failed to set config item %s", name);
         return  -1;
     }
-    if (configItemsFloat.find(name) != configItemsFloat.end() ) {
+    if (configItemsFloat.find(name) != configItemsFloat.end() ){
         std::pair< const float * , unsigned int> pair = configItemsFloat[name];
         delete [] pair.first;
         //configItemsFloat.clear();
@@ -358,8 +359,8 @@ OSP::OspConfiguration::setConfigItemFloat(
  *          Helper routine for clearing all configuration parameters
  *
  ***************************************************************************************************/
-void
-OSP::OspConfiguration::clear(const bool final){
+void OSP::OspConfiguration::clear(const bool final)
+{
     typedef std::map<std::string,  std::pair< const float *,  unsigned int> >::iterator it_type;
     for(it_type iterator = configItemsFloat.begin(); iterator != configItemsFloat.end(); iterator++) {
         delete[] (*iterator).second.first;
@@ -392,13 +393,12 @@ OSP::OspConfiguration::clear(const bool final){
  *          Helper routine for setting configuration parameter
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::setConfigItemInt(
+int OSP::OspConfiguration::setConfigItemInt(
         const char* const name,
         const int* const value,
         const unsigned int size,
-        const bool override){
-    
+        const bool override)
+{    
     if ( name == NULL || value == NULL){
         LOG_Err("Failed to set not fully specified config int item %s : %s",
             name ? name : "unknown",
@@ -451,8 +451,8 @@ OSP::OspConfiguration::setConfigItemInt(
  *          Helper routine for dumping the current configuration to a file for debugging
  *
  ***************************************************************************************************/
-int
-OSP::OspConfiguration::dump( const char* const filename ){
+int OSP::OspConfiguration::dump( const char *const filename )
+{
     FILE* f = ::fopen( filename, "w");
     if (!f){
         LOG_Err("Unable to open file '%s'",filename);
@@ -473,8 +473,8 @@ OSP::OspConfiguration::dump( const char* const filename ){
                 keys.push_back( it->first+"="+*item );/* for sorting properly*/
             }
         } else{
-            if (it->first != "debugOutputFileName" &&
-                    it->first != "requested-result")
+            if ((it->first != "debugOutputFileName") &&
+                ( it->first != "requested-result") )
                 keys.push_back( it->first );
         }
     }
@@ -507,10 +507,8 @@ OSP::OspConfiguration::dump( const char* const filename ){
             for(auto it2 = items.begin();
                 it2 != items.end();
                 ++it2){
-
                 fprintf( f, "%s = \"%s\"\n", key.c_str(),
                          *it2);
-
             }
         } else if (configItemsFloat.find(key) != configItemsFloat.end()){
             std::pair< const float*, unsigned int> floatarray =
@@ -535,12 +533,10 @@ OSP::OspConfiguration::dump( const char* const filename ){
             }
             fprintf(f, "\n");
         }
-
     }
     fclose(f);
 
     return 0;
-
 }
 
 

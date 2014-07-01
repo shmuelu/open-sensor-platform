@@ -85,7 +85,7 @@ void OSPBackgroundAlg_DestroyAlgorithms(void);
  *  \param pData IN pointer to a background result storage object.
  *
  */
-void OSPBackgroundAlg_SetStoredResult(OSP_BackgroundAlgResultType_t resultType, OSP_BackgroundAlgResult_t * pData);
+void OSPBackgroundAlg_SetStoredResult(OSP_BackgroundAlgResultType_t resultType, OSP_BackgroundAlgResult_t *pData);
 
 //! Sends sensor data into the underlying algorithms for background processing
 /*!
@@ -99,7 +99,8 @@ void OSPBackgroundAlg_SetStoredResult(OSP_BackgroundAlgResultType_t resultType, 
 *         Expected data format NTPRECISE is fixed point format 32 bit, Q24.
 *
 */
-void OSPBackgroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds, const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES]);
+void OSPBackgroundAlg_SetAccelerometerMeasurement(const NTTIME timeInSeconds,
+    const NTPRECISE measurementInMetersPerSecondSquare[NUM_ACCEL_AXES]);
 
 
 //! Registers a callback for background algorithm results

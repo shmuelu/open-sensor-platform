@@ -45,7 +45,7 @@
  |    P R I V A T E   C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
 #ifndef BUS_VIRTUAL
-#define BUS_VIRTUAL 6
+# define BUS_VIRTUAL 6
 #endif // BUS_VIRTUAL
 
 
@@ -75,13 +75,13 @@
  *
  ***************************************************************************************************/
 //! \todo this should call a registered error callback not give an exit code!
-void VirtualSensorDeviceManager::fatalErrorIf(bool condition, int code, const char* msg) {
+void VirtualSensorDeviceManager::fatalErrorIf(bool condition, int code, const char *msg)
+{
     if (condition) {
         LOG_Err("%s\n", msg);
         exit(code);
     }
 }
-
 
 
 /*-------------------------------------------------------------------------------------------------*\
@@ -93,10 +93,11 @@ void VirtualSensorDeviceManager::fatalErrorIf(bool condition, int code, const ch
  *          Class Constructor
  *
  ***************************************************************************************************/
-VirtualSensorDeviceManager::VirtualSensorDeviceManager( const int sleepus ):
+VirtualSensorDeviceManager::VirtualSensorDeviceManager( const int sleepus ) :
     _sleepus(sleepus)
 {
 }
+
 
 /****************************************************************************************************
  * @fn      ~VirtualSensorDeviceManager
@@ -105,7 +106,7 @@ VirtualSensorDeviceManager::VirtualSensorDeviceManager( const int sleepus ):
  ***************************************************************************************************/
 VirtualSensorDeviceManager::~VirtualSensorDeviceManager()
 {
-    for(std::vector<int>::iterator it = _deviceFds.begin(); it != _deviceFds.end(); ++it) {
+    for (std::vector<int>::iterator it = _deviceFds.begin(); it != _deviceFds.end(); ++it) {
         ioctl(*it, UI_DEV_DESTROY);
         close(*it);
     }
@@ -117,14 +118,15 @@ VirtualSensorDeviceManager::~VirtualSensorDeviceManager()
  *          Creates uinput node corresponding to the name
  *
  ***************************************************************************************************/
-int VirtualSensorDeviceManager::createSensor(const char* name, int absMin, int absMax) {
-    int result =-1;
-    int status =-1;
+int VirtualSensorDeviceManager::createSensor(const char *name, int absMin, int absMax)
+{
+    int result = -1;
+    int status = -1;
     struct uinput_user_dev virtualSensorDev;
 
     //struct uinput_user_dev virtualSensorDev;
     memset(&virtualSensorDev, 0, sizeof(struct uinput_user_dev));
-    result= open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+    result = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
     if (result < 0)
         return -1;
     strcpy(virtualSensorDev.name, name);
@@ -147,27 +149,27 @@ int VirtualSensorDeviceManager::createSensor(const char* name, int absMin, int a
     virtualSensorDev.absfuzz[ABS_Z] = 0;
     virtualSensorDev.absflat[ABS_Z] = 0;
 
-    status= write(result, &virtualSensorDev, sizeof(struct uinput_user_dev));
+    status = write(result, &virtualSensorDev, sizeof(struct uinput_user_dev));
     fatalErrorIf(status != sizeof(struct uinput_user_dev), -1, "error setIup\n");
 
 
-    status= ioctl(result, UI_SET_EVBIT, EV_ABS);
+    status = ioctl(result, UI_SET_EVBIT, EV_ABS);
     fatalErrorIf(status < 0, -1, "error evbit abs\n");
 
-    status= ioctl(result, UI_SET_EVBIT, EV_REL);
+    status = ioctl(result, UI_SET_EVBIT, EV_REL);
     fatalErrorIf(status < 0, -1, "error evbit rel\n");
 
-    status= ioctl(result, UI_SET_EVBIT, EV_SYN);
+    status = ioctl(result, UI_SET_EVBIT, EV_SYN);
     fatalErrorIf(status < 0, -1, "error evbit syn\n");
 
 
-    for(int i = ABS_X; i <= ABS_MAX; i++) {
-        status= ioctl(result, UI_SET_ABSBIT, i);
+    for (int i = ABS_X; i <= ABS_MAX; i++) {
+        status = ioctl(result, UI_SET_ABSBIT, i);
         fatalErrorIf(status < 0, -1, "error setabsbit %d\n");
     }
 
-    for(int i = REL_X; i <= REL_MAX; i++) {
-        status= ioctl(result, UI_SET_RELBIT, i);
+    for (int i = REL_X; i <= REL_MAX; i++) {
+        status = ioctl(result, UI_SET_RELBIT, i);
         fatalErrorIf(status < 0, -1, "error setrelbit %d\n");
     }
 
@@ -175,8 +177,8 @@ int VirtualSensorDeviceManager::createSensor(const char* name, int absMin, int a
     status = ioctl(result, UI_SET_PHYS, name);
     fatalErrorIf(status < 0, -1, "error set phys\n");
 
-    status= ioctl(result, UI_DEV_CREATE);
-    if (status < 0){
+    status = ioctl(result, UI_DEV_CREATE);
+    if (status < 0) {
         LOG_Err("Error on dev crate: %s", strerror(errno));
     }
     fatalErrorIf(status < 0, -1, "error create \n");
@@ -184,7 +186,6 @@ int VirtualSensorDeviceManager::createSensor(const char* name, int absMin, int a
     _deviceFds.push_back(result);
 
     return result;
-
 }
 
 
@@ -193,10 +194,11 @@ int VirtualSensorDeviceManager::createSensor(const char* name, int absMin, int a
  *          Publish events to the given uinput node file handle
  *
  ***************************************************************************************************/
-void VirtualSensorDeviceManager::publish(int deviceFd, input_event event) {
+void VirtualSensorDeviceManager::publish(int deviceFd, input_event event)
+{
     int status;
 
-    status= write(deviceFd, &event, sizeof(event));
+    status = write(deviceFd, &event, sizeof(event));
     fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
 }
 
@@ -206,8 +208,9 @@ void VirtualSensorDeviceManager::publish(int deviceFd, input_event event) {
  *          Publish events to the given uinput node file handle
  *
  ***************************************************************************************************/
-void VirtualSensorDeviceManager::publish(int deviceFd, int* data,
-                                         const unsigned int* const timeInMillis) {
+void VirtualSensorDeviceManager::publish(int deviceFd, int *data,
+    const unsigned int *const timeInMillis)
+{
     struct input_event event;
     int status;
 
@@ -219,20 +222,20 @@ void VirtualSensorDeviceManager::publish(int deviceFd, int* data,
         event.code = ABS_X + i;
         event.value = data[i];
         gettimeofday(&event.time, NULL);
-        status= write(deviceFd, &event, sizeof(event));
+        status = write(deviceFd, &event, sizeof(event));
         fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
     }
 
-    if (timeInMillis){
+    if (timeInMillis) {
         event.code = ABS_MISC;
-        memcpy(&event.value, timeInMillis, sizeof(event.value));//copying unsigned to signed here
-        status= write(deviceFd, &event, sizeof(event));
+        memcpy(&event.value, timeInMillis, sizeof(event.value)); //copying unsigned to signed here
+        status = write(deviceFd, &event, sizeof(event));
         fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
     }
 
     memset(&event, 0, sizeof(event));
     event.type = EV_SYN;
-    status= write(deviceFd, &event, sizeof(event));
+    status = write(deviceFd, &event, sizeof(event));
     fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
 
     return;
@@ -245,7 +248,8 @@ void VirtualSensorDeviceManager::publish(int deviceFd, int* data,
  *
  ***************************************************************************************************/
 void VirtualSensorDeviceManager::publish(int deviceFd, const int32_t data[],
-                                         const int64_t timeNanoSec, int numAxis) {
+    const int64_t timeNanoSec, int numAxis)
+{
     struct input_event event;
     int status;
     int i;
@@ -256,7 +260,7 @@ void VirtualSensorDeviceManager::publish(int deviceFd, const int32_t data[],
     for (i = 0; i < numAxis; i++) {
         event.code = ABS_X + i;
         event.value = data[i];
-        status= write(deviceFd, &event, sizeof(event));
+        status = write(deviceFd, &event, sizeof(event));
         fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
     }
 
@@ -265,14 +269,14 @@ void VirtualSensorDeviceManager::publish(int deviceFd, const int32_t data[],
     event.type = EV_ABS;
     event.code = ABS_MISC;
     event.value = (uint32_t)(timeNanoSec & 0xFFFFFFFF);
-    status= write(deviceFd, &event, sizeof(event));
+    status = write(deviceFd, &event, sizeof(event));
     fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
 
     memset(&event, 0, sizeof(event));
 
     event.type = EV_SYN;
     event.value = (uint32_t)(timeNanoSec >> 32);
-    status= write(deviceFd, &event, sizeof(event));
+    status = write(deviceFd, &event, sizeof(event));
     fatalErrorIf(status != sizeof(event), -1, "Error on send_event");
 
     return;

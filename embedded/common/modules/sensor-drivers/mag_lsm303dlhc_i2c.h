@@ -25,8 +25,8 @@
 /*-------------------------------------------------------------------------------------------------*\
  |    C O N S T A N T S   &   M A C R O S
 \*-------------------------------------------------------------------------------------------------*/
-#define BIT(x)                          ( 1<<(x) )
-#define BITS(val, pos)                  ((val)<<(pos))
+#define BIT(x)                          ( 1 << (x) )
+#define BITS(val, pos)                  ((val) << (pos))
 
 /* Magnetometer I2C Slave Address */
 #define LSM_M_I2C_ADDRESS               0x3D
