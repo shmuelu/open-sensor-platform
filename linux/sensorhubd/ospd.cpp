@@ -36,6 +36,7 @@
 #include <time.h>
 #include <assert.h>
 
+#include "osp_ConfigParser.h"
 #include "osp_configuration.h"
 #include "osp-sensors.h"
 #include "osp_debuglogging.h"
@@ -59,10 +60,18 @@
  |    P R I V A T E   T Y P E   D E F I N I T I O N S
 \*-------------------------------------------------------------------------------------------------*/
 
+typedef struct OspSensorAttributeFlags_t {
+    uint8_t subscribed:1;
+    uint8_t hasSwap:1;
+    uint8_t hasConversions:1;
+    uint8_t hasDelay:1;
+} OspSensorAttributeFlags;
+
+
 typedef struct OspSensorAttributes_t {
     struct SensorId_t   sensorId;
     
-    bool  subscribed;
+    OspSensorAttributeFlags  flags;
     const char          *configFileDeviceName;
     const char          *deviceDriverName;
     OSPD_ResultDataCallback_t   dataReadyCallBackFunction;
@@ -99,7 +108,7 @@ static VirtualSensorDeviceManager* _pVsDevMgr;
 static struct OspSensorAttributes_t _ospResultCodes[]= {
     {
         { SENSOR_STEP, SENSOR_STEP_COUNTER },
-        false,
+        { 0, 1, 0, 0 },
         "osp-step-counter",
         "osp-step-counter",
         (OSPD_ResultDataCallback_t)_onStepCounterSensorResultDataUpdate,
@@ -113,7 +122,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_STEP, SENSOR_STEP_DETECTOR },
-        false,
+        { 0, 1, 0, 0 },
         "osp-step-detector",
         "osp-step-detector",
        (OSPD_ResultDataCallback_t) _onStepDetectorSensorResultDataUpdate,
@@ -127,7 +136,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_CONTEXT_DEVICE_MOTION, CONTEXT_DEVICE_MOTION_SIGNIFICANT_MOTION },
-        false,
+        { 0, 1, 0, 0 },
         "osp-significant-motion",
         "osp-significant-motion",
         (OSPD_ResultDataCallback_t)_onSignificantMotionSensorResultDataUpdate,
@@ -141,7 +150,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_UNCALIBRATED },
-        false,
+        { 0, 1, 1, 1 },
         "osp-uncal-accelerometer",
         "osp-uncal-accelerometer",
         (OSPD_ResultDataCallback_t)_onUncalibratedTriAxisSensorResultDataUpdate,
@@ -156,7 +165,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_ACCELEROMETER,	SENSOR_ACCELEROMETER_CALIBRATED },
-        false,
+        { 0, 1, 0, 1 },
         "osp-cal-accelerometer",
         "osp-cal-accelerometer",
         (OSPD_ResultDataCallback_t)_onCalibratedTriAxisSensorResultDataUpdate,
@@ -171,7 +180,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_UNCALIBRATED },
-        false,
+        { 0, 1, 1, 1 },
         "osp-uncal-magnetometer",
         "osp-uncal-magnetometer",
         (OSPD_ResultDataCallback_t)_onUncalibratedTriAxisSensorResultDataUpdate,
@@ -186,7 +195,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_MAGNETIC_FIELD, SENSOR_MAGNETIC_FIELD_CALIBRATED },
-        false,
+        { 0, 1, 0, 1 },
         "osp-cal-magnetometer",
         "osp-cal-magnetometer",
         (OSPD_ResultDataCallback_t)_onCalibratedTriAxisSensorResultDataUpdate,
@@ -201,7 +210,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_UNCALIBRATED },
-        false,
+        { 0, 1, 1, 1 },
         "osp-uncal-gyroscope",
         "osp-uncal-gyroscope",
         (OSPD_ResultDataCallback_t)_onUncalibratedTriAxisSensorResultDataUpdate,
@@ -216,7 +225,7 @@ static struct OspSensorAttributes_t _ospResultCodes[]= {
     },
     {
         { SENSOR_GYROSCOPE, SENSOR_GYROSCOPE_CALIBRATED },
-        false,
+        { 0, 1, 0, 1 },
         "osp-cal-gyroscope",
         "osp-cal-gyroscope",
         (OSPD_ResultDataCallback_t)_onCalibratedTriAxisSensorResultDataUpdate,
@@ -782,42 +791,44 @@ static int32_t InitializeFromConfig( void )
         }
 
 
-        swap = OSPConfig::getNamedConfigItemInt(
-                    _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_SWAP, &swaplen);
-        if (!swap){
-            for (unsigned int j = 0; j < 3; ++j){
-                _ospResultCodes[index].swap[j] = j;
+        if ( _ospResultCodes[index].flags.hasSwap == 1) {
+            swap = OSPConfig::getNamedConfigItemInt(
+                        _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_SWAP, &swaplen);
+            if (!swap){
+                for (unsigned int j = 0; j < 3; ++j){
+                    _ospResultCodes[index].swap[j] = j;
+                }
+            } else if (swaplen == 3){
+                for (unsigned int j = 0; j < 3; ++j){
+                    _ospResultCodes[index].swap[j] = swap[j];
+                }
+            } else {
+                LOG_Err("Invalid swap indices length of %d fo %s. ABORTING",
+                        swaplen, _ospResultCodes[index].configFileDeviceName);
+                assert(swaplen == 3);
             }
-        } else if (swaplen == 3){
-            for (unsigned int j = 0; j < 3; ++j){
-                _ospResultCodes[index].swap[j] = swap[j];
-            }
-        } else {
-            LOG_Err("Invalid swap indices length of %d fo %s. ABORTING",
-                    swaplen, _ospResultCodes[index].configFileDeviceName);
-            assert(swaplen == 3);
         }
-
-        conv = OSPConfig::getNamedConfigItemFloat(
-                    _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_CONVERSION, &convlen);
-        if (!conv){
-            for (unsigned int j = 0; j < 3; ++j){
-                _ospResultCodes[index].conversion[j] = 1.0f;
+        if ( _ospResultCodes[index].flags.hasConversions == 1) {
+            conv = OSPConfig::getNamedConfigItemFloat(
+                        _ospResultCodes[index].configFileDeviceName, OSPConfig::SENSOR_CONVERSION, &convlen);
+            if (!conv){
+                for (unsigned int j = 0; j < 3; ++j){
+                    _ospResultCodes[index].conversion[j] = 1.0f;
+                }
+            } else if (convlen == 1){
+                for (unsigned int j = 0; j < 3; ++j){
+                    _ospResultCodes[index].conversion[j] = conv[0];
+                }
+            } else if (convlen == 3){
+                for (unsigned int j = 0; j < convlen; ++j){
+                    _ospResultCodes[index].conversion[j] = conv[j];
+                }
+            } else {
+                LOG_Err("Invalid conversion value array length of %d fo %s",
+                        convlen, _ospResultCodes[index].configFileDeviceName);
+                assert(convlen == 3);
             }
-        } else if (convlen == 1){
-            for (unsigned int j = 0; j < 3; ++j){
-                _ospResultCodes[index].conversion[j] = conv[0];
-            }
-        } else if (convlen == 3){
-            for (unsigned int j = 0; j < convlen; ++j){
-                _ospResultCodes[index].conversion[j] = conv[j];
-            }
-        } else {
-            LOG_Err("Invalid conversion value array length of %d fo %s",
-                    convlen, _ospResultCodes[index].configFileDeviceName);
-            assert(convlen == 3);
         }
-        
         if(_ospResultCodes[index].deviceDriverName && strlen(_ospResultCodes[index].deviceDriverName)) {
             osp_char_t *sysfs = NULL;
 
@@ -854,19 +865,21 @@ static int32_t InitializeFromConfig( void )
                     free(sysfs);
                 }
             }
-            if (OSPConfig::getNamedConfigItem(_ospResultCodes[index].configFileDeviceName,
-                                              OSPConfig::SENSOR_DELAY_PATH)) {
-                if(asprintf(
-                    &sysfs, "/sys/class/sensor_relay/%s/%s",
-                    _ospResultCodes[index].deviceDriverName,
-                    OSPConfig::getNamedConfigItem(
+            if ( _ospResultCodes[index].flags.hasDelay == 1) {
+                if (OSPConfig::getNamedConfigItem(_ospResultCodes[index].configFileDeviceName,
+                                                  OSPConfig::SENSOR_DELAY_PATH)) {
+                    if(asprintf(
+                        &sysfs, "/sys/class/sensor_relay/%s/%s",
                         _ospResultCodes[index].deviceDriverName,
-                        OSPConfig::SENSOR_DELAY_PATH)) < 0) {
-                    LOG_Err("asprintf call failed!");
-                } else {
-                    LOG_Info("Sysfs Delay Path: %s", sysfs);
-                    _ospResultCodes[index].sysDelayPath.assign(sysfs);
-                    free(sysfs);
+                        OSPConfig::getNamedConfigItem(
+                            _ospResultCodes[index].deviceDriverName,
+                            OSPConfig::SENSOR_DELAY_PATH)) < 0) {
+                        LOG_Err("asprintf call failed!");
+                    } else {
+                        LOG_Info("Sysfs Delay Path: %s", sysfs);
+                        _ospResultCodes[index].sysDelayPath.assign(sysfs);
+                        free(sysfs);
+                    }
                 }
             }
         }
@@ -891,8 +904,6 @@ static int32_t InitializeFromConfig( void )
             LOG_Err("InitializeRelayInput failed - relay device name not provided");
             assert (deviceRelayInputName.empty());
     }
-
-
     return result;
 }
 
@@ -905,6 +916,7 @@ osp_status_t OSPD_Initialize(void) {
     osp_status_t result = OSP_STATUS_OK;
     //int tick_us = 24;
     LOGT("%s\r\n", __FUNCTION__);
+    OSP::ConfigParser::parse("/data/misc/osp.config", "relay");
 
     /* Dump config for debug */
     OSPConfig::dump("/data/tmp/config-dump.txt");
@@ -940,7 +952,7 @@ osp_status_t OSPD_SubscribeResult(const struct SensorId_t *sensorId) {
     
     uint16_t index = OSPD_getResultIndex(sensorId);
     if (index >= 0) {
-        _ospResultCodes[index].subscribed = true;
+        _ospResultCodes[index].flags.subscribed = 1;
         return OSP_STATUS_OK;
     }
 
@@ -957,7 +969,7 @@ osp_status_t OSPD_UnsubscribeResult(const struct SensorId_t *sensorId) {
 
     uint16_t index = OSPD_getResultIndex(sensorId);
     if (index >= 0) {
-        _ospResultCodes[index].subscribed = false;
+        _ospResultCodes[index].flags.subscribed = 0;
         return OSP_STATUS_OK;
     }
     return OSP_STATUS_ERROR;

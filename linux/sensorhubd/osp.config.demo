@@ -20,6 +20,9 @@
 ##
 ######################################################################################################
 
+protocol.default = "relay"
+protocol.relay_driver = "sensor_relay_kernel"
+protocol.relay_tick_usec = 24
 
 # use this file to interface ospd to your physical/logical sensor drivers
 #
@@ -57,6 +60,20 @@ osp-uncal-accelerometer.swap = 0,1,2
 osp-uncal-accelerometer.type = "SENSOR_ACCELEROMETER"
 osp-uncal-accelerometer.subType = "SENSOR_ACCELEROMETER_UNCALIBRATED"
 
+sensor=osp-cal-accelerometer
+osp-cal-accelerometer.driver = "osp-cal-accelerometer"
+osp-cal-accelerometer.conversion = 0.019150391,0.019150391,0.019150391
+osp-cal-accelerometer.defaultrate = 0.020000
+osp-cal-accelerometer.delay-path = "delay"
+osp-cal-accelerometer.dimension = 3
+osp-cal-accelerometer.enable-path = "enable"
+osp-cal-accelerometer.disable-value = 0
+osp-cal-accelerometer.enable-value = 1
+osp-cal-accelerometer.noise = 0.057500,0.057500,0.057500
+osp-cal-accelerometer.protocol = "relay"
+osp-cal-accelerometer.saturation = 80.000000
+osp-cal-accelerometer.type = "SENSOR_ACCELEROMETER"
+osp-cal-accelerometer.subType = "SENSOR_ACCELEROMETER_CALIBRATED"
 
 ## L3GD20 Gyro  2000 dps mode
 # 
@@ -73,7 +90,6 @@ osp-uncal-gyroscope.enable-value = 1
 osp-uncal-gyroscope.disable-value = 0
 osp-uncal-gyroscope.delay-path = "delay"
 osp-uncal-gyroscope.dimension = 3
-osp-uncal-gyroscope.driver = "L3GD20"
 osp-uncal-gyroscope.factorycal = 1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000,1.000000,0.000000,0.000000,0.000000
 osp-uncal-gyroscope.noise = 0.001500,0.001500,0.001500
 osp-uncal-gyroscope.non-linear = 0.020000,0.000000,0.000000,0.000000,0.020000,0.000000,0.000000,0.000000,0.020000,0.000000,0.000000,0.000000
@@ -82,8 +98,25 @@ osp-uncal-gyroscope.saturation = 34.799999
 osp-uncal-gyroscope.shake = 0.000000,0.000000,0.000000
 osp-uncal-gyroscope.swap = 0,1,2
 osp-uncal-gyroscope.type = "SENSOR_GYROSCOPE"
-osp-uncal-gyroscope.type = "SENSOR_GYROSCOPE_UNCALIBRATED"
+osp-uncal-gyroscope.subType = "SENSOR_GYROSCOPE_UNCALIBRATED"
 
+sensor=osp-cal-gyroscope
+osp-cal-gyroscope.driver = "osp-cal-gyroscope"
+osp-cal-gyroscope.bias-stability = 0.000020,0.000020,0.000020
+osp-cal-gyroscope.conversion = 0.001225,0.001225,0.001225
+osp-cal-gyroscope.defaultrate = 0.010000
+osp-cal-gyroscope.enable-path = "enable"
+osp-cal-gyroscope.enable-value = 1
+osp-cal-gyroscope.disable-value = 0
+osp-cal-gyroscope.delay-path = "delay"
+osp-cal-gyroscope.dimension = 3
+osp-cal-gyroscope.noise = 0.001500,0.001500,0.001500
+osp-cal-gyroscope.non-linear = 0.020000,0.000000,0.000000,0.000000,0.020000,0.000000,0.000000,0.000000,0.020000,0.000000,0.000000,0.000000
+osp-cal-gyroscope.protocol = "relay"
+osp-cal-gyroscope.saturation = 34.799999
+osp-cal-gyroscope.shake = 0.000000,0.000000,0.000000
+osp-cal-gyroscope.type = "SENSOR_GYROSCOPE"
+osp-cal-gyroscope.subType = "SENSOR_GYROSCOPE_CALIBRATED"
 
 ## LSM303DLHC magnetometer
 #
@@ -91,10 +124,9 @@ osp-uncal-gyroscope.type = "SENSOR_GYROSCOPE_UNCALIBRATED"
 # Noise in uT
 #
 sensor=osp-uncal-magnetometer
-osp-uncal-accelerometer.driver = "osp-uncal-magnetometer"
+osp-uncal-magnetometer.driver = "osp-uncal-magnetometer"
 osp-uncal-magnetometer.conversion = 1.4925, 1.4925, 1.6666
 osp-uncal-magnetometer.defaultrate = 0.020000
-osp-uncal-magnetometer.delay-path = ""
 osp-uncal-magnetometer.dimension = 3
 osp-uncal-magnetometer.enable-path = "enable"
 osp-uncal-magnetometer.disable-value = 0
@@ -108,6 +140,43 @@ osp-uncal-magnetometer.saturation = 2000.000000
 osp-uncal-magnetometer.swap = 1,0,2
 osp-uncal-magnetometer.type = "SENSOR_MAGNETIC_FIELD"
 osp-uncal-magnetometer.subType = SENSOR_MAGNETIC_FIELD_UNCALIBRATED"
+
+sensor=osp-cal-magnetometer
+osp-cal-magnetometer.driver = "osp-cal-magnetometer"
+osp-cal-magnetometer.conversion = 1.4925, 1.4925, 1.6666
+osp-cal-magnetometer.defaultrate = 0.020000
+osp-cal-magnetometer.dimension = 3
+osp-cal-magnetometer.enable-path = "enable"
+osp-cal-magnetometer.disable-value = 0
+osp-cal-magnetometer.enable-value = 1
+osp-cal-magnetometer.delay-path = "delay"
+osp-cal-magnetometer.expectednorm = 40.000000
+osp-cal-magnetometer.noise = 1.300000,1.300000,1.300000
+osp-cal-magnetometer.protocol = "relay"
+osp-cal-magnetometer.saturation = 2000.000000
+osp-cal-magnetometer.type = "SENSOR_MAGNETIC_FIELD"
+osp-cal-magnetometer.subType = SENSOR_MAGNETIC_FIELD_CALIBRATED"
+
+
+sensor="osp-step-counter"
+osp-step-counter.driver = "osp-step-counter"
+osp-step-counter.enable-path = "enable"
+osp-step-counter.disable-value = 0
+osp-step-counter.enable-value = 1
+
+sensor="osp-step-detector"
+osp-step-detector.driver = "osp-step-detector"
+osp-step-detector.enable-path = "enable"
+osp-step-detector.disable-value = 0
+osp-step-detector.enable-value = 1
+
+sensor="osp-significant-motion"
+osp-significant-motion.driver = "osp-significant-motion"
+osp-significant-motion.enable-path = "enable"
+osp-significant-motion.disable-value = 0
+osp-significant-motion.enable-value = 1
+
+
 
 ##
 ## Protocol

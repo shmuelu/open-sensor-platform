@@ -113,16 +113,23 @@ OSP::OspConfiguration::Init::Init(){
  *          Helper routine for getting configuration parameter
  *
  ***************************************************************************************************/
-const char* const
+ const char * const
 OSP::OspConfiguration::getConfigItem( const char* const name ){
     if (name == NULL){
         LOG_Err("Attempt to get config item for null name");
-    } else if( configItemsString.find(std::string(name)) != configItemsString.end()){
-        if (configItemsString.find(name)->second.size() >= 1){
-            return  (configItemsString.find(name)->second)[0];
-        }
+        return NULL;
     }
-    return NULL;
+    if( configItemsString.find(std::string(name)) == configItemsString.end()) {
+        LOG_Err("Attempt to get Multiple items that do not exist : %s", name);
+        return NULL;
+    }
+    if (configItemsString.find(name)->second.size() == 0) {
+        LOG_Err("Attempt to get Multiple items that was not populated : %s", name);
+        return NULL;
+    }
+    
+    LOG_Info("Getting config  item %s value %s", name, (configItemsString.find(name)->second)[0]);
+    return  (configItemsString.find(name)->second)[0];
 }
 
 
@@ -136,16 +143,21 @@ OSP::OspConfiguration::getConfigItemsMultiple( const char* const name ){
     std::vector< const char*  > retval;
     if (name == NULL){
         LOG_Err("Attempt to get config item for null name");
+        return retval;
     }
 
-    if (name != NULL && configItemsString.find(name) != configItemsString.end()){
-        for (auto it = configItemsString.find(name)->second.begin();
-             it != configItemsString.find(name)->second.end();
-             ++it){
-            if(*it)
-                retval.push_back( *it );
-        }
+    if (configItemsString.find(name) == configItemsString.end()){
+      LOG_Err("Attempt to get Multiple items that do not exist : %s", name);
+        return retval;
     }
+    
+    for (auto it = configItemsString.find(name)->second.begin();
+         it != configItemsString.find(name)->second.end();
+         ++it) {
+        if(*it)
+            retval.push_back( *it );
+    }
+    LOG_Info("Getting config Multiple item %s size %d", name, retval.size());
     return retval;
 }
 
@@ -159,15 +171,18 @@ const float *
 OSP::OspConfiguration::getConfigItemFloat( const char* const name ,  unsigned int* size ){
     if (name == NULL){
         if(size) *size = 0;
+        LOG_Err("Attempt to get float item from null name");
         return NULL;
     }
     if ( configItemsFloat.end() == configItemsFloat.find(name)){
         if(size)  *size = 0;
+        LOG_Err("Attempt to get float item that does not exist : %s", name);
         return NULL;
     }
 
     std::pair< const float*, unsigned int> pair = configItemsFloat[name];
     if(size) *size = pair.second;
+    LOG_Info("Getting config item %s size %d", name, pair.second);
     return pair.first;
 }
 
@@ -199,7 +214,8 @@ OSP::OspConfiguration::getConfigItemIntV(
         }
 
     }
-    return item?*item:defaultValue;
+    LOG_Info("Getting config item %s : %d", name, item ? *item : defaultValue);
+    return item ? *item : defaultValue;
 }
 
 
@@ -236,41 +252,46 @@ OSP::OspConfiguration::setConfigItem(
         const char* const name,
         const char* const value,
         const bool allowMultiple,
-        const bool override){
-    LOG_Info("Setting config item %s", name);
-    int status = -1;
+        const bool override) {
     if ( name == NULL || value == NULL){
-        status = -1;
-    } else if (!allowMultiple && !override && configItemsString.find( name ) != configItemsString.end() ){
-        status = -1;
-    } else {
-        if (configItemsString.find(name) == configItemsString.end()){
-            configItemsString.insert(std::pair<std::string,
-                                     std::vector<const char*> >(name, std::vector<const char*>()));
+        LOG_Err("Failed to set not fully specified config item %s : %s",
+            name ? name : "unknown",
+            value ? value : "unknown");
+        return  -1;
+    }
+    if ((!allowMultiple) &&
+        (!override) &&
+        (configItemsString.find(name) != configItemsString.end()) ){
+        LOG_Err("Failed to set config item %s : %s", name, value);
+        return -1;
+    }
+    
+    if (configItemsString.find(name) == configItemsString.end()){
+        configItemsString.insert(std::pair<std::string,
+                                 std::vector<const char*> >(name, std::vector<const char*>()));
+    }
+    if (allowMultiple){
+        bool found = false;
+        for(  auto item =  configItemsString.find(name)->second.begin();
+              item  !=  configItemsString.find(name)->second.end();
+              ++item){
+            found = found || (std::string(value) == std::string(*item));
         }
-        if (allowMultiple){
-            bool found = false;
-            for(  auto item =  configItemsString.find(name)->second.begin();
-                  item  !=  configItemsString.find(name)->second.end();
-                  ++item){
-                found = found || (std::string(value) == std::string(*item));
-            }
-            if(!found){
-                char *clone = new char[strlen(value)+1];
-                clone[strlen(value)] = 0;
-                memcpy( clone, value, strlen(value));
-                configItemsString.find(name)->second.push_back(clone);
-            }
-        } else {
+        if(!found){
             char *clone = new char[strlen(value)+1];
             clone[strlen(value)] = 0;
             memcpy( clone, value, strlen(value));
-            configItemsString.find(name)->second.clear();
             configItemsString.find(name)->second.push_back(clone);
         }
-        status = 0;
+    } else {
+        char *clone = new char[strlen(value)+1];
+        clone[strlen(value)] = 0;
+        memcpy( clone, value, strlen(value));
+        configItemsString.find(name)->second.clear();
+        configItemsString.find(name)->second.push_back(clone);
     }
-    return status;
+    LOG_Info("Setting config item %s : %s", name, value);
+    return 0;
 }
 
 
@@ -285,26 +306,50 @@ OSP::OspConfiguration::setConfigItemFloat(
         const float* const value,
         const unsigned int size,
         const bool override){
-    LOG_Info("Setting config item %s", name);
-    int status = -1;
-    if (!override && configItemsFloat.find( name ) != configItemsFloat.end() ){
-        status = -1;
-    } else {
-        if (configItemsFloat.find(name) != configItemsFloat.end() ){
-            std::pair< const float * , unsigned int> pair = configItemsFloat[name];
-            delete [] pair.first;
-            //configItemsFloat.clear();
-        }
-        std::pair< const float*, unsigned int> pair;
-        pair.first = new float[ size ];
-        pair.second = size;
-        for (unsigned int i =0; i < size; ++i ){
-            const_cast< float* >( pair.first )[i] = value[i];
-        }
-        configItemsFloat.insert(std::pair<std::string, std::pair<const float*,unsigned int> >(name, pair) );
-        status = 0;
+    if ( name == NULL || value == NULL){
+        LOG_Err("Failed to set not fully specified config float item %s : %s",
+            name ? name : "unknown",
+            value ? "specified" : "unknown");
+        return  -1;
     }
-    return status;
+    if ((!override) &&
+        (configItemsFloat.find( name ) != configItemsFloat.end())){
+        LOG_Err("Failed to set config item %s", name);
+        return  -1;
+    }
+    if (configItemsFloat.find(name) != configItemsFloat.end() ) {
+        std::pair< const float * , unsigned int> pair = configItemsFloat[name];
+        delete [] pair.first;
+        //configItemsFloat.clear();
+    }
+    std::pair< const float*, unsigned int> pair;
+    pair.first = new float[ size ];
+    pair.second = size;
+    for (unsigned int i =0; i < size; ++i ){
+        const_cast< float* >( pair.first )[i] = value[i];
+    }
+    configItemsFloat.insert(std::pair<std::string, std::pair<const float*,unsigned int> >(name, pair) );
+    switch (size) {
+    case 1:
+        LOG_Info("Setting config item %s : %g",
+            name,
+            value[0]);
+        break;
+    case 2:
+        LOG_Info("Setting config item %s : %g,%g",
+            name,
+            value[0],
+            value[1]);
+        break;
+    case 3:
+        LOG_Info("Setting config item %s : %g,%g,%g",
+            name,
+            value[0],
+            value[1],
+            value[2]);
+        break;
+    }
+    return 0;
 }
 
 
@@ -353,25 +398,49 @@ OSP::OspConfiguration::setConfigItemInt(
         const int* const value,
         const unsigned int size,
         const bool override){
-    LOG_Info("Setting config item %s", name);
-    int status = -1;
-    if (!override && configItemsInt.find( name ) != configItemsInt.end() ){
-        status = -1;
-    } else {
-        if (configItemsInt.find(name) != configItemsInt.end()){
-            std::pair< const int * , unsigned int> pair = configItemsInt[name];
-            delete [] pair.first;
-        }
-        std::pair< const int*, unsigned int> pair;
-        pair.first = new int[ size ];
-        pair.second = size;
-        for (unsigned int i =0; i < size; ++i ){
-            const_cast< int* >( pair.first )[i] = value[i];
-        }
-        configItemsInt.insert(std::pair<std::string, std::pair<const int*, unsigned int> >(name, pair) );
-        status = 0;
+    
+    if ( name == NULL || value == NULL){
+        LOG_Err("Failed to set not fully specified config int item %s : %s",
+            name ? name : "unknown",
+            value ? "specified" : "unknown");
+        return  -1;
     }
-    return status;
+    if (!override && configItemsInt.find( name ) != configItemsInt.end() ){
+        LOG_Err("Failed to set config item %s", name);
+        return  -1;
+    }
+    if (configItemsInt.find(name) != configItemsInt.end()){
+        std::pair< const int * , unsigned int> pair = configItemsInt[name];
+        delete [] pair.first;
+    }
+    std::pair< const int*, unsigned int> pair;
+    pair.first = new int[ size ];
+    pair.second = size;
+    for (unsigned int i =0; i < size; ++i ){
+        const_cast< int* >( pair.first )[i] = value[i];
+    }
+    configItemsInt.insert(std::pair<std::string, std::pair<const int*, unsigned int> >(name, pair) );
+    switch (size) {
+    case 1:
+        LOG_Info("Setting config item %s : %d",
+            name,
+            value[0]);
+        break;
+    case 2:
+        LOG_Info("Setting config item %s : %d,%d",
+            name,
+            value[0],
+            value[1]);
+        break;
+    case 3:
+        LOG_Info("Setting config item %s : %d,%d,%d",
+            name,
+            value[0],
+            value[1],
+            value[2]);
+        break;
+    }
+    return 0;
 }
 
 
